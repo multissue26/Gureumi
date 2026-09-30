@@ -1,19 +1,18 @@
-# GitHub Pages 배포
+# GitHub Pages 갱신
 
-1. GitHub에서 새 repository를 만듭니다. 예: `dding-db`
-2. 이 `01_페이지` 폴더 안의 모든 파일과 폴더를 repository 루트에 업로드합니다.
-   - `index.html`
-   - `app.js`
-   - `styles.css`
-   - `data.js`
-   - `shop-data.js`
-   - `assets/`
-   - `.github/workflows/deploy-pages.yml`
-   - `.nojekyll`
-3. Repository의 `Settings → Pages`로 이동합니다.
-4. `Build and deployment → Source`를 `GitHub Actions`로 설정합니다.
-5. `Actions` 탭에서 Pages 배포 workflow가 완료되면 사이트 주소로 접속합니다.
+기존 사이트 저장소에 `01_페이지` 안의 웹 파일을 덮어씁니다.
 
-프로젝트 repository라면 보통 주소는 `https://아이디.github.io/저장소이름/` 형태입니다.
+주요 파일:
 
-`prices.json`은 GitHub에 업로드하지 않아도 됩니다. 웹사이트의 `가격 연결`에서 내 PC의 Minecraft 인스턴스에 생성된 파일을 직접 선택합니다.
+- `index.html`
+- `styles.css`
+- `app.js`
+- `data.js`
+- `shop-data.js`
+- `assets/`
+
+사이트는 로컬 `prices.json`을 읽지 않고 아래 Cloudflare Worker에서 공개 확정 가격을 읽습니다.
+
+`https://dding-price-api.hansuyeon191-6fe.workers.dev`
+
+따라서 다른 PC, 휴대폰, 다른 지역에서도 같은 가격을 볼 수 있습니다.

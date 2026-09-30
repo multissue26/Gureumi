@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light" />
   <title>띵타 개인DB</title>
   <meta name="description" content="띵타이쿤 개인용 제작·수급·농장·가격 데이터베이스" />
-  <link rel="stylesheet" href="styles.css?v=0.4.0" />
+  <link rel="stylesheet" href="styles.css?v=0.5.0" />
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -57,15 +57,15 @@
 
       <div class="side-module">
         <div class="module-head"><span>PRICE FEED</span><span id="sidePriceDot" class="tiny-dot"></span></div>
-        <div id="sidePriceStatus" class="price-feed-title">연결 안 됨</div>
-        <small id="sidePriceUpdated">prices.json을 연결하면 자동 갱신돼.</small>
-        <button id="sideConnect" class="text-action">가격 파일 연결 <svg><use href="#i-arrow"/></svg></button>
+        <div id="sidePriceStatus" class="price-feed-title">가격 대기</div>
+        <small id="sidePriceUpdated">Cloudflare 확정 가격을 불러오는 중.</small>
+        <button id="sideConnect" class="text-action">최신 가격 확인 <svg><use href="#i-arrow"/></svg></button>
       </div>
 
       <div class="sidebar-footer">
-        <span>v0.4.0</span>
+        <span>v0.5.0</span>
         <span class="sep"></span>
-        <span>local-first</span>
+        <span>cloud-sync</span>
       </div>
     </aside>
 
@@ -87,7 +87,7 @@
             <button class="icon-btn" data-tool="memo" title="메모"><svg><use href="#i-note"/></svg></button>
             <button class="icon-btn" data-tool="settings" title="환경 설정"><svg><use href="#i-settings"/></svg></button>
           </div>
-          <button id="quickConnect" class="btn primary"><span class="connect-indicator"></span>가격 연결</button>
+          <button id="quickConnect" class="btn primary"><span class="connect-indicator"></span>최신 가격 확인</button>
         </div>
       </header>
 
@@ -113,10 +113,9 @@
   </aside>
 
   <div id="toast" class="toast" hidden></div>
-  <input id="fallbackPriceFile" type="file" accept="application/json,.json" hidden />
 
-  <script src="data.js?v=0.4.0"></script>
-  <script src="shop-data.js?v=0.4.0"></script>
-  <script src="app.js?v=0.4.0"></script>
+  <script src="data.js?v=0.5.0"></script>
+  <script src="shop-data.js?v=0.5.0"></script>
+  <script src="app.js?v=0.5.0"></script>
 </body>
 </html>

@@ -277,7 +277,7 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 @media(max-width:1020px){.finder-hero{grid-template-columns:1fr}.finder-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.finder-intro{padding:24px}.finder-intro h2{font-size:25px}.finder-toolbar{align-items:flex-start;flex-direction:column}.finder-grid{grid-template-columns:1fr}.finder-card{grid-template-columns:1fr}.finder-value{text-align:left;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.finder-value a{margin-top:0}}
 
-/* ===== v0.4.0 market dashboard ===== */
+/* ===== v0.5.0 market dashboard ===== */
 .market-home{padding-bottom:60px}
 .market-hero{background:#17211d}
 .market-status-hero{display:flex;flex-direction:column;justify-content:center;gap:10px}
@@ -315,3 +315,11 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 
 @media(max-width:1120px){.market-rank-grid{grid-template-columns:1fr}.market-chart-card{grid-template-columns:1fr}.market-food-picker{border-left:0;border-top:1px solid var(--line);min-height:0}.picker-list{display:grid;grid-template-columns:repeat(3,1fr);max-height:none}.market-selected-numbers{gap:10px}}
 @media(max-width:720px){.market-chart-head{flex-direction:column}.market-selected-numbers{width:100%;justify-content:flex-start;text-align:left;flex-wrap:wrap}.market-selected-numbers>.change-pill{margin-top:0}.picker-list{grid-template-columns:1fr 1fr}.movement-table-card{overflow:auto}.movement-table-head,.movement-row{min-width:660px}.market-rank-row{grid-template-columns:20px 34px minmax(0,1fr) auto}.market-rank-card{padding-left:12px;padding-right:12px}}
+
+/* ===== v0.5.0 cloud price confirmation ===== */
+.price-alert{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:14px 0 0;padding:14px 16px;border:1px solid #e2c98f;border-radius:12px;background:#fff8e8}
+.price-alert.ready{border-color:#b8d6c5;background:#eff7f2}
+.price-alert>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:0}.price-alert b{font-size:10px}.price-alert span{font-size:8.5px;color:#7d817c;line-height:1.55}.alert-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.update-help{position:relative;display:inline-flex;align-items:center;min-height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.16);border-radius:8px;color:#c7d0ca;font-size:8px;cursor:help;outline:none}.price-alert .update-help{border-color:#d8d9d3;color:#667069;background:#fff}.update-help-pop{position:absolute;z-index:1000;left:0;top:calc(100% + 8px);width:270px;padding:11px 12px;border-radius:9px;background:#18201c;color:#eef2ef!important;font-size:8.5px!important;line-height:1.6!important;box-shadow:0 12px 32px rgba(16,25,20,.2);opacity:0;visibility:hidden;transform:translateY(-4px);transition:.15s ease;pointer-events:none}.update-help:hover .update-help-pop,.update-help:focus .update-help-pop{opacity:1;visibility:visible;transform:translateY(0)}
+.cloud-status-list{display:grid;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.cloud-status-list>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;background:#fff;border-bottom:1px solid var(--line)}.cloud-status-list>div:last-child{border-bottom:0}.cloud-status-list span{font-size:8px;color:#8d948f}.cloud-status-list b{font-size:8.5px;text-align:right;overflow-wrap:anywhere}.cloud-error{margin:10px 0 0;color:#9c4a43;font-size:8.5px;line-height:1.6}
+@media(max-width:760px){.price-alert{align-items:flex-start;flex-direction:column}.alert-actions{width:100%;justify-content:space-between}.update-help-pop{left:auto;right:0;width:min(270px,80vw)}}

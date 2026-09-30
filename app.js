@@ -7,6 +7,8 @@
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const LEGACY_URL = 'https://raw.githubusercontent.com/beniforreal/ddingtasearch/main/data/regionData.json';
   const LEGACY_CACHE_KEY = 'ddingLegacyCacheV1';
+  const PRICE_API = 'https://dding-price-api.hansuyeon191-6fe.workers.dev';
+  const PRICE_CHANGE_DAYS = [1,3,6,9,12,15,18,21,24,27,30];
 
   const state = {
     page: 'dashboard',
@@ -19,8 +21,12 @@
     query: '',
     prices: {},
     priceMeta: null,
-    priceHandle: null,
-    priceTimer: null,
+    cloudStatus: null,
+    cloudHistory: [],
+    cloudLoaded: false,
+    cloudBusy: false,
+    cloudError: '',
+    uiCycleKey: '',
     farm: new Set(JSON.parse(localStorage.getItem('ddingFarm') || '[]')),
     legacy: null,
     legacyLoading: false,
@@ -224,7 +230,25 @@
     return `이전 ${i + 1}`;
   }
 
+  function cloudHistoryForFood(food) {
+    const rows = [];
+    for (const snap of [...state.cloudHistory].reverse()) {
+      const entry = snap?.prices?.[food.name];
+      const price = Number(entry?.marketPrice ?? entry?.myPrice);
+      if (!Number.isFinite(price)) continue;
+      const stamp = snap?.capturedAt || snap?.publishedAt || snap?.cycleKey;
+      rows.push({
+        label: stamp ? new Date(stamp).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '기록',
+        price,
+        capturedAt: stamp,
+      });
+    }
+    return rows;
+  }
+
   function priceHistory(food) {
+    const cloudRows = cloudHistoryForFood(food);
+    if (cloudRows.length) return cloudRows;
     const p = getPrice(food);
     if (!p) return [];
     const hist = Array.isArray(p.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
@@ -235,6 +259,13 @@
   }
 
   function priceChange(food) {
+    const cloudRows = cloudHistoryForFood(food);
+    if (cloudRows.length >= 2) {
+      const current = cloudRows[cloudRows.length - 1].price;
+      const previous = cloudRows[cloudRows.length - 2].price;
+      const diff = current - previous;
+      return {current, previous, diff, pct: previous ? (diff / previous) * 100 : null};
+    }
     const p = getPrice(food);
     const current = marketPrice(food);
     const hist = Array.isArray(p?.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
@@ -315,6 +346,62 @@
     </button>`).join('');
   }
 
+  function kstEpoch(y, m, d, h = 3, min = 0, sec = 0) {
+    return Date.UTC(y, m - 1, d, h - 9, min, sec);
+  }
+
+  function kstNowParts(nowMs = Date.now()) {
+    const d = new Date(nowMs + 9 * 3600000);
+    return {y:d.getUTCFullYear(), m:d.getUTCMonth()+1, d:d.getUTCDate(), h:d.getUTCHours(), min:d.getUTCMinutes(), sec:d.getUTCSeconds()};
+  }
+
+  function daysInMonth(y,m) { return new Date(Date.UTC(y,m,0)).getUTCDate(); }
+
+  function priceCycleInfo(nowMs = Date.now()) {
+    const p = kstNowParts(nowMs);
+    let startMs = null, nextMs = null;
+    for (let back=0; back<45 && startMs==null; back++) {
+      const t = new Date(Date.UTC(p.y,p.m-1,p.d-back,0,0,0));
+      const y=t.getUTCFullYear(), m=t.getUTCMonth()+1, d=t.getUTCDate();
+      if (!PRICE_CHANGE_DAYS.includes(d) || d>daysInMonth(y,m)) continue;
+      const candidate = kstEpoch(y,m,d,3,0,0);
+      if (candidate <= nowMs) startMs = candidate;
+    }
+    for (let fwd=0; fwd<45 && nextMs==null; fwd++) {
+      const t = new Date(Date.UTC(p.y,p.m-1,p.d+fwd,0,0,0));
+      const y=t.getUTCFullYear(), m=t.getUTCMonth()+1, d=t.getUTCDate();
+      if (!PRICE_CHANGE_DAYS.includes(d) || d>daysInMonth(y,m)) continue;
+      const candidate = kstEpoch(y,m,d,3,0,0);
+      if (candidate > nowMs) nextMs = candidate;
+    }
+    const start = new Date(startMs);
+    const shifted = new Date(startMs + 9*3600000);
+    const cycleKey = `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth()+1).padStart(2,'0')}-${String(shifted.getUTCDate()).padStart(2,'0')}T03:00:00+09:00`;
+    return {startMs,nextMs,cycleKey};
+  }
+
+  function fmtKst(ts, withSeconds = true) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:withSeconds?'2-digit':undefined,hour12:false});
+  }
+
+  function isCurrentCycleStamp(ts) {
+    if (!ts) return false;
+    const t = new Date(ts).getTime();
+    return Number.isFinite(t) && t >= priceCycleInfo().startMs;
+  }
+
+  function priceFreshState() {
+    const cycle = priceCycleInfo();
+    const published = state.cloudStatus?.published || state.priceMeta;
+    const candidate = state.cloudStatus?.candidate;
+    const publishedFresh = !!published && published.cycleKey === cycle.cycleKey && isCurrentCycleStamp(published.capturedAt || published.updatedAt);
+    const candidateFresh = !!candidate && candidate.cycleKey === cycle.cycleKey && isCurrentCycleStamp(candidate.capturedAt);
+    return {cycle,published,candidate,publishedFresh,candidateFresh};
+  }
+
   function renderDashboard() {
     const linked = Object.keys(state.prices).length > 0;
     const fully = D.foods.filter(f => readiness(f) === 1).length;
@@ -331,40 +418,52 @@
       .filter(x => x.current != null)
       .sort((a,b) => (b.pct ?? -9999) - (a.pct ?? -9999));
     const recommendations = calcCropUnlocks().slice(0, 4);
+    const freshness = priceFreshState();
+    const statusLabel = !linked ? 'WAITING' : freshness.publishedFresh ? 'CURRENT' : 'UPDATE';
+    const statusClass = linked && freshness.publishedFresh ? 'on' : '';
+    const updateCopy = !linked
+      ? 'Cloudflare에 아직 확정 가격이 없어.'
+      : freshness.publishedFresh
+        ? `현재 가격 주기 확인 완료 · ${fmtKst(freshness.published?.capturedAt || state.priceMeta?.capturedAt || state.priceMeta?.updatedAt)}`
+        : freshness.candidateFresh
+          ? `새 가격 후보가 확인됐어 · ${fmtKst(freshness.candidate.capturedAt)}`
+          : `가격 변동 시각이 지났어. 밀키 상점 확인이 필요해.`;
 
     $('#page-dashboard').innerHTML = `<div class="content-shell market-home">
       <section class="hero market-hero">
         <div class="hero-copy">
-          <div class="hero-kicker">DDING TYCOON · LIVE COOKING MARKET</div>
-          <h2>가격은 읽고,<br><b>팔 타이밍은 바로 본다.</b></h2>
-          <p>요리 판매 상점에서 읽은 현재가와 과거 가격을 기준으로 등락, 판매 효율, 고가 순위를 한 화면에서 비교해.</p>
-          <div class="hero-actions"><button class="btn primary" data-go="prices">가격 파일 연결</button><button class="btn" data-go="cooking">레시피 보기</button></div>
+          <div class="hero-kicker">DDING TYCOON · COOKING MARKET</div>
+          <h2>가격은 확인할 때만,<br><b>공개는 네가 원할 때.</b></h2>
+          <p>모드가 확인한 가격은 Cloudflare의 후보값으로만 올라가고, 이 사이트의 가격은 [최신 가격 업데이트]를 눌렀을 때만 확정돼.</p>
+          <div class="hero-actions"><button id="publishLatestBtn" class="btn primary">최신 가격 업데이트</button><span class="update-help" tabindex="0">업데이트 방법 ?<span class="update-help-pop">모드가 설치된 Minecraft에서 밀키 → 요리 판매 상점을 한 번 연 뒤, 이 버튼을 눌러줘.</span></span></div>
         </div>
         <div class="hero-side market-status-hero">
-          <div class="hero-side-label">PRICE FEED</div>
-          <div class="feed-big-status"><span class="feed-live-dot ${linked ? 'on' : ''}"></span><strong>${linked ? 'LIVE' : 'WAITING'}</strong></div>
-          <p>${linked ? `${Object.keys(state.prices).length}개 가격 항목 · ${state.priceMeta?.updatedAt ? new Date(state.priceMeta.updatedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ' 갱신' : '로컬 파일 연결됨'}` : '게임에서 요리 판매 상점을 연 뒤 prices.json을 연결해.'}</p>
+          <div class="hero-side-label">PRICE STATUS</div>
+          <div class="feed-big-status"><span class="feed-live-dot ${statusClass}"></span><strong>${statusLabel}</strong></div>
+          <p>${esc(updateCopy)}</p>
         </div>
       </section>
+
+      ${!freshness.publishedFresh && (linked || freshness.candidateFresh) ? `<section class="price-alert ${freshness.candidateFresh?'ready':'warning'}"><div><b>${freshness.candidateFresh?'새 가격 후보가 준비됐습니다.':'가격 업데이트가 필요합니다.'}</b><span>${freshness.candidateFresh ? '밀키 상점에서 현재 주기 가격이 이미 확인됐어. 업데이트 버튼을 누르면 사이트에 반영돼.' : '현재 가격 주기의 실제 가격이 아직 확인되지 않았어.'}</span></div><div class="alert-actions"><span class="update-help" tabindex="0">업데이트 방법 ?<span class="update-help-pop">1. 모드가 설치된 PC에서 Minecraft 서버 접속<br>2. 밀키 → 요리 판매 상점 열기<br>3. 사이트로 돌아와 [최신 가격 업데이트] 클릭</span></span><button id="publishLatestBtn2" class="btn primary">최신 가격 업데이트</button></div></section>` : ''}
 
       <section class="metrics">
-        <div class="metric"><div class="metric-label">가격 피드</div><div class="metric-value">${linked ? 'ON' : 'OFF'}</div><div class="metric-foot">${linked ? `${Object.keys(state.prices).length}개 항목 로드됨` : 'prices.json 연결 대기'}</div></div>
-        <div class="metric"><div class="metric-label">상승 음식</div><div class="metric-value">${changes.filter(x => x.diff > 0).length}</div><div class="metric-foot">직전 기록 대비</div></div>
-        <div class="metric"><div class="metric-label">하락 음식</div><div class="metric-value">${changes.filter(x => x.diff < 0).length}</div><div class="metric-foot">직전 기록 대비</div></div>
-        <div class="metric"><div class="metric-label">다음 가격 변경</div><div class="metric-value" id="nextChange">—</div><div class="metric-foot">지정일 03:00 기준</div></div>
+        <div class="metric"><div class="metric-label">가격 상태</div><div class="metric-value">${freshness.publishedFresh ? '최신' : linked ? '확인 필요' : '대기'}</div><div class="metric-foot">${freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : '확정 가격 없음'}</div></div>
+        <div class="metric"><div class="metric-label">상승 음식</div><div class="metric-value">${changes.filter(x => x.diff > 0).length}</div><div class="metric-foot">직전 확정 주기 대비</div></div>
+        <div class="metric"><div class="metric-label">하락 음식</div><div class="metric-value">${changes.filter(x => x.diff < 0).length}</div><div class="metric-foot">직전 확정 주기 대비</div></div>
+        <div class="metric"><div class="metric-label">다음 가격 변경</div><div class="metric-value" id="nextChange">—</div><div class="metric-foot">1·3·6·9·12·15·18·21·24·27·30일 03:00</div></div>
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>지금 뭘 파는 게 좋은가</h2><p>왼쪽은 확인 가능한 NPC 구매비를 차감한 판매 차익, 오른쪽은 현재 내 판매가 자체가 높은 순서야.</p></div></div>
+        <div class="section-head"><div><h2>지금 뭘 파는 게 좋은가</h2><p>왼쪽은 확인 가능한 NPC 구매비를 차감한 판매 차익, 오른쪽은 현재 확정 판매가 자체가 높은 순서야.</p></div></div>
         <div class="market-rank-grid">
           <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">SELL EFFICIENCY</span><h3>추천 판매 효율</h3></div><small>NPC 구매비 차감 기준</small></div>${efficiencyRankHtml(efficiency)}</article>
-          <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">HIGHEST PRICE</span><h3>내 판매가 최고</h3></div><small>현재 가격 순</small></div>${highPriceRankHtml(expensive)}</article>
+          <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">HIGHEST PRICE</span><h3>확정 판매가 최고</h3></div><small>현재 공개 가격 순</small></div>${highPriceRankHtml(expensive)}</article>
         </div>
-        <div class="market-method-note">재배·사냥·채집 재료는 임의의 골드 원가로 환산하지 않고, DB에 확인된 NPC 구매비만 비용으로 차감해. 그래서 ‘추천 판매 효율’은 완전 원가회계가 아니라 <b>지금 바로 비교하기 위한 실전 지표</b>야.</div>
+        <div class="market-method-note">재배·사냥·채집 재료는 임의의 골드 원가로 환산하지 않고, DB에 확인된 NPC 구매비만 비용으로 차감해. ‘추천 판매 효율’은 <b>현재 공개 가격을 빠르게 비교하는 실전 지표</b>야.</div>
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>현재가 흐름</h2><p>오른쪽 음식 목록을 누르면 해당 음식의 과거 가격과 현재 판매가 흐름을 바로 바꿔서 볼 수 있어.</p></div><button class="btn ghost" data-go="prices">원본 가격 보기</button></div>
+        <div class="section-head"><div><h2>현재가 흐름</h2><p>사이트에서 확정한 가격 주기만 그래프에 한 점씩 쌓여. 오른쪽 음식 목록을 누르면 바로 바뀌어.</p></div><button class="btn ghost" data-go="prices">가격 상태 보기</button></div>
         <div class="card market-chart-card">
           <div class="market-chart-main">
             <div class="market-chart-head">
@@ -381,16 +480,13 @@
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>음식별 등락 현황</h2><p>현재 시장 판매가를 직전 히스토리 값과 비교한 변동률이야. 행을 누르면 위 차트도 해당 음식으로 바뀐다.</p></div><div class="reference-status">${changes.length} tracked</div></div>
-        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>새 helper로 요리 판매 상점을 열면 과거 가격 4개와 현재가를 한 번에 읽어와.</div>`}</div>
+        <div class="section-head"><div><h2>전체 음식 변동</h2><p>직전 확정 가격과 현재 확정 가격을 비교해 얼마나 비싸졌고 싸졌는지 바로 확인해.</p></div></div>
+        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>가격을 두 주기 이상 확정하면 실제 Cloudflare 기록을 기준으로 비교해.</div>`}</div>
       </section>
 
       <section class="section farm-after-market">
-        <div class="section-head"><div><h2>다음 작물 후보</h2><p>가격과 별개로, 현재 농장에서 1종을 추가했을 때 완성 가능한 요리를 계산해.</p></div></div>
-        <div class="card crop-suggest"><div class="crop-suggest-list">${recommendations.length ? recommendations.map(x => {
-          const c = D.crops.find(c => c.id === x.id);
-          return `<div class="crop-suggest-item">${c.icon ? `<img src="${c.icon}" alt="">` : `<span class="crop-emoji">${esc(c.emoji || '·')}</span>`}<div><b>${esc(c.name)}</b><small>관련 요리 ${x.improves}종 · 즉시 완성 ${x.unlock}종</small></div><strong>+${x.unlock}</strong></div>`;
-        }).join('') : `<div class="empty">모든 작물이 체크되어 있어.</div>`}</div></div>
+        <div class="section-head"><div><h2>다음 농장 추천</h2><p>현재 체크한 작물 기준으로 제작 가능 요리를 늘리는 작물을 계산했어.</p></div><button class="btn ghost" data-go="farm">농장 수정</button></div>
+        <div class="card crop-suggest">${recommendations.map(x=>`<div class="crop-suggest-row"><span>${iconHTML(D.crops.find(c=>c.id===x.id)||{emoji:'□'})}</span><div><b>${esc(cropName(x.id))}</b><small>관련 요리 ${x.improves}종 · 즉시 완성 ${x.unlock}종</small></div><strong>+${x.unlock}</strong></div>`).join('') || `<div class="empty compact"><strong>농장 정보가 없어.</strong>내 농장에서 현재 재배 작물을 체크해줘.</div>`}</div>
       </section>
     </div>`;
     updateNextPriceChange();
@@ -601,27 +697,20 @@
 
   function renderPrices() {
     const rows = D.foods.flatMap(f => [[f,false],[f,true]]).filter(([f,g]) => getPrice(f,g));
+    const freshness = priceFreshState();
+    const candidate = freshness.candidate;
+    const published = freshness.published;
     $('#page-prices').innerHTML = `<div class="content-shell">
       <div class="connect-hero">
-        <div class="card connect-box"><p class="eyebrow">LOCAL FILE ACCESS</p><h2>prices.json 연결</h2><p>게임 쪽 helper가 로컬 JSON을 갱신하면, 브라우저는 네가 직접 고른 그 파일 하나만 읽어. 연결 뒤에는 약 2초마다 변경 여부를 확인해.</p><div class="connect-actions"><button id="connectPriceBtn" class="btn primary">가격 파일 연결</button><button id="loadDemoBtn" class="btn">샘플 보기</button><button id="disconnectPriceBtn" class="btn danger">연결 해제</button></div><div class="steps"><div class="step">모드를 mods 폴더에 넣고 게임 실행</div><div class="step">게임에서 밀키 → 요리 판매 상점을 한 번 열기</div><div class="step">helper가 15개 슬롯 tooltip을 hover 없이 읽어 prices.json 갱신</div><div class="step">이 사이트가 연결된 파일을 자동으로 다시 읽음</div></div></div>
-        <div class="card connect-box"><p class="eyebrow">DATA FORMAT</p><h2>가벼운 스냅샷</h2><p>현재 상태를 덮어쓰는 구조라 파일이 계속 커지지 않아.</p><div class="codebox">{
-  "updatedAt": "2026-09-30T06:30:00+09:00",
-  "prices": {
-    "토마토 스파게티": {
-      "marketPrice": 416,
-      "myPrice": 424,
-      "marketDelta": 19,
-      "history": [{"label": "1.8일", "price": 306}]
-    }
-  }
-}</div></div>
+        <div class="card connect-box"><p class="eyebrow">CLOUD PRICE FEED</p><h2>파일 선택 없이 자동 연동</h2><p>모드가 밀키의 요리 판매 상점을 읽으면 현재 가격 주기의 후보값을 Cloudflare에 한 번 보낸다. 사이트 가격은 사용자가 직접 [최신 가격 업데이트]를 누를 때만 바뀐다.</p><div class="connect-actions"><button id="refreshCloudBtn" class="btn">Cloudflare 새로 확인</button><button id="publishLatestBtn3" class="btn primary">최신 가격 업데이트</button></div><div class="steps"><div class="step">모드가 설치된 PC에서 Minecraft 실행</div><div class="step">밀키 → 요리 판매 상점을 한 번 열기</div><div class="step">새 가격 주기 최초 확인값이 candidate로 전송</div><div class="step">사이트에서 최신 가격 업데이트를 눌러 확정</div></div></div>
+        <div class="card connect-box"><p class="eyebrow">SYNC STATUS</p><h2>${freshness.publishedFresh ? '현재 주기 확인 완료' : '가격 확인 필요'}</h2><div class="cloud-status-list"><div><span>현재 가격 주기</span><b>${esc(freshness.cycle.cycleKey.replace('T03:00:00+09:00',' · 03:00'))}</b></div><div><span>모드 후보 확인</span><b>${candidate ? fmtKst(candidate.capturedAt) : '없음'}</b></div><div><span>사이트 최종 확정</span><b>${published ? fmtKst(published.capturedAt) : '없음'}</b></div><div><span>수집 항목</span><b>${published?.itemCount ?? rows.length} / 15</b></div></div>${state.cloudError ? `<p class="cloud-error">${esc(state.cloudError)}</p>` : ''}</div>
       </div>
-      <section class="section"><div class="section-head"><div><h2>현재 로드된 가격</h2><p>${state.priceMeta?.updatedAt ? `마지막 갱신 ${esc(new Date(state.priceMeta.updatedAt).toLocaleString('ko-KR'))}` : '아직 가격 데이터가 없어.'}</p></div><div class="status-row"><span class="status-dot ${rows.length ? 'on' : ''}"></span>${rows.length ? `${rows.length}개 항목` : '미연결'}</div></div>
+      <section class="section"><div class="section-head"><div><h2>현재 사이트 확정 가격</h2><p>${published ? `Minecraft 실제 확인 ${fmtKst(published.capturedAt)}` : '아직 Cloudflare에 확정된 가격이 없어.'}</p></div><div class="status-row"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span>${freshness.publishedFresh ? '최신 주기' : rows.length ? '이전 주기' : '대기'}</div></div>
       <div class="card price-panel">${rows.length ? `<div class="price-table-wrap"><table class="price-table"><thead><tr><th>음식</th><th>기준 판매가</th><th>나의 판매가</th><th>범위 내 위치</th></tr></thead><tbody>${rows.map(([f,g]) => {
         const p = getPrice(f,g), pct = normalizedPrice(f,g), percent = pct == null ? null : Math.round(pct * 100);
         return `<tr><td>${g ? '황금 · ' : ''}${esc(g ? f.gold.name : f.name)}</td><td>${fmt(p.marketPrice)}</td><td><b>${fmt(p.myPrice ?? p.marketPrice)}</b></td><td>${percent == null ? '—' : `<div class="price-position"><div class="mini-progress"><span style="width:${percent}%"></span></div>${percent}%</div>`}</td></tr>`;
-      }).join('')}</tbody></table></div>` : `<div class="empty"><strong>가격 데이터가 없어.</strong>prices.json을 연결하거나 샘플 데이터를 불러와.</div>`}</div></section>
-      <div class="note-strip" style="margin-top:14px">사이트는 네가 선택한 <b>prices.json 한 파일</b>만 읽어. GitHub에 가격 파일을 올릴 필요는 없어.</div>
+      }).join('')}</tbody></table></div>` : `<div class="empty"><strong>확정 가격 데이터가 없어.</strong>모드에서 밀키 상점을 확인한 뒤 최신 가격 업데이트를 눌러줘.</div>`}</div></section>
+      <div class="note-strip" style="margin-top:14px">가격 변동 공식 일정: 매월 <b>1·3·6·9·12·15·18·21·24·27·30일 오전 3시</b>. 사이트는 그 시간이 지나면 자동으로 업데이트 필요 상태로 바뀐다.</div>
     </div>`;
   }
 
@@ -691,14 +780,15 @@
 
   function syncPriceStatus() {
     const count = Object.keys(state.prices).length;
-    $('#sidePriceStatus').textContent = count ? `연동됨 · ${count}개` : '연결 안 됨';
-    $('#sidePriceDot').classList.toggle('on', !!count);
-    $('#sidePriceUpdated').textContent = state.priceMeta?.updatedAt ? `마지막 갱신 ${new Date(state.priceMeta.updatedAt).toLocaleString('ko-KR')}` : 'prices.json을 연결하면 자동 갱신돼.';
+    const freshness = priceFreshState();
+    $('#sidePriceStatus').textContent = freshness.publishedFresh ? `최신 · ${count}개` : count ? '업데이트 필요' : '가격 대기';
+    $('#sidePriceDot').classList.toggle('on', !!freshness.publishedFresh);
+    $('#sidePriceUpdated').textContent = freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : 'Cloudflare 확정 가격을 기다리는 중.';
     const quick = $('#quickConnect');
-    if (quick) quick.innerHTML = `<span class="connect-indicator" style="background:${count ? '#78d19b' : '#83b59c'}"></span>${count ? '가격 연동됨' : '가격 연결'}`;
+    if (quick) quick.innerHTML = `<span class="connect-indicator" style="background:${freshness.publishedFresh ? '#78d19b' : '#d6a85c'}"></span>${freshness.publishedFresh ? '가격 최신' : '최신 가격 확인'}`;
   }
 
-  function normalizePriceData(obj) {
+  function normalizePriceData(obj, meta = {}) {
     const src = obj?.prices || obj || {};
     const out = {};
     for (const [name,val] of Object.entries(src)) {
@@ -710,7 +800,7 @@
         history:Array.isArray(val.history) ? val.history : [],
       };
     }
-    return {prices:out, meta:{updatedAt:obj.updatedAt || obj.generatedAt || new Date().toISOString(), source:obj.source || 'file'}};
+    return {prices:out, meta:{...meta, updatedAt:meta.capturedAt || obj?.updatedAt || obj?.generatedAt || new Date().toISOString(), source:'cloudflare'}};
   }
 
   function num(v) {
@@ -719,81 +809,90 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  async function applyPriceObject(obj) {
-    const n = normalizePriceData(obj);
-    state.prices = n.prices;
-    state.priceMeta = n.meta;
-    renderAll();
-    toast(`가격 ${Object.keys(n.prices).length}개를 불러왔어.`);
+  async function apiJson(path, options = {}) {
+    const res = await fetch(`${PRICE_API}${path}`, {cache:'no-store', ...options, headers:{'Content-Type':'application/json', ...(options.headers||{})}});
+    let body = null;
+    try { body = await res.json(); } catch (_) {}
+    if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+    return body;
   }
 
-  const DB = 'dding-personal-db', STORE = 'handles';
-  function idbOpen() { return new Promise((res,rej) => { const r=indexedDB.open(DB,1); r.onupgradeneeded=()=>r.result.createObjectStore(STORE); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
-  async function idbSet(key,val) { const db=await idbOpen(); return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(val,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);}); }
-  async function idbGet(key) { const db=await idbOpen(); return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);}); }
-  async function idbDel(key) { const db=await idbOpen(); return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).delete(key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);}); }
+  function applyPublishedSnapshot(snapshot) {
+    if (!snapshot?.prices) { state.prices={}; state.priceMeta=null; return; }
+    const n = normalizePriceData(snapshot.prices, snapshot);
+    state.prices = n.prices;
+    state.priceMeta = n.meta;
+  }
 
-  async function connectPriceFile() {
-    if (!window.showOpenFilePicker) { $('#fallbackPriceFile').click(); return; }
+  async function loadCloudState(showToast = false) {
+    if (state.cloudBusy) return false;
+    state.cloudBusy = true;
+    state.cloudError = '';
     try {
-      if (state.priceHandle && await ensurePermission(state.priceHandle,true)) {
-        await readHandle(false); startPolling(); toast('기존 가격 파일 연결을 다시 활성화했어.'); return;
+      let bundle;
+      try {
+        bundle = await apiJson('/dashboard');
+      } catch (e) {
+        // Backward-compatible fallback for the first Worker code already deployed.
+        const [status, prices, history] = await Promise.all([apiJson('/status'), apiJson('/prices'), apiJson('/history?limit=40')]);
+        bundle = {status, prices:prices.prices, history:history.history};
       }
-      const [handle] = await showOpenFilePicker({types:[{description:'띵타 가격 JSON',accept:{'application/json':['.json']}}],multiple:false});
-      state.priceHandle = handle;
-      await idbSet('priceFile',handle);
-      await readHandle(false);
-      startPolling();
+      state.cloudStatus = bundle.status || null;
+      state.cloudHistory = Array.isArray(bundle.history) ? bundle.history : [];
+      applyPublishedSnapshot(bundle.prices);
+      state.cloudLoaded = true;
+      renderAll();
+      if (showToast) toast('Cloudflare 최신 상태를 확인했어.');
+      return true;
     } catch (e) {
-      if (e.name !== 'AbortError') toast('파일 연결 실패: ' + e.message);
+      state.cloudError = `Cloudflare 연결 실패: ${e.message}`;
+      console.warn(e);
+      renderAll();
+      if (showToast) toast(state.cloudError);
+      return false;
+    } finally {
+      state.cloudBusy = false;
     }
   }
 
-  async function ensurePermission(handle, request = false) {
-    if (!handle) return false;
-    const opt = {mode:'read'};
-    if ((await handle.queryPermission(opt)) === 'granted') return true;
-    if (request && (await handle.requestPermission(opt)) === 'granted') return true;
-    return false;
-  }
+  async function publishLatestPrice() {
+    if (state.cloudBusy) return;
+    const cycle = priceCycleInfo();
+    await loadCloudState(false);
+    if (priceFreshState().publishedFresh) {
+      toast('현재 가격 주기는 이미 확정되어 있어.');
+      return;
+    }
+    const candidate = state.cloudStatus?.candidate;
+    if (!candidate || candidate.cycleKey !== cycle.cycleKey || !isCurrentCycleStamp(candidate.capturedAt)) {
+      toast('현재 주기 가격이 아직 없어. 밀키의 요리 판매 상점을 한 번 열어줘.');
+      return;
+    }
 
-  async function readHandle(requestPermission = false) {
-    const h = state.priceHandle;
-    if (!h || !(await ensurePermission(h,requestPermission))) return false;
+    state.cloudBusy = true;
     try {
-      const f = await h.getFile();
-      const obj = JSON.parse(await f.text());
-      const n = normalizePriceData(obj);
-      const sig = JSON.stringify(n);
-      const old = JSON.stringify({prices:state.prices,meta:state.priceMeta});
-      if (sig !== old) { state.prices=n.prices; state.priceMeta=n.meta; renderAll(); }
-      return true;
-    } catch (e) { console.warn(e); return false; }
+      await apiJson('/publish', {method:'POST', body:JSON.stringify({cycleKey:cycle.cycleKey})});
+      state.cloudBusy = false;
+      await loadCloudState(false);
+      toast(`최신 가격 업데이트 완료 · ${fmtKst(candidate.capturedAt)}`);
+    } catch (e) {
+      state.cloudBusy = false;
+      toast(`가격 업데이트 실패: ${e.message}`);
+    }
   }
-
-  function startPolling() { clearInterval(state.priceTimer); state.priceTimer = setInterval(() => readHandle(false), 2000); }
-  async function disconnectPrice() { clearInterval(state.priceTimer); state.priceHandle=null; state.prices={}; state.priceMeta=null; await idbDel('priceFile').catch(()=>{}); renderAll(); toast('가격 연결을 해제했어.'); }
-  async function restoreHandle() { try { const h=await idbGet('priceFile'); if(h){state.priceHandle=h; const ok=await readHandle(false); if(ok) startPolling();} } catch(e) {} }
 
   function saveFarm() { localStorage.setItem('ddingFarm',JSON.stringify([...state.farm])); renderAll(); }
 
   function updateNextPriceChange() {
     const el = $('#nextChange');
     if (!el) return;
-    const now = new Date();
-    const dates = [1,3,6,9,12,15,18,21,24,27,30];
-    let target = null;
-    for (let m=0; m<2 && !target; m++) {
-      const y = now.getFullYear(), mo = now.getMonth() + m;
-      for (const d of dates) {
-        const t = new Date(y,mo,d,3,0,0);
-        if (t > now) { target=t; break; }
-      }
-    }
-    if (!target) target = new Date(now.getFullYear(), now.getMonth()+1, 1, 3);
-    const diff = target - now;
-    const days = Math.floor(diff/86400000), hrs = Math.floor((diff%86400000)/3600000), mins = Math.floor((diff%3600000)/60000);
-    el.textContent = days ? `${days}일 ${hrs}시간` : `${hrs}시간 ${mins}분`;
+    const {nextMs} = priceCycleInfo();
+    const diff = Math.max(0, nextMs - Date.now());
+    const days = Math.floor(diff/86400000);
+    const hrs = Math.floor((diff%86400000)/3600000);
+    const mins = Math.floor((diff%3600000)/60000);
+    const secs = Math.floor((diff%60000)/1000);
+    el.textContent = days ? `${days}일 ${hrs}시간` : hrs ? `${hrs}시간 ${mins}분` : `${mins}분 ${secs}초`;
   }
 
   function toast(msg) {
@@ -982,9 +1081,8 @@
     const tool = e.target.closest('[data-tool]');
     if (tool) { openTool(tool.dataset.tool); return; }
     if (e.target.closest('#toolClose')) { closeTool(); return; }
-    if (e.target.closest('#quickConnect') || e.target.closest('#connectPriceBtn') || e.target.closest('#sideConnect')) { await connectPriceFile(); return; }
-    if (e.target.closest('#disconnectPriceBtn')) { await disconnectPrice(); return; }
-    if (e.target.closest('#loadDemoBtn')) { try { await applyPriceObject(await (await fetch('prices.example.json',{cache:'no-store'})).json()); } catch { toast('샘플 파일을 불러오지 못했어. 웹서버에서 열어줘.'); } return; }
+    if (e.target.closest('#quickConnect') || e.target.closest('#sideConnect') || e.target.closest('#refreshCloudBtn')) { await loadCloudState(true); return; }
+    if (e.target.closest('#publishLatestBtn') || e.target.closest('#publishLatestBtn2') || e.target.closest('#publishLatestBtn3')) { await publishLatestPrice(); return; }
     const fil = e.target.closest('[data-filter]');
     if (fil) { state.cookingFilter=fil.dataset.filter; renderCooking(); return; }
     const view = e.target.closest('[data-view]');
@@ -1036,7 +1134,6 @@
     if(e.key==='Escape'){e.target.value='';state.query='';renderCurrent();e.target.blur();}
     if(e.key==='Enter' && state.query.trim()){switchPage('finder');renderFinder();}
   });
-  $('#fallbackPriceFile').addEventListener('change', async e => { const f=e.target.files[0]; if(!f)return; try{await applyPriceObject(JSON.parse(await f.text()));}catch{toast('JSON 형식을 확인해줘.');} });
 
   // Ingredient help is rendered in a body-level floating layer.
   // Keeping the tooltip inside .food-card caused position:fixed to be scoped by
@@ -1095,7 +1192,15 @@
 
   renderAll();
   switchPage('dashboard');
-  restoreHandle();
+  loadCloudState(false);
   restoreTimer();
-  setInterval(updateNextPriceChange,60000);
+  state.uiCycleKey = priceCycleInfo().cycleKey;
+  setInterval(() => {
+    const key = priceCycleInfo().cycleKey;
+    if (state.uiCycleKey && key !== state.uiCycleKey) {
+      state.uiCycleKey = key;
+      renderAll();
+    }
+    updateNextPriceChange();
+  },1000);
 })();
