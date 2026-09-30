@@ -34,6 +34,7 @@
     legacyScope: localStorage.getItem('ddingLegacyScope') || 'wild',
     legacySub: '',
     activeTool: null,
+    memoEditingId: null,
     timer: {
       duration: Number(localStorage.getItem('ddingTimerDuration') || 900),
       target: Number(localStorage.getItem('ddingTimerTarget') || 0),
@@ -224,10 +225,59 @@
   }
 
   function historyLabel(h, i) {
-    if (h?.label) return String(h.label);
+    if (h?.label) return String(h.label).replace(/일$/, '');
     if (h?.date) return String(h.date);
     if (h?.day != null) return `${h.day}일`;
     return `이전 ${i + 1}`;
+  }
+
+  function kstParts(stamp) {
+    const d = new Date(stamp || Date.now());
+    if (Number.isNaN(d.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone:'Asia/Seoul', year:'numeric', month:'numeric', day:'numeric'
+    }).formatToParts(d);
+    const get = type => Number(parts.find(x => x.type === type)?.value);
+    return {year:get('year'), month:get('month'), day:get('day')};
+  }
+
+  function kstDateKey(stamp) {
+    const p = kstParts(stamp);
+    if (!p) return '';
+    return `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;
+  }
+
+  function tooltipHistoryForFood(food) {
+    const p = getPrice(food);
+    if (!p) return [];
+    const hist = Array.isArray(p.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
+    if (!hist.length) return [];
+
+    const baseStamp = state.priceMeta?.capturedAt || state.priceMeta?.updatedAt || Date.now();
+    const base = kstParts(baseStamp) || kstParts(Date.now());
+
+    // Milky's tooltip shows the newest past observation first. Reverse it for a
+    // left-to-right chronological chart.
+    return [...hist].reverse().map((h,i) => {
+      const label = historyLabel(h, hist.length - 1 - i);
+      let dateKey = '';
+      const m = String(h?.label || '').match(/(\d{1,2})[.\/-](\d{1,2})\s*일?/);
+      if (m && base) {
+        const month = Number(m[1]), day = Number(m[2]);
+        let year = base.year;
+        // Handles the Dec -> Jan boundary when old tooltip dates are from the
+        // previous calendar year.
+        if (month > base.month + 1) year -= 1;
+        dateKey = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      }
+      return {
+        label,
+        price:Number(h.price),
+        delta:h.delta ?? null,
+        dateKey,
+        source:'tooltip',
+      };
+    });
   }
 
   function cloudHistoryForFood(food) {
@@ -237,42 +287,64 @@
       const price = Number(entry?.marketPrice ?? entry?.myPrice);
       if (!Number.isFinite(price)) continue;
       const stamp = snap?.capturedAt || snap?.publishedAt || snap?.cycleKey;
+      const kp = kstParts(stamp);
       rows.push({
-        label: stamp ? new Date(stamp).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}) : '기록',
+        label: kp ? `${kp.month}.${kp.day}` : '기록',
         price,
         capturedAt: stamp,
+        dateKey: kstDateKey(stamp),
+        source:'cloud',
+        current:false,
       });
     }
+    if (rows.length) rows[rows.length - 1].current = true;
     return rows;
   }
 
   function priceHistory(food) {
+    const seedRows = tooltipHistoryForFood(food);
     const cloudRows = cloudHistoryForFood(food);
-    if (cloudRows.length) return cloudRows;
-    const p = getPrice(food);
-    if (!p) return [];
-    const hist = Array.isArray(p.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
-    const rows = hist.map((h,i) => ({label:historyLabel(h,i), price:Number(h.price), delta:h.delta ?? null}));
-    const now = marketPrice(food);
-    if (now != null) rows.push({label:'현재', price:Number(now), delta:p.marketDelta ?? null, current:true});
+    const rows = [];
+    const dateIndex = new Map();
+
+    for (const row of seedRows) {
+      if (row.dateKey) dateIndex.set(row.dateKey, rows.length);
+      rows.push(row);
+    }
+
+    // Cloudflare observations are authoritative for a date. If a tooltip seed
+    // happens to describe the same date, replace it instead of drawing a
+    // duplicate point.
+    for (const row of cloudRows) {
+      if (row.dateKey && dateIndex.has(row.dateKey)) {
+        rows[dateIndex.get(row.dateKey)] = row;
+      } else {
+        if (row.dateKey) dateIndex.set(row.dateKey, rows.length);
+        rows.push(row);
+      }
+    }
+
+    // Backward/local fallback: before any Cloudflare history exists, append the
+    // currently published market price after the tooltip's past observations.
+    if (!cloudRows.length) {
+      const now = marketPrice(food);
+      if (now != null) rows.push({label:'현재', price:Number(now), delta:getPrice(food)?.marketDelta ?? null, current:true, source:'current'});
+    }
+
     return rows;
   }
 
   function priceChange(food) {
-    const cloudRows = cloudHistoryForFood(food);
-    if (cloudRows.length >= 2) {
-      const current = cloudRows[cloudRows.length - 1].price;
-      const previous = cloudRows[cloudRows.length - 2].price;
-      const diff = current - previous;
-      return {current, previous, diff, pct: previous ? (diff / previous) * 100 : null};
+    const rows = priceHistory(food);
+    if (rows.length < 2) {
+      const current = marketPrice(food);
+      return {current, previous:null, diff:null, pct:null};
     }
-    const p = getPrice(food);
-    const current = marketPrice(food);
-    const hist = Array.isArray(p?.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
-    const previous = hist.length ? Number(hist[hist.length - 1].price) : null;
-    if (current == null || previous == null || previous === 0) return {current, previous, diff:null, pct:null};
-    const diff = Number(current) - previous;
-    return {current:Number(current), previous, diff, pct:(diff / previous) * 100};
+    const current = Number(rows[rows.length - 1].price);
+    const previous = Number(rows[rows.length - 2].price);
+    if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return {current, previous, diff:null, pct:null};
+    const diff = current - previous;
+    return {current, previous, diff, pct:(diff / previous) * 100};
   }
 
   function changeBadge(change, compact = false) {
@@ -306,7 +378,7 @@
 
   function trendChartSvg(food) {
     const rows = priceHistory(food);
-    if (rows.length < 2) return `<div class="market-chart-empty"><strong>가격 히스토리가 아직 부족해.</strong><span>요리 판매 상점을 열어서 과거 가격까지 수집되면 여기에 선 그래프가 생겨.</span></div>`;
+    if (rows.length < 2) return `<div class="market-chart-empty"><strong>가격 기록을 기다리고 있어.</strong><span>밀키 가격표의 과거 기록이나 사이트 확정 기록이 2개 이상 모이면 차트가 표시돼.</span></div>`;
 
     const W = 720, H = 292, L = 58, R = 22, T = 22, B = 45;
     const values = rows.map(x => x.price);
@@ -463,7 +535,7 @@
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>현재가 흐름</h2><p>사이트에서 확정한 가격 주기만 그래프에 한 점씩 쌓여. 오른쪽 음식 목록을 누르면 바로 바뀌어.</p></div><button class="btn ghost" data-go="prices">가격 상태 보기</button></div>
+        <div class="section-head"><div><h2>현재가 흐름</h2><p>첫 연결은 밀키 툴팁의 과거 가격을 시드로 쓰고, 이후에는 사이트에서 확정한 가격 주기가 차례로 쌓여.</p></div><button class="btn ghost" data-go="prices">가격 상태 보기</button></div>
         <div class="card market-chart-card">
           <div class="market-chart-main">
             <div class="market-chart-head">
@@ -952,6 +1024,66 @@
     return `<option value="">직접 입력</option>${D.foods.map(f => `<option value="${f.slug}">${esc(f.name)}</option>`).join('')}`;
   }
 
+  function loadMemoEntries() {
+    try {
+      const rows = JSON.parse(localStorage.getItem('ddingMemosV1') || '[]');
+      return Array.isArray(rows) ? rows.filter(n => n && n.id && typeof n.text === 'string') : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function persistMemoEntries(rows) {
+    localStorage.setItem('ddingMemosV1', JSON.stringify(rows.slice(0, 100)));
+  }
+
+  function formatMemoTime(stamp) {
+    const d = new Date(stamp);
+    if (Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('ko-KR', {
+      timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', hour12:false,
+    }).format(d);
+  }
+
+  function saveMemoFromTool() {
+    const area = $('#memoArea');
+    if (!area) return;
+    const text = area.value.trim();
+    if (!text) { toast('메모 내용을 입력해줘.'); return; }
+    const rows = loadMemoEntries();
+    const now = new Date().toISOString();
+    if (state.memoEditingId) {
+      const i = rows.findIndex(n => n.id === state.memoEditingId);
+      if (i >= 0) rows[i] = {...rows[i], text, updatedAt:now};
+      state.memoEditingId = null;
+      toast('메모를 수정했어.');
+    } else {
+      rows.unshift({id:`memo-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, text, createdAt:now, updatedAt:now});
+      toast('메모를 저장했어.');
+    }
+    persistMemoEntries(rows);
+    localStorage.setItem('ddingMemoDraft','');
+    localStorage.removeItem('ddingMemo');
+    renderTool();
+  }
+
+  function editMemo(id) {
+    const note = loadMemoEntries().find(n => n.id === id);
+    if (!note) return;
+    state.memoEditingId = id;
+    renderTool();
+    requestAnimationFrame(() => { const a=$('#memoArea'); if(a){ a.focus(); a.setSelectionRange(a.value.length,a.value.length); } });
+  }
+
+  function deleteMemo(id) {
+    const rows = loadMemoEntries().filter(n => n.id !== id);
+    persistMemoEntries(rows);
+    if (state.memoEditingId === id) state.memoEditingId = null;
+    renderTool();
+    toast('메모를 삭제했어.');
+  }
+
   function renderTool() {
     const body = $('#toolPanelBody');
     if (state.activeTool === 'calculator') {
@@ -969,8 +1101,12 @@
     } else if (state.activeTool === 'memo') {
       $('#toolEyebrow').textContent = 'UTILITY 03';
       $('#toolTitle').textContent = '메모';
-      const text = localStorage.getItem('ddingMemo') || '';
-      body.innerHTML = `<textarea id="memoArea" class="memo-area" placeholder="오늘 해야 할 것, 살 것, 만들어야 할 것…">${esc(text)}</textarea><div class="memo-foot"><span>자동 저장</span><span id="memoCount">${text.length} chars</span></div>`;
+      const draft = localStorage.getItem('ddingMemoDraft') ?? localStorage.getItem('ddingMemo') ?? '';
+      const notes = loadMemoEntries();
+      const editing = state.memoEditingId ? notes.find(n => n.id === state.memoEditingId) : null;
+      body.innerHTML = `<div class="memo-compose"><textarea id="memoArea" class="memo-area" placeholder="오늘 해야 할 것, 살 것, 만들어야 할 것…">${esc(editing?.text ?? draft)}</textarea><div class="memo-compose-foot"><span id="memoCount">${(editing?.text ?? draft).length} chars</span><div class="memo-compose-actions">${editing ? '<button id="memoCancelEdit" class="btn">취소</button>' : ''}<button id="memoSave" class="btn primary">${editing ? '수정 저장' : '저장'}</button></div></div></div>
+        <div class="memo-list-head"><b>저장된 메모</b><span>${notes.length}개</span></div>
+        <div class="memo-list">${notes.length ? notes.map(n => `<article class="memo-item"><div class="memo-item-meta"><time>${esc(formatMemoTime(n.updatedAt || n.createdAt))}</time><div><button class="memo-link" data-memo-edit="${esc(n.id)}">수정</button><button class="memo-link danger" data-memo-delete="${esc(n.id)}">삭제</button></div></div><p>${esc(n.text).replace(/\n/g,'<br>')}</p></article>`).join('') : '<div class="memo-empty">아직 저장된 메모가 없어.</div>'}</div>`;
     } else if (state.activeTool === 'settings') {
       $('#toolEyebrow').textContent = 'APPEARANCE';
       $('#toolTitle').textContent = '환경 설정';
@@ -1104,6 +1240,12 @@
     if (card && e.target.closest('.gold-toggle')) { openDrawer(foodBySlug(card.dataset.food), card.dataset.gold !== '1'); return; }
     if (e.target.closest('.drawer-close') || e.target.id === 'drawerBackdrop') { closeDrawer(); return; }
     if (e.target.closest('#clearFarm')) { state.farm.clear(); saveFarm(); return; }
+    if (e.target.closest('#memoSave')) { saveMemoFromTool(); return; }
+    if (e.target.closest('#memoCancelEdit')) { state.memoEditingId=null; localStorage.setItem('ddingMemoDraft',''); renderTool(); return; }
+    const memoEdit = e.target.closest('[data-memo-edit]');
+    if (memoEdit) { editMemo(memoEdit.dataset.memoEdit); return; }
+    const memoDelete = e.target.closest('[data-memo-delete]');
+    if (memoDelete) { deleteMemo(memoDelete.dataset.memoDelete); return; }
     const preset = e.target.closest('[data-timer-preset]');
     if (preset) { setTimerDuration(Number(preset.dataset.timerPreset)); return; }
     if (e.target.closest('#timerStart')) { startPauseTimer(); return; }
@@ -1119,7 +1261,7 @@
   document.addEventListener('input', e => {
     if (['calcSale','calcQty','calcCost','calcExtra'].includes(e.target.id)) updateCalc();
     if (e.target.id === 'memoArea') {
-      localStorage.setItem('ddingMemo', e.target.value);
+      if (!state.memoEditingId) localStorage.setItem('ddingMemoDraft', e.target.value);
       const count=$('#memoCount'); if(count) count.textContent=`${e.target.value.length} chars`;
     }
     if (e.target.id === 'fontScaleRange') {
@@ -1182,6 +1324,47 @@
 
   window.addEventListener('scroll', hideFloatingTooltip, true);
   window.addEventListener('resize', hideFloatingTooltip);
+
+  // The update-help popup also lives at body level so hero/card overflow can
+  // never clip it.
+  const floatingHelp = document.createElement('div');
+  floatingHelp.id = 'floatingUpdateHelp';
+  floatingHelp.className = 'update-help-floating';
+  floatingHelp.setAttribute('role','tooltip');
+  document.body.appendChild(floatingHelp);
+
+  function hideFloatingHelp() {
+    floatingHelp.style.display = 'none';
+    floatingHelp.innerHTML = '';
+  }
+
+  function showFloatingHelp(trigger, clientX, clientY) {
+    const source = $('.update-help-pop', trigger);
+    if (!source) return;
+    floatingHelp.innerHTML = source.innerHTML;
+    floatingHelp.style.display = 'block';
+    const pad=12, gap=12, w=floatingHelp.offsetWidth || 290, h=floatingHelp.offsetHeight || 100;
+    let x=clientX+gap, y=clientY+gap;
+    if (x+w+pad>window.innerWidth) x=clientX-w-gap;
+    if (y+h+pad>window.innerHeight) y=clientY-h-gap;
+    floatingHelp.style.left=Math.max(pad,Math.min(x,window.innerWidth-w-pad))+'px';
+    floatingHelp.style.top=Math.max(pad,Math.min(y,window.innerHeight-h-pad))+'px';
+  }
+
+  document.addEventListener('mousemove', e => {
+    const help=e.target.closest('.update-help');
+    if (help) showFloatingHelp(help,e.clientX,e.clientY);
+    else hideFloatingHelp();
+  });
+  document.addEventListener('focusin', e => {
+    const help=e.target.closest?.('.update-help');
+    if (!help) return;
+    const r=help.getBoundingClientRect();
+    showFloatingHelp(help,r.left+r.width/2,r.bottom);
+  });
+  document.addEventListener('focusout', e => { if(e.target.closest?.('.update-help')) hideFloatingHelp(); });
+  window.addEventListener('scroll', hideFloatingHelp, true);
+  window.addEventListener('resize', hideFloatingHelp);
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeDrawer(); closeTool(); }

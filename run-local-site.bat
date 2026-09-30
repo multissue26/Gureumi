@@ -32,17 +32,17 @@ if not "%PORT%"=="8088" (
   echo.
   echo [INFO] Port 8088 is already in use.
   echo        An older Dding DB server may still be running.
-  echo        v0.5.0 will use port %PORT% instead.
+  echo        v0.5.1 will use port %PORT% instead.
 )
 
 echo.
 echo ===============================================
-echo  Dding Personal DB v0.5.0
+echo  Dding Personal DB v0.5.1
 echo ===============================================
-echo URL: http://127.0.0.1:%PORT%/?v=0.5.0
+echo URL: http://127.0.0.1:%PORT%/?v=0.5.1
 echo Keep this window open while using the site.
 echo.
-start "" "http://127.0.0.1:%PORT%/?v=0.5.0"
+start "" "http://127.0.0.1:%PORT%/?v=0.5.1"
 %PYTHON_CMD% -m http.server %PORT% --bind 127.0.0.1
 
 if errorlevel 1 (
