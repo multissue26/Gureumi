@@ -1,16 +1,396 @@
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-09-30T06:20:00+09:00",
-  "source": "screenshot-demo",
+  "schemaVersion": 2,
+  "updatedAt": "2026-09-30T09:00:00Z",
+  "source": "sample-demo",
+  "note": "UI 확인용 샘플 데이터입니다. 실제 게임 가격이 아닙니다.",
   "prices": {
     "토마토 스파게티": {
       "marketPrice": 416,
       "myPrice": 424,
+      "marketDelta": 19,
       "history": [
-        {"day": 27, "price": 337},
-        {"day": 24, "price": 343},
-        {"day": 21, "price": 202},
-        {"day": 18, "price": 306}
+        {
+          "label": "2.7일",
+          "price": 330
+        },
+        {
+          "label": "2.4일",
+          "price": 393,
+          "delta": 191
+        },
+        {
+          "label": "2.1일",
+          "price": 202,
+          "delta": -104
+        },
+        {
+          "label": "1.8일",
+          "price": 306
+        }
+      ]
+    },
+    "어니언 링": {
+      "marketPrice": 431,
+      "myPrice": 439,
+      "marketDelta": -75,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 421
+        },
+        {
+          "label": "2.4일",
+          "price": 492,
+          "delta": 71
+        },
+        {
+          "label": "2.1일",
+          "price": 385,
+          "delta": -107
+        },
+        {
+          "label": "1.8일",
+          "price": 506,
+          "delta": 121
+        }
+      ]
+    },
+    "갈릭 케이크": {
+      "marketPrice": 342,
+      "myPrice": 348,
+      "marketDelta": -14,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 331
+        },
+        {
+          "label": "2.4일",
+          "price": 348,
+          "delta": 17
+        },
+        {
+          "label": "2.1일",
+          "price": 296,
+          "delta": -52
+        },
+        {
+          "label": "1.8일",
+          "price": 356,
+          "delta": 60
+        }
+      ]
+    },
+    "삼겹살 토마토 찌개": {
+      "marketPrice": 988,
+      "myPrice": 1006,
+      "marketDelta": -66,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 780
+        },
+        {
+          "label": "2.4일",
+          "price": 903,
+          "delta": 123
+        },
+        {
+          "label": "2.1일",
+          "price": 832,
+          "delta": -71
+        },
+        {
+          "label": "1.8일",
+          "price": 1054,
+          "delta": 222
+        }
+      ]
+    },
+    "삼색 아이스크림": {
+      "marketPrice": 1562,
+      "myPrice": 1590,
+      "marketDelta": 70,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1241
+        },
+        {
+          "label": "2.4일",
+          "price": 1506,
+          "delta": 265
+        },
+        {
+          "label": "2.1일",
+          "price": 1283,
+          "delta": -223
+        },
+        {
+          "label": "1.8일",
+          "price": 1492,
+          "delta": 209
+        }
+      ]
+    },
+    "마늘 양갈비 핫도그": {
+      "marketPrice": 664,
+      "myPrice": 676,
+      "marketDelta": -142,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 751
+        },
+        {
+          "label": "2.4일",
+          "price": 822,
+          "delta": 71
+        },
+        {
+          "label": "2.1일",
+          "price": 616,
+          "delta": -206
+        },
+        {
+          "label": "1.8일",
+          "price": 806,
+          "delta": 190
+        }
+      ]
+    },
+    "달콤 시리얼": {
+      "marketPrice": 1082,
+      "myPrice": 1101,
+      "marketDelta": -250,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 986
+        },
+        {
+          "label": "2.4일",
+          "price": 1189,
+          "delta": 203
+        },
+        {
+          "label": "2.1일",
+          "price": 969,
+          "delta": -220
+        },
+        {
+          "label": "1.8일",
+          "price": 1332,
+          "delta": 363
+        }
+      ]
+    },
+    "로스트 치킨 파이": {
+      "marketPrice": 964,
+      "myPrice": 981,
+      "marketDelta": -89,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 876
+        },
+        {
+          "label": "2.4일",
+          "price": 945,
+          "delta": 69
+        },
+        {
+          "label": "2.1일",
+          "price": 836,
+          "delta": -109
+        },
+        {
+          "label": "1.8일",
+          "price": 1053,
+          "delta": 217
+        }
+      ]
+    },
+    "스윗 치킨 햄버거": {
+      "marketPrice": 1566,
+      "myPrice": 1594,
+      "marketDelta": 45,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1417
+        },
+        {
+          "label": "2.4일",
+          "price": 1611,
+          "delta": 194
+        },
+        {
+          "label": "2.1일",
+          "price": 1320,
+          "delta": -291
+        },
+        {
+          "label": "1.8일",
+          "price": 1521,
+          "delta": 201
+        }
+      ]
+    },
+    "토마토 파인애플 피자": {
+      "marketPrice": 1590,
+      "myPrice": 1619,
+      "marketDelta": 0,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1178
+        },
+        {
+          "label": "2.4일",
+          "price": 1476,
+          "delta": 298
+        },
+        {
+          "label": "2.1일",
+          "price": 1306,
+          "delta": -170
+        },
+        {
+          "label": "1.8일",
+          "price": 1590,
+          "delta": 284
+        }
+      ]
+    },
+    "양파 수프": {
+      "marketPrice": 1471,
+      "myPrice": 1497,
+      "marketDelta": -404,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1559
+        },
+        {
+          "label": "2.4일",
+          "price": 1752,
+          "delta": 193
+        },
+        {
+          "label": "2.1일",
+          "price": 1366,
+          "delta": -386
+        },
+        {
+          "label": "1.8일",
+          "price": 1875,
+          "delta": 509
+        }
+      ]
+    },
+    "허브 삼겹살 찜": {
+      "marketPrice": 1251,
+      "myPrice": 1274,
+      "marketDelta": -152,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1307
+        },
+        {
+          "label": "2.4일",
+          "price": 1320,
+          "delta": 13
+        },
+        {
+          "label": "2.1일",
+          "price": 1121,
+          "delta": -199
+        },
+        {
+          "label": "1.8일",
+          "price": 1403,
+          "delta": 282
+        }
+      ]
+    },
+    "토마토 라자냐": {
+      "marketPrice": 1888,
+      "myPrice": 1922,
+      "marketDelta": -271,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1599
+        },
+        {
+          "label": "2.4일",
+          "price": 2082,
+          "delta": 483
+        },
+        {
+          "label": "2.1일",
+          "price": 1638,
+          "delta": -444
+        },
+        {
+          "label": "1.8일",
+          "price": 2159,
+          "delta": 521
+        }
+      ]
+    },
+    "딥 크림 빠네": {
+      "marketPrice": 1859,
+      "myPrice": 1892,
+      "marketDelta": -35,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1575
+        },
+        {
+          "label": "2.4일",
+          "price": 1841,
+          "delta": 266
+        },
+        {
+          "label": "2.1일",
+          "price": 1566,
+          "delta": -275
+        },
+        {
+          "label": "1.8일",
+          "price": 1894,
+          "delta": 328
+        }
+      ]
+    },
+    "트리플 소갈비 꼬치": {
+      "marketPrice": 2226,
+      "myPrice": 2266,
+      "marketDelta": 199,
+      "history": [
+        {
+          "label": "2.7일",
+          "price": 1887
+        },
+        {
+          "label": "2.4일",
+          "price": 1987,
+          "delta": 100
+        },
+        {
+          "label": "2.1일",
+          "price": 1828,
+          "delta": -159
+        },
+        {
+          "label": "1.8일",
+          "price": 2027,
+          "delta": 199
+        }
       ]
     }
   }

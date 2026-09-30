@@ -13,6 +13,7 @@
     cookingFilter: 'ALL',
     cookingView: localStorage.getItem('ddingCookingView') || 'grid',
     finderFilter: localStorage.getItem('ddingFinderFilter') || 'all',
+    selectedTrendFood: localStorage.getItem('ddingTrendFood') || '',
     fontChoice: localStorage.getItem('ddingFontChoice') || 'gmarket',
     fontScale: Number(localStorage.getItem('ddingFontScale') || 1),
     query: '',
@@ -211,54 +212,186 @@
     return [...D.foods].sort((a,b) => readiness(b) - readiness(a) || b.maxPrice - a.maxPrice)[0];
   }
 
+  function marketPrice(food, gold = false) {
+    const p = getPrice(food, gold);
+    return p?.marketPrice ?? p?.myPrice ?? null;
+  }
+
+  function historyLabel(h, i) {
+    if (h?.label) return String(h.label);
+    if (h?.date) return String(h.date);
+    if (h?.day != null) return `${h.day}일`;
+    return `이전 ${i + 1}`;
+  }
+
+  function priceHistory(food) {
+    const p = getPrice(food);
+    if (!p) return [];
+    const hist = Array.isArray(p.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
+    const rows = hist.map((h,i) => ({label:historyLabel(h,i), price:Number(h.price), delta:h.delta ?? null}));
+    const now = marketPrice(food);
+    if (now != null) rows.push({label:'현재', price:Number(now), delta:p.marketDelta ?? null, current:true});
+    return rows;
+  }
+
+  function priceChange(food) {
+    const p = getPrice(food);
+    const current = marketPrice(food);
+    const hist = Array.isArray(p?.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
+    const previous = hist.length ? Number(hist[hist.length - 1].price) : null;
+    if (current == null || previous == null || previous === 0) return {current, previous, diff:null, pct:null};
+    const diff = Number(current) - previous;
+    return {current:Number(current), previous, diff, pct:(diff / previous) * 100};
+  }
+
+  function changeBadge(change, compact = false) {
+    if (change?.pct == null) return `<span class="change-pill neutral">기록 대기</span>`;
+    const up = change.diff > 0, down = change.diff < 0;
+    const cls = up ? 'up' : down ? 'down' : 'neutral';
+    const arrow = up ? '↑' : down ? '↓' : '→';
+    const pct = Math.abs(change.pct).toFixed(Math.abs(change.pct) >= 10 ? 1 : 2);
+    return `<span class="change-pill ${cls}">${arrow} ${pct}%${compact ? '' : ` · ${change.diff > 0 ? '+' : ''}${Number(change.diff).toLocaleString('ko-KR')} G`}</span>`;
+  }
+
+  function salesEfficiencyFoods() {
+    return D.foods.map(food => {
+      const sale = currentPrice(food);
+      if (sale == null) return null;
+      const npcCost = npcCashCostFood(food);
+      const net = sale - npcCost;
+      const heat = normalizedPrice(food) ?? .5;
+      // Primary signal is actual gold left after known NPC purchases.  Market heat
+      // is only a light tie-break so the ranking stays easy to explain.
+      const score = net + (sale * heat * .03);
+      return {food, sale, npcCost, net, heat, change:priceChange(food), score};
+    }).filter(Boolean).sort((a,b) => b.score - a.score);
+  }
+
+  function highestPriceFoods() {
+    return D.foods.map(food => ({food, sale:currentPrice(food), change:priceChange(food)}))
+      .filter(x => x.sale != null)
+      .sort((a,b) => b.sale - a.sale);
+  }
+
+  function trendChartSvg(food) {
+    const rows = priceHistory(food);
+    if (rows.length < 2) return `<div class="market-chart-empty"><strong>가격 히스토리가 아직 부족해.</strong><span>요리 판매 상점을 열어서 과거 가격까지 수집되면 여기에 선 그래프가 생겨.</span></div>`;
+
+    const W = 720, H = 292, L = 58, R = 22, T = 22, B = 45;
+    const values = rows.map(x => x.price);
+    let lo = Math.min(...values), hi = Math.max(...values);
+    const pad = Math.max(12, Math.round((hi - lo || Math.max(hi,1) * .08) * .18));
+    lo = Math.max(0, lo - pad); hi += pad;
+    const x = i => L + (rows.length === 1 ? 0 : i * ((W - L - R) / (rows.length - 1)));
+    const y = v => T + (hi - v) * ((H - T - B) / (hi - lo || 1));
+    const points = rows.map((r,i) => `${x(i).toFixed(1)},${y(r.price).toFixed(1)}`).join(' ');
+    const area = `${L},${H-B} ${points} ${x(rows.length-1)},${H-B}`;
+    const ticks = Array.from({length:5},(_,i) => hi - i * ((hi-lo)/4));
+
+    return `<svg class="market-chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(food.name)} 가격 흐름">
+      <defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f7556" stop-opacity=".18"/><stop offset="100%" stop-color="#2f7556" stop-opacity="0"/></linearGradient></defs>
+      ${ticks.map(v => `<g><line class="chart-grid-line" x1="${L}" x2="${W-R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text class="chart-y-label" x="${L-10}" y="${(y(v)+3).toFixed(1)}">${Math.round(v).toLocaleString('ko-KR')}</text></g>`).join('')}
+      <polygon class="chart-area" points="${area}"/>
+      <polyline class="chart-line" points="${points}"/>
+      ${rows.map((r,i) => `<g class="chart-point-group"><circle class="chart-point ${r.current ? 'current' : ''}" cx="${x(i).toFixed(1)}" cy="${y(r.price).toFixed(1)}" r="${r.current ? 5 : 3.5}"/><text class="chart-x-label" x="${x(i).toFixed(1)}" y="${H-17}">${esc(r.label)}</text><title>${esc(r.label)} · ${fmt(r.price)}</title></g>`).join('')}
+    </svg>`;
+  }
+
+  function efficiencyRankHtml(rows) {
+    if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
+    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}">
+      <span class="market-rank-no">${i+1}</span><span class="market-rank-icon"><img src="${x.food.image}" alt=""></span>
+      <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>확인된 NPC 구매비 ${fmt(x.npcCost)} · 예상 차익 ${fmt(x.net)}</small></span>
+      <span class="market-rank-value"><b>${fmt(x.sale)}</b>${changeBadge(x.change,true)}</span>
+    </button>`).join('');
+  }
+
+  function highPriceRankHtml(rows) {
+    if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
+    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}">
+      <span class="market-rank-no">${i+1}</span><span class="market-rank-icon"><img src="${x.food.image}" alt=""></span>
+      <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>${fmt(x.change.previous)} → ${fmt(x.change.current)}</small></span>
+      <span class="market-rank-value"><b>${fmt(x.sale)}</b>${changeBadge(x.change,true)}</span>
+    </button>`).join('');
+  }
+
   function renderDashboard() {
     const linked = Object.keys(state.prices).length > 0;
     const fully = D.foods.filter(f => readiness(f) === 1).length;
-    const top = topPricedFoods().slice(0, 5);
+    const efficiency = salesEfficiencyFoods();
+    const expensive = highestPriceFoods();
+    const pricedFoods = D.foods.filter(f => getPrice(f));
+    const selected = foodBySlug(state.selectedTrendFood) && getPrice(foodBySlug(state.selectedTrendFood))
+      ? foodBySlug(state.selectedTrendFood)
+      : (efficiency[0]?.food || pricedFoods[0] || D.foods[0]);
+    state.selectedTrendFood = selected.slug;
+    const selectedPrice = getPrice(selected);
+    const selectedChange = priceChange(selected);
+    const changes = D.foods.map(food => ({food, ...priceChange(food)}))
+      .filter(x => x.current != null)
+      .sort((a,b) => (b.pct ?? -9999) - (a.pct ?? -9999));
     const recommendations = calcCropUnlocks().slice(0, 4);
-    const heroFood = top[0] || bestFallbackFood();
-    const heroPrice = currentPrice(heroFood) ?? heroFood.maxPrice;
-    const heroPct = normalizedPrice(heroFood);
 
-    $('#page-dashboard').innerHTML = `<div class="content-shell">
-      <section class="hero">
+    $('#page-dashboard').innerHTML = `<div class="content-shell market-home">
+      <section class="hero market-hero">
         <div class="hero-copy">
-          <div class="hero-kicker">Dding Tycoon · Personal Index</div>
-          <h2>검색보다 빠르게,<br><b>지금 필요한 정보만.</b></h2>
-          <p>요리 레시피, 재료 수급처, 내 농장 준비도와 가격 흐름을 한 화면에서 이어서 보는 개인용 작업 공간.</p>
-          <div class="hero-actions"><button class="btn primary" data-go="cooking">요리 DB 열기</button><button class="btn" data-tool="memo">오늘 할 일 메모</button></div>
+          <div class="hero-kicker">DDING TYCOON · LIVE COOKING MARKET</div>
+          <h2>가격은 읽고,<br><b>팔 타이밍은 바로 본다.</b></h2>
+          <p>요리 판매 상점에서 읽은 현재가와 과거 가격을 기준으로 등락, 판매 효율, 고가 순위를 한 화면에서 비교해.</p>
+          <div class="hero-actions"><button class="btn primary" data-go="prices">가격 파일 연결</button><button class="btn" data-go="cooking">레시피 보기</button></div>
         </div>
-        <div class="hero-side">
-          <div class="hero-side-label">${top.length ? 'Current spotlight' : 'Farm-ready pick'}</div>
-          <div class="hero-food">
-            <div class="hero-food-img"><img src="${heroFood.image}" alt="${esc(heroFood.name)}"></div>
-            <div><h3>${esc(heroFood.name)}</h3><div class="hero-price">${fmt(heroPrice)}</div><small>${heroPct != null ? `공식 범위 기준 상단 ${Math.round(heroPct * 100)}% 지점` : `내 농장 준비도 ${Math.round(readiness(heroFood) * 100)}%`}</small></div>
-          </div>
+        <div class="hero-side market-status-hero">
+          <div class="hero-side-label">PRICE FEED</div>
+          <div class="feed-big-status"><span class="feed-live-dot ${linked ? 'on' : ''}"></span><strong>${linked ? 'LIVE' : 'WAITING'}</strong></div>
+          <p>${linked ? `${Object.keys(state.prices).length}개 가격 항목 · ${state.priceMeta?.updatedAt ? new Date(state.priceMeta.updatedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ' 갱신' : '로컬 파일 연결됨'}` : '게임에서 요리 판매 상점을 연 뒤 prices.json을 연결해.'}</p>
         </div>
       </section>
 
       <section class="metrics">
         <div class="metric"><div class="metric-label">가격 피드</div><div class="metric-value">${linked ? 'ON' : 'OFF'}</div><div class="metric-foot">${linked ? `${Object.keys(state.prices).length}개 항목 로드됨` : 'prices.json 연결 대기'}</div></div>
-        <div class="metric"><div class="metric-label">내 재배 작물</div><div class="metric-value">${state.farm.size}</div><div class="metric-foot">브라우저에 자동 저장</div></div>
-        <div class="metric"><div class="metric-label">농작물 조건 충족</div><div class="metric-value">${fully}<small> / ${D.foods.length}</small></div><div class="metric-foot">고기·구매재료는 별도</div></div>
+        <div class="metric"><div class="metric-label">상승 음식</div><div class="metric-value">${changes.filter(x => x.diff > 0).length}</div><div class="metric-foot">직전 기록 대비</div></div>
+        <div class="metric"><div class="metric-label">하락 음식</div><div class="metric-value">${changes.filter(x => x.diff < 0).length}</div><div class="metric-foot">직전 기록 대비</div></div>
         <div class="metric"><div class="metric-label">다음 가격 변경</div><div class="metric-value" id="nextChange">—</div><div class="metric-foot">지정일 03:00 기준</div></div>
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>현재가 흐름</h2><p>각 음식의 최저~최고 가격 범위 안에서 현재 위치를 비교해.</p></div><button class="btn ghost" data-go="prices">가격 피드 보기</button></div>
-        <div class="dashboard-columns">
-          <div class="card rank-card">${top.length ? top.map((f,i) => {
-            const pct = Math.round((normalizedPrice(f) || 0) * 100);
-            return `<div class="rank-row"><div class="rank-no">${String(i + 1).padStart(2,'0')}</div><div class="rank-thumb"><img src="${f.image}" alt=""></div><div><div class="rank-name">${esc(f.name)}</div><div class="rank-meta">가격 범위 상단 ${pct}% · 농장 준비도 ${Math.round(readiness(f) * 100)}%</div></div><div class="rank-price"><strong>${fmt(currentPrice(f))}</strong><span>${fmt(f.minPrice)} — ${fmt(f.maxPrice)}</span></div></div>`;
-          }).join('') : `<div class="empty"><strong>가격 파일이 아직 없어.</strong>연결하면 현재가가 강한 요리를 여기서 바로 비교할 수 있어.</div>`}</div>
-          <div class="card crop-suggest"><div class="hero-side-label" style="color:#8a918c">NEXT CROP</div><p class="crop-suggest-intro">땅 한 칸을 더 쓴다면 무엇을 심는 게 좋은지, 현재 체크한 농장 상태에서 계산해.</p><div class="crop-suggest-list">${recommendations.length ? recommendations.map(x => {
-            const c = D.crops.find(c => c.id === x.id);
-            return `<div class="crop-suggest-item">${c.icon ? `<img src="${c.icon}" alt="">` : `<span class="crop-emoji">${esc(c.emoji || '·')}</span>`}<div><b>${esc(c.name)}</b><small>관련 요리 ${x.improves}종 · 즉시 완성 ${x.unlock}종</small></div><strong>+${x.unlock}</strong></div>`;
-          }).join('') : `<div class="empty">모든 작물이 체크되어 있어.</div>`}</div></div>
+        <div class="section-head"><div><h2>지금 뭘 파는 게 좋은가</h2><p>왼쪽은 확인 가능한 NPC 구매비를 차감한 판매 차익, 오른쪽은 현재 내 판매가 자체가 높은 순서야.</p></div></div>
+        <div class="market-rank-grid">
+          <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">SELL EFFICIENCY</span><h3>추천 판매 효율</h3></div><small>NPC 구매비 차감 기준</small></div>${efficiencyRankHtml(efficiency)}</article>
+          <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">HIGHEST PRICE</span><h3>내 판매가 최고</h3></div><small>현재 가격 순</small></div>${highPriceRankHtml(expensive)}</article>
+        </div>
+        <div class="market-method-note">재배·사냥·채집 재료는 임의의 골드 원가로 환산하지 않고, DB에 확인된 NPC 구매비만 비용으로 차감해. 그래서 ‘추천 판매 효율’은 완전 원가회계가 아니라 <b>지금 바로 비교하기 위한 실전 지표</b>야.</div>
+      </section>
+
+      <section class="section">
+        <div class="section-head"><div><h2>현재가 흐름</h2><p>오른쪽 음식 목록을 누르면 해당 음식의 과거 가격과 현재 판매가 흐름을 바로 바꿔서 볼 수 있어.</p></div><button class="btn ghost" data-go="prices">원본 가격 보기</button></div>
+        <div class="card market-chart-card">
+          <div class="market-chart-main">
+            <div class="market-chart-head">
+              <div class="market-selected-food"><span class="market-selected-icon"><img src="${selected.image}" alt=""></span><div><span class="market-kicker">SELECTED FOOD</span><h3>${esc(selected.name)}</h3></div></div>
+              <div class="market-selected-numbers"><div><small>시장 판매가</small><b>${fmt(marketPrice(selected))}</b></div><div><small>나의 판매가</small><b>${fmt(selectedPrice?.myPrice ?? selectedPrice?.marketPrice)}</b></div>${changeBadge(selectedChange)}</div>
+            </div>
+            <div class="market-chart-wrap">${trendChartSvg(selected)}</div>
+          </div>
+          <aside class="market-food-picker"><div class="picker-head"><b>음식 선택</b><span>${pricedFoods.length}/${D.foods.length}</span></div><div class="picker-list">${D.foods.map(food => {
+            const p=getPrice(food), ch=priceChange(food);
+            return `<button class="picker-food ${food.slug===selected.slug?'active':''} ${p?'':'disabled'}" data-trend-food="${food.slug}" ${p?'':'disabled'}><img src="${food.image}" alt=""><span><b>${esc(food.name)}</b><small>${p ? `${fmt(p.myPrice ?? p.marketPrice)} · ${ch.pct == null ? '변동 기록 대기' : `${ch.diff>0?'↑':ch.diff<0?'↓':'→'} ${Math.abs(ch.pct).toFixed(1)}%`}` : '가격 미수집'}</small></span></button>`;
+          }).join('')}</div></aside>
         </div>
       </section>
 
-      <section class="section"><div class="note-strip">직접 재배·사냥·채집한 재료를 임의의 골드 비용으로 환산하지 않아. 현재 계산되는 비용은 <b>NPC에게 실제로 지불하는 구매비</b>만 별도로 잡는다.</div></section>
+      <section class="section">
+        <div class="section-head"><div><h2>음식별 등락 현황</h2><p>현재 시장 판매가를 직전 히스토리 값과 비교한 변동률이야. 행을 누르면 위 차트도 해당 음식으로 바뀐다.</p></div><div class="reference-status">${changes.length} tracked</div></div>
+        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>새 helper로 요리 판매 상점을 열면 과거 가격 4개와 현재가를 한 번에 읽어와.</div>`}</div>
+      </section>
+
+      <section class="section farm-after-market">
+        <div class="section-head"><div><h2>다음 작물 후보</h2><p>가격과 별개로, 현재 농장에서 1종을 추가했을 때 완성 가능한 요리를 계산해.</p></div></div>
+        <div class="card crop-suggest"><div class="crop-suggest-list">${recommendations.length ? recommendations.map(x => {
+          const c = D.crops.find(c => c.id === x.id);
+          return `<div class="crop-suggest-item">${c.icon ? `<img src="${c.icon}" alt="">` : `<span class="crop-emoji">${esc(c.emoji || '·')}</span>`}<div><b>${esc(c.name)}</b><small>관련 요리 ${x.improves}종 · 즉시 완성 ${x.unlock}종</small></div><strong>+${x.unlock}</strong></div>`;
+        }).join('') : `<div class="empty">모든 작물이 체크되어 있어.</div>`}</div></div>
+      </section>
     </div>`;
     updateNextPriceChange();
   }
@@ -470,14 +603,15 @@
     const rows = D.foods.flatMap(f => [[f,false],[f,true]]).filter(([f,g]) => getPrice(f,g));
     $('#page-prices').innerHTML = `<div class="content-shell">
       <div class="connect-hero">
-        <div class="card connect-box"><p class="eyebrow">LOCAL FILE ACCESS</p><h2>prices.json 연결</h2><p>게임 쪽 helper가 로컬 JSON을 갱신하면, 브라우저는 네가 직접 고른 그 파일 하나만 읽어. 연결 뒤에는 약 2초마다 변경 여부를 확인해.</p><div class="connect-actions"><button id="connectPriceBtn" class="btn primary">가격 파일 연결</button><button id="loadDemoBtn" class="btn">샘플 보기</button><button id="disconnectPriceBtn" class="btn danger">연결 해제</button></div><div class="steps"><div class="step">모드를 mods 폴더에 넣고 게임 실행</div><div class="step">게임에서 가격 GUI를 한 번 열기</div><div class="step">helper가 화면의 가격 정보를 prices.json에 저장</div><div class="step">이 사이트가 연결된 파일을 자동으로 다시 읽음</div></div></div>
+        <div class="card connect-box"><p class="eyebrow">LOCAL FILE ACCESS</p><h2>prices.json 연결</h2><p>게임 쪽 helper가 로컬 JSON을 갱신하면, 브라우저는 네가 직접 고른 그 파일 하나만 읽어. 연결 뒤에는 약 2초마다 변경 여부를 확인해.</p><div class="connect-actions"><button id="connectPriceBtn" class="btn primary">가격 파일 연결</button><button id="loadDemoBtn" class="btn">샘플 보기</button><button id="disconnectPriceBtn" class="btn danger">연결 해제</button></div><div class="steps"><div class="step">모드를 mods 폴더에 넣고 게임 실행</div><div class="step">게임에서 밀키 → 요리 판매 상점을 한 번 열기</div><div class="step">helper가 15개 슬롯 tooltip을 hover 없이 읽어 prices.json 갱신</div><div class="step">이 사이트가 연결된 파일을 자동으로 다시 읽음</div></div></div>
         <div class="card connect-box"><p class="eyebrow">DATA FORMAT</p><h2>가벼운 스냅샷</h2><p>현재 상태를 덮어쓰는 구조라 파일이 계속 커지지 않아.</p><div class="codebox">{
   "updatedAt": "2026-09-30T06:30:00+09:00",
   "prices": {
     "토마토 스파게티": {
       "marketPrice": 416,
       "myPrice": 424,
-      "history": [{"day": 27, "price": 337}]
+      "marketDelta": 19,
+      "history": [{"label": "1.8일", "price": 306}]
     }
   }
 }</div></div>
@@ -572,6 +706,7 @@
       else if (val && typeof val === 'object') out[name] = {
         marketPrice:num(val.marketPrice ?? val.price ?? val.current),
         myPrice:num(val.myPrice ?? val.personalPrice ?? val.marketPrice ?? val.price ?? val.current),
+        marketDelta:num(val.marketDelta),
         history:Array.isArray(val.history) ? val.history : [],
       };
     }
@@ -864,6 +999,8 @@
     if (fontChoice) { state.fontChoice=fontChoice.dataset.fontChoice; localStorage.setItem('ddingFontChoice',state.fontChoice); applyDisplayPrefs(); renderTool(); return; }
     if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
     if (e.target.closest('#reloadLegacy')) { loadLegacyData(true); return; }
+    const trendFood = e.target.closest('[data-trend-food]');
+    if (trendFood && !trendFood.disabled) { state.selectedTrendFood=trendFood.dataset.trendFood; localStorage.setItem('ddingTrendFood',state.selectedTrendFood); if(state.page!=='dashboard') switchPage('dashboard'); else renderDashboard(); return; }
     const card = e.target.closest('.food-card');
     if (card && e.target.closest('.detail-btn')) { openDrawer(foodBySlug(card.dataset.food), card.dataset.gold === '1'); return; }
     if (card && e.target.closest('.gold-toggle')) { openDrawer(foodBySlug(card.dataset.food), card.dataset.gold !== '1'); return; }

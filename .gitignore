@@ -1,0 +1,8 @@
+# 로컬/빌드 산출물
+mod-source/.gradle/
+mod-source/build/
+.DS_Store
+Thumbs.db
+
+# 실제 가격 파일을 저장소에 복사한 경우 실수로 커밋하지 않기
+prices.json
