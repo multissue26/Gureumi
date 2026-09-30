@@ -166,6 +166,18 @@
     </div>`;
   }
 
+  function foodRecipeTooltip(food) {
+    const rows = (food.recipe || []).map(([id, qty]) => {
+      const ing = resolveIngredient(id);
+      return `<span class="food-recipe-tip-row">${iconHTML(ing, 'food-recipe-tip-icon')}<span>${esc(ing.name)}</span><b>×${qty}</b></span>`;
+    }).join('');
+    return `<span class="hover-card">
+      <span class="food-recipe-tip-head"><strong>${esc(food.name)}</strong><em>${esc(gradeText(food.grade))}</em></span>
+      <span class="food-recipe-tip-label">제작 재료</span>
+      <span class="food-recipe-tip-list">${rows || '<span class="food-recipe-tip-empty">등록된 제작 재료가 없습니다.</span>'}</span>
+    </span>`;
+  }
+
   function priceDisplay(food, gold = false) {
     const p = getPrice(food, gold);
     const [min, max] = rangeFor(food, gold);
@@ -403,8 +415,12 @@
   function efficiencyRankHtml(rows) {
     if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
     return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}">
-      <span class="market-rank-no">${i+1}</span><span class="market-rank-icon"><img src="${x.food.image}" alt=""></span>
-      <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>확인된 NPC 구매비 ${fmt(x.npcCost)} · 예상 차익 ${fmt(x.net)}</small></span>
+      <span class="market-rank-no">${i+1}</span>
+      <span class="market-rank-food" data-tip="1">
+        <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
+        <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>확인된 NPC 구매비 ${fmt(x.npcCost)} · 예상 차익 ${fmt(x.net)}</small></span>
+        ${foodRecipeTooltip(x.food)}
+      </span>
       <span class="market-rank-value"><b>${fmt(x.sale)}</b>${changeBadge(x.change,true)}</span>
     </button>`).join('');
   }
@@ -412,8 +428,12 @@
   function highPriceRankHtml(rows) {
     if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
     return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}">
-      <span class="market-rank-no">${i+1}</span><span class="market-rank-icon"><img src="${x.food.image}" alt=""></span>
-      <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>${fmt(x.change.previous)} → ${fmt(x.change.current)}</small></span>
+      <span class="market-rank-no">${i+1}</span>
+      <span class="market-rank-food" data-tip="1">
+        <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
+        <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>${fmt(x.change.previous)} → ${fmt(x.change.current)}</small></span>
+        ${foodRecipeTooltip(x.food)}
+      </span>
       <span class="market-rank-value"><b>${fmt(x.sale)}</b>${changeBadge(x.change,true)}</span>
     </button>`).join('');
   }

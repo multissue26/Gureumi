@@ -166,7 +166,7 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 .pixel-wrap{width:62px;height:62px;background:#f0efeb;border:1px solid #e0e1db;border-radius:12px;display:grid;place-items:center;flex:0 0 auto}
 .pixel{width:46px;height:46px;image-rendering:pixelated;object-fit:contain}
 .food-title-block{min-width:0}
-.food-name{font-size:14px;font-weight:820;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.food-name{font-size:14px;font-weight:820;line-height:1.3;white-space:normal;overflow:visible;text-overflow:clip;word-break:keep-all;overflow-wrap:anywhere}
 .grade{display:inline-flex;align-items:center;margin-top:6px;border-radius:4px;padding:3px 6px;font-size:8px;font-weight:850;letter-spacing:.07em;color:#fff}
 .grade.COMMON{background:#767e79}.grade.NORMAL{background:#4f739c}.grade.RARE{background:#7760a5}.grade.EPIC{background:#a26534}.grade.GOLD{background:#9a761f}
 .price-line{text-align:right;min-width:105px}
@@ -291,13 +291,16 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 .market-card-head h3{font-family:var(--font-display);font-size:18px;margin:3px 0 0;font-weight:600}
 .market-card-head>small{font-size:8px;color:#989f9a;margin-bottom:2px}
 .market-kicker{font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;color:#86918b;font-weight:800}
-.market-rank-row{width:100%;display:grid;grid-template-columns:24px 38px minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 2px;border:0;border-bottom:1px solid #ecece7;background:transparent;text-align:left;color:inherit;cursor:pointer}
+.market-rank-row{width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 2px;border:0;border-bottom:1px solid #ecece7;background:transparent;text-align:left;color:inherit;cursor:pointer}
 .market-rank-row:last-child{border-bottom:0}
 .market-rank-row:hover{background:#f7f8f5}
 .market-rank-no{font-family:var(--font-display);font-size:13px;color:#9ca29e;text-align:center}
+.market-rank-food{min-width:0;display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:10px;position:relative}
 .market-rank-icon{width:36px;height:36px;border:1px solid var(--line);border-radius:9px;background:#f4f3ef;display:grid;place-items:center}
 .market-rank-icon img{width:29px;height:29px;object-fit:contain;image-rendering:pixelated}
-.market-rank-main{min-width:0}.market-rank-main b{display:block;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.market-rank-main small{display:block;font-size:7.5px;color:#939a95;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.market-rank-main{min-width:0}.market-rank-main b{display:block;font-size:10px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}.market-rank-main small{display:block;font-size:7.5px;color:#939a95;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.market-rank-food>.hover-card{display:none!important}
+.food-recipe-tip-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.food-recipe-tip-head strong{font-size:12px;color:#eef2ef}.food-recipe-tip-head em{flex:0 0 auto;color:#94c4a6;font-style:normal;font-size:8px;font-weight:850;letter-spacing:.07em}.food-recipe-tip-label{display:block;margin:0 0 6px!important;color:#8d9991!important;font-size:8px!important;font-weight:800;letter-spacing:.08em}.food-recipe-tip-list{display:grid;gap:5px}.food-recipe-tip-row{display:grid;grid-template-columns:25px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;background:#262d29}.food-recipe-tip-row img,.food-recipe-tip-row .fallback-icon{width:22px;height:22px;object-fit:contain;image-rendering:pixelated}.food-recipe-tip-row .fallback-icon{display:grid;place-items:center;font-size:17px;line-height:22px}.food-recipe-tip-row span{min-width:0;color:#e8eeea;font-size:9px;white-space:normal;word-break:keep-all}.food-recipe-tip-row b{color:#b8c5bd;font-size:9px}.food-recipe-tip-empty{color:#b9c4bc;font-size:9px}
 .market-rank-value{text-align:right}.market-rank-value>b{display:block;font-family:var(--font-display);font-size:13px;font-weight:650;margin-bottom:5px}
 .change-pill{display:inline-flex;align-items:center;justify-content:center;gap:3px;border-radius:999px;padding:4px 7px;font-size:7.5px;font-weight:800;white-space:nowrap;border:1px solid transparent}
 .change-pill.up{color:#206244;background:#edf7f1;border-color:#d2eadc}.change-pill.down{color:#9e463e;background:#fbefed;border-color:#f1d5d1}.change-pill.neutral{color:#737a75;background:#f0f1ee;border-color:#e1e3de}
@@ -314,7 +317,7 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 .farm-after-market .crop-suggest{padding:8px 18px}.empty.compact{padding:26px 8px}.empty.compact strong{display:block;margin-bottom:5px}
 
 @media(max-width:1120px){.market-rank-grid{grid-template-columns:1fr}.market-chart-card{grid-template-columns:1fr}.market-food-picker{border-left:0;border-top:1px solid var(--line);min-height:0}.picker-list{display:grid;grid-template-columns:repeat(3,1fr);max-height:none}.market-selected-numbers{gap:10px}}
-@media(max-width:720px){.market-chart-head{flex-direction:column}.market-selected-numbers{width:100%;justify-content:flex-start;text-align:left;flex-wrap:wrap}.market-selected-numbers>.change-pill{margin-top:0}.picker-list{grid-template-columns:1fr 1fr}.movement-table-card{overflow:auto}.movement-table-head,.movement-row{min-width:660px}.market-rank-row{grid-template-columns:20px 34px minmax(0,1fr) auto}.market-rank-card{padding-left:12px;padding-right:12px}}
+@media(max-width:720px){.market-chart-head{flex-direction:column}.market-selected-numbers{width:100%;justify-content:flex-start;text-align:left;flex-wrap:wrap}.market-selected-numbers>.change-pill{margin-top:0}.picker-list{grid-template-columns:1fr 1fr}.movement-table-card{overflow:auto}.movement-table-head,.movement-row{min-width:660px}.market-rank-row{grid-template-columns:20px minmax(0,1fr) auto}.market-rank-food{grid-template-columns:34px minmax(0,1fr);gap:8px}.market-rank-card{padding-left:12px;padding-right:12px}}
 
 /* ===== v0.5.0 cloud price confirmation ===== */
 .price-alert{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:14px 0 0;padding:14px 16px;border:1px solid #e2c98f;border-radius:12px;background:#fff8e8}
