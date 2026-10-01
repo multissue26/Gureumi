@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light" />
   <title>띵타 개인DB</title>
   <meta name="description" content="띵타이쿤 개인용 제작·수급·농장·가격 데이터베이스" />
-  <link rel="stylesheet" href="styles.css?v=0.6.2" />
+  <link rel="stylesheet" href="styles.css?v=0.7.0" />
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -50,7 +50,7 @@
         <button class="nav-btn" data-page="profit"><svg><use href="#i-profit"/></svg><span>예상 수익</span><em>NEW</em></button>
         <button class="nav-btn" data-page="ingredients"><svg><use href="#i-box"/></svg><span>재료 도감</span></button>
         <button class="nav-btn" data-page="finder"><svg><use href="#i-compass"/></svg><span>아이템 찾기</span><em>NEW</em></button>
-        <button class="nav-btn" data-page="reference"><svg><use href="#i-book"/></svg><span>원본 DB 탐색</span></button>
+        <button class="nav-btn" data-page="reference"><svg><use href="#i-book"/></svg><span>초뉴비 가이드</span><em>NEW</em></button>
         <button class="nav-btn" data-page="prices"><svg><use href="#i-refresh"/></svg><span>가격 연동</span></button>
         <button class="nav-btn" data-tool="settings"><svg><use href="#i-settings"/></svg><span>환경 설정</span><em>FONT</em></button>
       </nav>
@@ -65,7 +65,7 @@
       </div>
 
       <div class="sidebar-footer">
-        <span>v0.6.2</span>
+        <span>v0.7.0</span>
         <span class="sep"></span>
         <span>cloud-sync</span>
       </div>
@@ -80,7 +80,7 @@
         <div class="top-actions">
           <label class="search-wrap">
             <svg><use href="#i-search"/></svg>
-            <input id="globalSearch" type="search" placeholder="아이템·NPC·지역 검색 · Enter" autocomplete="off" />
+            <input id="globalSearch" type="search" placeholder="아이템·강화·수급처·사용법을 질문해봐 · Enter" autocomplete="off" />
             <kbd>/</kbd>
           </label>
           <div class="utility-buttons" aria-label="도구">
@@ -117,8 +117,9 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="data.js?v=0.6.2"></script>
-  <script src="shop-data.js?v=0.6.2"></script>
-  <script src="app.js?v=0.6.2"></script>
+  <script src="data.js?v=0.7.0"></script>
+  <script src="shop-data.js?v=0.7.0"></script>
+  <script src="guide-data.js?v=0.7.0"></script>
+  <script src="app.js?v=0.7.0"></script>
 </body>
 </html>

@@ -3,10 +3,9 @@
 
   const D = window.DDING_DATA;
   const SHOP = window.DDING_SHOP_DATA || {meta:{},items:[]};
+  const GUIDE = window.DDING_GUIDE || {meta:{},sources:{},items:[],enhancement:[],sagePickaxeStats:[]};
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-  const LEGACY_URL = 'https://raw.githubusercontent.com/beniforreal/ddingtasearch/main/data/regionData.json';
-  const LEGACY_CACHE_KEY = 'ddingLegacyCacheV1';
   const PRICE_API = 'https://dding-price-api.hansuyeon191-6fe.workers.dev';
   const PRICE_CHANGE_DAYS = [1,3,6,9,12,15,18,21,24,27,30];
   const PROFIT_CROP_IDS = ['tomato','onion','garlic'];
@@ -48,11 +47,9 @@
     profitSort: localStorage.getItem('ddingProfitSort') || 'avgRevenue',
     profitFilter: localStorage.getItem('ddingProfitFilter') || 'all',
     profitPriceMode: localStorage.getItem('ddingProfitPriceMode') || 'mine',
-    legacy: null,
-    legacyLoading: false,
-    legacyError: '',
-    legacyScope: localStorage.getItem('ddingLegacyScope') || 'wild',
-    legacySub: '',
+    guideFilter: localStorage.getItem('ddingGuideFilter') || 'all',
+    guideTarget: Math.min(15, Math.max(1, Number(localStorage.getItem('ddingGuideTarget') || 15))),
+    guideExpanded: false,
     activeTool: null,
     memoEditingId: null,
     timer: {
@@ -70,22 +67,10 @@
     profit: ['FARM REVENUE', '예상 수익'],
     ingredients: ['INGREDIENT INDEX', '재료 도감'],
     finder: ['TRADE FINDER', '아이템 찾기'],
-    reference: ['REFERENCE ARCHIVE', '원본 DB 탐색'],
+    reference: ['NEWBIE GUIDE', '초뉴비 가이드'],
     prices: ['LOCAL PRICE FEED', '가격 연동'],
   };
 
-  const scopeLabels = {
-    wild: '야생',
-    grindel: '세레니티',
-    collection: '컬렉션북',
-    expert: '전문가',
-  };
-
-  const legacySubLabels = {
-    sell: '판매', buy: '구매', process: '가공', cooking: '요리', enhancement: '강화',
-    blocks: '블록', nature: '자연', loot: '전리품', collection: '수집품',
-    gathering: '채집 전문가', mining: '채광 전문가', fishing: '해양 전문가',
-  };
 
   const tradeLabels = {buy:'내가 구매', sell:'내가 판매', exchange:'교환'};
 
@@ -1011,108 +996,302 @@
     </div>`;
   }
 
-  function legacyScopeData() {
-    if (!state.legacy) return null;
-    if (state.legacyScope === 'expert') {
-      const tools = state.legacy.grindel?.toolEnhancement || [];
-      return {toolEnhancement: tools};
+  function guideByName(name) {
+    if (!name) return null;
+    const n = String(name).trim().toLowerCase();
+    return GUIDE.items.find(x => String(x.name).toLowerCase() === n || (x.aliases || []).some(a => String(a).toLowerCase() === n)) || null;
+  }
+
+  function guideText(item) {
+    const shopText = (item.shopEntries || []).flatMap(x => [x.action,x.value,x.region,x.location,x.npc,x.category,x.note]);
+    return [item.name,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[])].filter(Boolean).join(' ').toLowerCase();
+  }
+
+  function cleanGuideQuery(q) {
+    return String(q || '').toLowerCase().replace(/[?!.,/\\()[\]{}:;~`'\"]/g,' ').replace(/(뭐야|뭔데|뭐임|무엇|어떻게|하는법|방법|알려줘|알려|어디서|어디에|구해|구함|얻어|획득|수급|쓰는지|사용처|사용|재료|제작법|제작|강화하려면|강화방법|강화법|강화)/g,' ').replace(/\s+/g,' ').trim();
+  }
+
+  function guideScore(item, raw) {
+    const q = String(raw || '').trim().toLowerCase();
+    if (!q) return 1;
+    const text = guideText(item);
+    const name = item.name.toLowerCase();
+    const compactQ = q.replace(/\s+/g,'');
+    const compactName = name.replace(/\s+/g,'');
+    let score = 0;
+    if (q === name || compactQ === compactName) score += 300;
+    if (q.includes(name) || compactQ.includes(compactName)) score += 170;
+    if (name.includes(q) || compactName.includes(compactQ)) score += 135;
+    for (const a of item.aliases || []) {
+      const al = String(a).toLowerCase();
+      if (q.includes(al) || al.includes(q) || compactQ.includes(al.replace(/\s+/g,''))) score += 120;
     }
-    return state.legacy[state.legacyScope];
+    const cleaned = cleanGuideQuery(q);
+    const tokens = cleaned.split(/\s+/).filter(x => x.length > 1);
+    tokens.forEach(t => {
+      if (name.includes(t)) score += 46;
+      else if (text.includes(t)) score += 12;
+    });
+    if (text.includes(q)) score += 40;
+    return score;
   }
 
-  function legacySubKeys(scopeData) {
-    if (!scopeData || typeof scopeData !== 'object') return [];
-    if (state.legacyScope === 'wild') return ['all'];
-    if (state.legacyScope === 'expert') return ['gathering','mining','fishing'];
-    return Object.keys(scopeData).filter(k => k !== 'toolEnhancement');
+  function guideFilterMatch(item, filter) {
+    if (!filter || filter === 'all') return true;
+    const r = `${item.region} ${item.category} ${item.subcategory}`;
+    if (filter === 'general') return /공통|스폰|마을|특별/.test(r) && !/야생|세레니티|루미디아|파라다이스/.test(item.region);
+    if (filter === 'wild') return /야생/.test(r);
+    if (filter === 'serenity') return /세레니티/.test(r);
+    if (filter === 'lumidia') return /루미디아/.test(r);
+    if (filter === 'noctila') return /노크틸라/.test(r);
+    if (filter === 'paradise') return /파라다이스/.test(r);
+    if (filter === 'badge') return /뱃지/.test(r);
+    if (filter === 'odds') return /캡슐|보급품|확률|코스메틱|가구|이벤트|칭호/.test(r);
+    return true;
   }
 
-  function flattenLegacyItems(value, group = '') {
-    const out = [];
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (item && typeof item === 'object') out.push({...item, __group:group});
-      }
-    } else if (value && typeof value === 'object') {
-      for (const [k,v] of Object.entries(value)) out.push(...flattenLegacyItems(v,k));
+  function guideMatches(raw, filter = state.guideFilter) {
+    return GUIDE.items
+      .filter(item => guideFilterMatch(item, filter))
+      .map(item => ({item,score:guideScore(item,raw)}))
+      .filter(x => !raw.trim() || x.score > 0)
+      .sort((a,b) => b.score-a.score || a.item.name.localeCompare(b.item.name,'ko'));
+  }
+
+  function guideSourceLink(item) {
+    if (!item?.sourceUrl) return '';
+    return `<a class="guide-source-link" href="${esc(item.sourceUrl)}" target="_blank" rel="noreferrer">${esc(item.sourceLabel || '원문')} ↗</a>`;
+  }
+
+  function guideTradeLabel(action) {
+    if (action === 'buy') return '구매';
+    if (action === 'sell') return '판매';
+    if (action === 'exchange') return '교환';
+    return action || '거래';
+  }
+
+  function guideShopTable(item) {
+    const rows = item?.shopEntries || [];
+    if (!rows.length) return '';
+    return `<section class="guide-panel guide-shop-panel"><div class="guide-panel-head"><div><span>공식 상점 정보</span><h3>돈·교환값 / 어디서 거래해?</h3></div></div>
+      <div class="guide-table-wrap"><table class="guide-table guide-shop-table"><thead><tr><th>구분</th><th>가격/교환값</th><th>지역</th><th>장소</th><th>NPC</th><th>비고</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(guideTradeLabel(x.action))}</b></td><td><strong>${esc(x.value || '—')}</strong></td><td>${esc(x.region || '—')}</td><td>${esc(x.location || '—')}</td><td>${esc(x.npc || '—')}</td><td>${esc(x.note || x.category || '—')}</td></tr>`).join('')}</tbody></table></div>
+      <p class="guide-panel-copy">상점 가격은 현재 사이트에 편입한 공식 상점 카탈로그 값이야. 운영 중 변경될 수 있으니 이상하면 원문 링크를 최종 기준으로 봐.</p>
+    </section>`;
+  }
+
+  const noctilaWeaponTiers = {
+    '루트바인 스태프':'입문','템페스트 해머':'입문','아크 블래스터':'견습','레디언트 윙보우':'정예','글레이셜 스피어':'정예','인페르널 클레이모어':'영웅','팬텀 사이드':'영웅(인피니티)'
+  };
+
+  function noctilaWeaponNames() { return Object.keys(noctilaWeaponTiers); }
+
+  function noctilaWeaponFromQuery(q) {
+    const text=String(q||'').replace(/\s+/g,'');
+    return noctilaWeaponNames().find(n=>text.includes(n.replace(/\s+/g,''))) || '루트바인 스태프';
+  }
+
+  function aggregateGuideMaterials(stages) {
+    const map = new Map();
+    stages.forEach(s => (s.materials || []).forEach(([name,qty]) => map.set(name,(map.get(name)||0)+Number(qty||0))));
+    return [...map.entries()];
+  }
+
+  function renderNoctilaWeaponEnhancement() {
+    const weapon = noctilaWeaponFromQuery(state.query);
+    const tier = noctilaWeaponTiers[weapon];
+    const allStages = GUIDE.noctilaWeaponEnhancement?.[tier] || [];
+    const target = Math.min(15, Math.max(1, Number(state.guideTarget) || 15));
+    const stages = allStages.filter(x=>x.stage<=target);
+    const totalGold = stages.reduce((a,x)=>a+Number(x.gold||0),0);
+    const mats = aggregateGuideMaterials(stages);
+    const item=guideByName(weapon);
+    return `<section class="guide-answer guide-enhancement noctila-enhancement">
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 무기 강화</span><h2>${esc(weapon)} 0강 → +${target}</h2><p>초뉴비 기준으로 <b>NPC 위치 → 강화 단계 → 정확한 골드 → 재료 → 재료 수급처</b>까지 한 화면에서 보게 만들었어.</p></div>
+        <div class="guide-target dual"><label><span>무기</span><select id="noctilaWeaponSelect">${noctilaWeaponNames().map(n=>`<option value="${esc(n)}" ${n===weapon?'selected':''}>${esc(n)}</option>`).join('')}</select></label><label><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></label></div>
+      </div>
+      <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span>브론에게 말을 걸고 <strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(weapon)} 올리기</b><span>현재 단계에서 요구하는 골드와 재료를 준비해.</span></div></div><div class="guide-step"><i>3</i><div><b>강화 실행</b><span>공식 표 기준 노크틸라 무기 강화는 <strong>전 단계 성공률 100%</strong>야.</span></div></div><div class="guide-step"><i>4</i><div><b>스킬 해금도 확인</b><span>무기 +3/+6/+9/+12에서 스킬 슬롯 조건이 열리므로 시온의 스킬 시스템도 같이 확인해.</span></div></div></div>
+      <div class="guide-summary-grid"><article><span>등급</span><strong>${esc(tier)}</strong><small>${esc(item?.subcategory||'노크틸라 무기')}</small></article><article><span>0 → +${target} 고정 골드</span><strong>${fmt(totalGold)}</strong><small>단계별 공식 골드 합계</small></article><article><span>성공률</span><strong>100%</strong><small>공식 무기 강화표 기준</small></article><article><span>외형 변화</span><strong>+3·6·9·12·14·15</strong><small>해당 강화 구간에서 변화</small></article></div>
+      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>필요 재료 합계</span><h3>0강부터 +${target}까지 한 번에 준비</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaWeaponEnhancement,sourceLabel:'공식 무기 강화'})}</div><div class="guide-materials">${mats.map(([n,q])=>guideItemChip(n,q)).join('')}</div><p class="guide-panel-copy">각 재료에 마우스를 올리면 획득처·사용처가 뜨고, 클릭하면 그 재료 상세로 계속 내려갈 수 있어.</p></section>
+      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>공식 단계표</span><h3>${esc(weapon)} · ${esc(tier)} 강화 비용</h3></div></div><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>강화</th><th>골드</th><th>필요 재료</th><th>성공률</th></tr></thead><tbody>${allStages.map(x=>`<tr class="${x.stage<=target?'selected-row':''}"><td><b>+${x.stage}</b></td><td>${fmt(x.gold)}</td><td class="table-mats">${(x.materials||[]).map(([n,q])=>`${esc(n)} ×${esc(String(q))}`).join(' · ')}</td><td><strong>${x.chance}%</strong></td></tr>`).join('')}</tbody></table></div></section>
+      <div class="guide-note important"><b>참고 · 강화만 보고 끝내면 안 돼</b><span>+3/+6/+9/+12는 스킬 슬롯 해금 조건과 연결돼. 스킬 슬롯은 <strong>봉인 해방의 인장</strong>, 개별 스킬 해금은 <strong>능력 개방의 문장 + 골드</strong>, 스킬 강화는 무기 등급에 맞는 <strong>각성석</strong>이 필요해. 검색창에서 “${esc(weapon)} 스킬” 또는 재료 이름을 그대로 검색하면 이어서 볼 수 있어.</span></div>
+      <div class="guide-sourcebar"><span>고정 골드·재료·성공률은 공식 노크틸라 무기 강화표 기준</span>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaWeaponEnhancement,sourceLabel:'공식 원문'})}</div>
+    </section>`;
+  }
+
+  function renderNoctilaAccessoryEnhancement() {
+    const q = String(state.query||'');
+    const tier = ['카르벤','세리온','브렉사','오브레'].find(x=>q.includes(x)) || '카르벤';
+    const d = GUIDE.noctilaAccessoryEnhancement?.[tier];
+    if (!d) return renderGuideHome(guideMatches(state.query,state.guideFilter));
+    const rows = Array.from({length:5},(_,i)=>({stage:i+1,gold:d.gold[i],chance:d.chance[i],pity:d.pity[i]}));
+    const onePassGold = rows.reduce((a,x)=>a+x.gold,0);
+    return `<section class="guide-answer guide-enhancement noctila-enhancement">
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 장신구 강화</span><h2>${esc(tier)} 장신구 강화</h2><p>브론에게 강화하는 방법과 +1~+5 비용, 성공률, 확정 시도, 다음 등급 승급 조건을 같이 정리했어.</p></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaAccessoryEnhancement,sourceLabel:'공식 장신구 강화'})}</div>
+      <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span><strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(d.stone)} 준비</b><span>등급 내 강화 1회마다 ${esc(d.stone)} ×${d.count}와 단계별 골드가 필요해.</span></div></div><div class="guide-step"><i>3</i><div><b>+5까지 강화</b><span>실패할 수 있지만 단계별 <strong>확정 강화 시도 횟수</strong>가 있어.</span></div></div>${d.next?`<div class="guide-step"><i>4</i><div><b>${esc(d.next)} 등급 승급</b><span>승급 성공률 5%, 확정 26회. ${esc(d.stone)} ×${d.upgradeStone} + 어빌리티 스톤 ×${d.upgradeAbility}가 추가로 필요해.</span></div></div>`:''}</div>
+      <div class="guide-summary-grid"><article><span>등급 내 최소 골드</span><strong>${fmt(onePassGold)}</strong><small>각 단계 1회 성공 가정</small></article><article><span>1회 강화 재료</span><strong>${esc(d.stone)} ×${d.count}</strong><small>+1~+5 공통</small></article><article><span>강화 성공률</span><strong>90 → 10%</strong><small>+1부터 +5 순서</small></article><article><span>승급</span><strong>${d.next?'5% · 확정 26회':'최종 등급'}</strong><small>${d.next?`${tier} → ${d.next}`:'오브레 +5까지'}</small></article></div>
+      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>공식 단계표</span><h3>${esc(tier)} +1 ~ +5</h3></div></div><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>목표</th><th>수호석</th><th>골드</th><th>성공률</th><th>확정 강화</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${guideItemChip(d.stone,d.count)}</td><td>${fmt(x.gold)}</td><td><strong class="chance ${x.chance<=10?'low':''}">${x.chance}%</strong></td><td>${x.pity}회</td></tr>`).join('')}</tbody></table></div></section>
+      ${d.next?`<div class="guide-note important"><b>+5 다음 등급 승급</b><span><strong>${esc(tier)} → ${esc(d.next)}</strong>: 성공률 5%, 확정 26회. ${guideItemChip(d.stone,d.upgradeStone)} ${guideItemChip('어빌리티 스톤',d.upgradeAbility)}가 필요해. 승급 실패/소모 규칙은 공식 원문을 최종 기준으로 확인해.</span></div>`:''}
+      <div class="guide-sourcebar"><span>장신구 강화 비용·확률·확정 횟수는 공식 위키 기준</span>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaAccessoryEnhancement,sourceLabel:'공식 원문'})}</div>
+    </section>`;
+  }
+
+  function guideHoverCard(item) {
+    if (!item) return '';
+    const recipe = (item.recipe || []).slice(0,5).map(([n,q])=>`${n} ×${q}`).join(' · ');
+    return `<div class="hover-card"><strong>${esc(item.name)}</strong><span>${esc(item.region)} · ${esc(item.category)}</span><p><b>획득</b> ${esc(item.acquire || '미확인')}</p><p><b>사용</b> ${esc(item.use || '미확인')}</p>${recipe ? `<p><b>재료</b> ${esc(recipe)}${item.recipe.length>5?' 외':''}</p>`:''}</div>`;
+  }
+
+  function guideItemChip(name, qty = null) {
+    const item = guideByName(name);
+    const q = qty == null ? '' : `<em>×${esc(String(qty))}</em>`;
+    if (!item) return `<span class="guide-mat plain"><b>${esc(name)}</b>${q}</span>`;
+    return `<button type="button" class="guide-mat" data-tip data-guide-item="${esc(item.name)}"><b>${esc(item.name)}</b>${q}${guideHoverCard(item)}</button>`;
+  }
+
+  function enhancementTotals(target, expected = false) {
+    const out = {low:0,mid:0,high:0,gold:0,ruby:0};
+    for (const s of GUIDE.enhancement.filter(x => x.stage <= target)) {
+      const mul = expected ? 100 / Math.max(1,s.chance) : 1;
+      out.low += s.low * mul; out.mid += s.mid * mul; out.high += s.high * mul;
+      out.gold += s.gold * mul; out.ruby += s.ruby * mul;
     }
     return out;
   }
 
-  function matchesLegacy(item, q) {
-    if (!q) return true;
-    const text = [item.name,item.price,item.recipe,item.probability,item.__group,...(item.headers || []),...(item.rows || []).flat()].filter(Boolean).join(' ').toLowerCase();
-    return text.includes(q);
+  function stoneRawTotals(t) {
+    return [
+      ['조약돌', t.low * 128], ['구리 블록', t.low * 8 + t.high * 30], ['레드스톤 블록', t.low * 3], ['코룸 주괴', t.low],
+      ['심층암 조약돌', t.mid * 128], ['청금석 블록', t.mid * 5], ['철 블록', t.mid * 5 + t.high * 7], ['다이아몬드 블록', t.mid * 3 + t.high * 5], ['리프톤 주괴', t.mid * 2],
+      ['자수정 블록', t.high * 20], ['금 블록', t.high * 7], ['세렌트 주괴', t.high * 3]
+    ].filter(([,n]) => n > 0);
   }
 
-  function legacyItemHTML(item) {
-    if (item.type === 'table' && Array.isArray(item.headers) && Array.isArray(item.rows)) {
-      return `<div class="legacy-table-wrap"><table class="legacy-table"><thead><tr>${item.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${item.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-    }
-    if (item.recipe) return `<div class="legacy-item recipe"><b>${esc(item.name || '항목')}</b><span>${esc(item.recipe)}</span>${item.price ? `<span>${esc(item.price)}</span>` : ''}${item.probability ? `<span>확률 ${esc(item.probability)}</span>` : ''}</div>`;
-    return `<div class="legacy-item"><b>${esc(item.name || item.__group || '항목')}</b><span>${esc(item.price ?? item.value ?? '')}</span></div>`;
+  function num1(n) {
+    if (!Number.isFinite(n)) return '—';
+    return Math.abs(n-Math.round(n)) < .001 ? Math.round(n).toLocaleString('ko-KR') : n.toLocaleString('ko-KR',{maximumFractionDigits:1});
   }
 
-  function renderLegacyGroups(scopeData) {
-    const q = state.query.trim().toLowerCase();
-    if (!scopeData) return '';
+  function renderGuideEnhancement() {
+    const target = state.guideTarget;
+    const min = enhancementTotals(target,false);
+    const exp = enhancementTotals(target,true);
+    const raw = stoneRawTotals(min);
+    const stages = GUIDE.enhancement.filter(x=>x.stage<=target);
+    const stats = GUIDE.sagePickaxeStats.filter(x=>x.stage<=target);
+    return `<section class="guide-answer guide-enhancement">
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 도구 강화</span><h2>세이지 곡괭이 강화, 처음부터 ${target}강까지</h2><p>초뉴비 기준으로 <b>어디로 가는지 → 뭘 넣는지 → 단계별 돈/재료/확률 → 라이프스톤 제작 → 곡괭이 성능</b> 순서로 정리했어.</p></div><div class="guide-target"><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></div></div>
+      <div class="guide-steps">
+        <div class="guide-step"><i>1</i><div><b>세레니티 마을로 이동</b><span>NPC <strong>로니</strong>를 찾는다.</span></div></div>
+        <div class="guide-step"><i>2</i><div><b>로니에게 말 걸기</b><span><strong>2번 → 강화하기</strong>를 선택한다.</span></div></div>
+        <div class="guide-step"><i>3</i><div><b>도구 + 강화 재료 올리기</b><span>현재 단계에 필요한 라이프스톤·골드·루비를 준비한다.</span></div></div>
+        <div class="guide-step"><i>4</i><div><b>강화 실행</b><span>도구를 사용하거나 강화하면 해당 플레이어에게 <strong>귀속</strong>된다.</span></div></div>
+      </div>
+      <div class="guide-note important"><b>참고 · 단계가 올라가면 재료 종류가 추가돼</b><span><strong>+1~3:</strong> 하급만 · <strong>+4~5:</strong> 하급+중급 · <strong>+6부터:</strong> 하급+중급+상급 · <strong>+7부터:</strong> 루비까지 필요. 하급은 3강 이후에 사라지는 게 아니라 고강화에서도 계속 같이 들어가.</span></div>
+      <div class="guide-summary-grid">
+        <article><span>최소 고정 골드</span><strong>${fmt(min.gold)}</strong><small>모든 단계 1회 성공 기준</small></article>
+        <article><span>최소 라이프스톤</span><strong>${num1(min.low)} / ${num1(min.mid)} / ${num1(min.high)}</strong><small>하급 / 중급 / 상급</small></article>
+        <article><span>최소 루비</span><strong>${num1(min.ruby)}개</strong><small>+7 이후 단계 합계</small></article>
+        <article class="expected"><span>단순 확률 기대 골드*</span><strong>${fmt(Math.round(exp.gold))}</strong><small>성공확률 역수로 계산</small></article>
+      </div>
+      <div class="guide-note caution"><b>* 기대값 계산 주의</b><span>공식 강화표의 성공 확률을 이용해 단계별 평균 시도 횟수를 <code>1 ÷ 성공확률</code>로 단순 계산한 값이야. <strong>실패 시 단계 유지 + 해당 1회 비용/재료가 소모된다는 가정</strong>이 들어가며, 공식 문서에서 실패 패널티가 별도로 명시되지 않은 경우 실제 체감 비용과 달라질 수 있어. 아래의 “최소 비용” 표는 공식 수치를 그대로 사용해.</span></div>
+      <div class="guide-two-col">
+        <section class="guide-panel"><div class="guide-panel-head"><div><span>강화석 제작</span><h3>라이프스톤은 이렇게 만든다</h3></div></div>
+          ${['하급 라이프스톤','중급 라이프스톤','상급 라이프스톤'].map(n=>{const it=guideByName(n);return `<div class="guide-recipe-card"><div><b>${esc(n)}</b><small>${esc(it?.note||'')}</small></div><div class="guide-materials">${(it?.recipe||[]).map(([x,q])=>guideItemChip(x,q)).join('')}</div></div>`}).join('')}
+        </section>
+        <section class="guide-panel"><div class="guide-panel-head"><div><span>0 → +${target}</span><h3>최소 라이프스톤 제작 원재료</h3></div></div><p class="guide-panel-copy">강화석을 전부 직접 제작하고, 각 강화가 한 번에 성공한다고 가정했을 때의 원재료 환산이야.</p><div class="guide-materials dense">${raw.map(([n,q])=>guideItemChip(n,q)).join('')}</div></section>
+      </div>
+      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>OFFICIAL ENHANCEMENT TABLE</span><h3>단계별 강화 비용 · 재료 · 성공률</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.enhancement,sourceLabel:'공식 강화표'})}</div>
+        <div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>목표</th><th>하급</th><th>중급</th><th>상급</th><th>골드</th><th>루비</th><th>성공률</th></tr></thead><tbody>${stages.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${x.low}</td><td>${x.mid||'—'}</td><td>${x.high||'—'}</td><td>${fmt(x.gold)}</td><td>${x.ruby||'—'}</td><td><strong class="chance ${x.chance<=5?'low':''}">${x.chance}%</strong></td></tr>`).join('')}</tbody></table></div>
+      </section>
+      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>SAGE PICKAXE</span><h3>그래서 강화하면 뭐가 좋아져?</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.sagePickaxe,sourceLabel:'공식 세이지 곡괭이'})}</div>
+        <p class="guide-panel-copy">세이지 곡괭이는 채광 1회당 스태미나 10을 사용해. 아래는 ${target}강까지 공식 강화 성능표야.</p>
+        <div class="guide-table-wrap"><table class="guide-table stats"><thead><tr><th>강화</th><th>채광력</th><th>채광속도</th><th>광물 드롭</th><th>유물%</th><th>코비%</th><th>광채 속도%</th><th>광채 확률%</th><th>경험치</th></tr></thead><tbody>${stats.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${x.power}</td><td>${x.speed}</td><td>${x.drops}</td><td>${x.relic}</td><td>${x.kobi}</td><td>${x.glowSpeed==null?'—':x.glowSpeed}</td><td>${x.glowChance==null?'—':x.glowChance}</td><td>${x.xp}</td></tr>`).join('')}</tbody></table></div>
+      </section>
+      <div class="guide-note"><b>돈 계산 범위</b><span>위 골드는 <strong>강화창에서 직접 요구하는 고정 골드</strong>야. 라이프스톤 원재료를 다른 유저에게 구매할 때 드는 시세 비용은 서버 시장가가 고정값이 아니므로 임의로 만들지 않았어. 대신 필요한 강화석/원재료 수량은 전부 계산해서 바로 비교할 수 있게 했어.</span></div>
+    </section>`;
+  }
 
-    if (state.legacyScope === 'wild') {
-      const groups = Object.entries(scopeData);
-      return groups.map(([group, items]) => {
-        const filtered = (items || []).filter(i => matchesLegacy({...i,__group:group},q));
-        if (!filtered.length) return '';
-        return `<section class="legacy-group"><h3>${esc(group)}<span>${filtered.length} items</span></h3><div class="legacy-items">${filtered.map(legacyItemHTML).join('')}</div></section>`;
-      }).join('');
-    }
+  function renderGuideItemAnswer(item) {
+    const recipe = item.recipe || [];
+    return `<section class="guide-answer">
+      <div class="guide-answer-head item"><div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p></div>${guideSourceLink(item)}</div>
+      ${item.probability ? `<div class="guide-inline-fact"><span>확률/조건</span><b>${esc(item.probability)}</b></div>`:''}
+      ${item.trade ? `<div class="guide-inline-fact"><span>거래/가격</span><b>${esc(item.trade)}</b></div>`:''}
+      <div class="guide-info-grid">
+        <article><span>이게 뭐고, 어디서 구해?</span><p>${esc(item.acquire || '공식 문서에서 세부 획득처를 확인하지 못했어.')}</p></article>
+        <article><span>어디에 써?</span><p>${esc(item.use || '공식 문서에서 세부 사용처를 확인하지 못했어.')}</p></article>
+      </div>
+      ${guideShopTable(item)}
+      ${recipe.length ? `<section class="guide-panel recipe-main"><div class="guide-panel-head"><div><span>필요 재료</span><h3>${esc(item.name)} 제작 재료</h3></div></div><div class="guide-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><p class="guide-panel-copy">재료에 마우스를 올리면 수급처가 뜨고, 클릭하면 그 재료의 획득법·사용처·하위 재료까지 이어서 볼 수 있어.</p></section>`:''}
+      ${item.note ? `<div class="guide-note important"><b>참고 / 꼭 알아둘 것</b><span>${esc(item.note)}</span></div>`:''}
+      ${(item.related||[]).length ? `<div class="guide-related"><span>같이 보면 좋은 항목</span><div>${item.related.map(n=>guideItemChip(n)).join('')}</div></div>`:''}
+      <div class="guide-sourcebar"><span>${item.official === false ? '기본 게임/참고 정보 · 서버 전용 규칙이 있으면 공식 공지가 우선' : `공식 자료 기준 · 확인 ${esc(item.verified||GUIDE.meta.verified||'')}`}</span>${guideSourceLink(item)}</div>
+    </section>`;
+  }
 
-    if (state.legacyScope === 'expert') {
-      const tools = scopeData.toolEnhancement || [];
-      const map = {gathering:0,mining:1,fishing:2};
-      const selected = state.legacySub || 'gathering';
-      const item = tools[map[selected]];
-      if (!item || !matchesLegacy(item,q)) return '';
-      return `<section class="legacy-group"><h3>${esc(item.name)}<span>강화 정보</span></h3>${legacyItemHTML(item)}</section>`;
-    }
+  function guideCard(item) {
+    const recipe = (item.recipe || []).slice(0,3);
+    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3><p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></article>`;
+  }
 
-    const sub = state.legacySub || Object.keys(scopeData)[0];
-    const chosen = scopeData[sub];
-    if (!chosen) return '';
+  function renderGuideHome(matches) {
+    const q = state.query.trim();
+    const limit = q ? 160 : (state.guideExpanded ? matches.length : 72);
+    const visible = matches.slice(0,limit).map(x=>guideCard(x.item)).join('');
+    const exactish = q ? matches.filter(x=>x.score>=100).slice(0,4) : [];
+    const itemAnswer = exactish.length ? renderGuideItemAnswer(exactish[0].item) : '';
+    return `${itemAnswer}<section class="guide-catalog-section"><div class="section-head guide-catalog-head"><div><h2>${q ? '관련 아이템·시스템' : '서버 아이템 백과'}</h2><p>${q ? `검색어 “${esc(q)}”와 관련도가 높은 순서야.` : '공식 위키 아이템/제작/확률표를 한 곳에서 검색할 수 있게 묶었어.'}</p></div><b>${matches.length.toLocaleString('ko-KR')}개</b></div><div class="guide-catalog">${visible || '<div class="card empty"><strong>검색 결과가 없어.</strong>띄어쓰기를 바꾸거나 아이템 이름 일부만 입력해봐.</div>'}</div>${matches.length>limit?`<div class="guide-sourcebar guide-expandbar"><span>빠르게 열리도록 앞 ${limit}개만 먼저 표시 중 · 데이터에는 전체 ${matches.length.toLocaleString('ko-KR')}개가 들어 있어.</span>${!q?`<button class="btn" data-guide-expand>전체 ${matches.length.toLocaleString('ko-KR')}개 펼치기</button>`:`<span>검색을 더 구체적으로 쓰면 전체 인덱스에서 다시 찾음</span>`}</div>`:''}</section>`;
+  }
 
-    if (Array.isArray(chosen)) {
-      const filtered = chosen.filter(i => matchesLegacy(i,q));
-      return filtered.length ? `<section class="legacy-group"><h3>${esc(legacySubLabels[sub] || sub)}<span>${filtered.length} items</span></h3><div class="legacy-items">${filtered.map(legacyItemHTML).join('')}</div></section>` : '';
-    }
-
-    return Object.entries(chosen).map(([group, value]) => {
-      const items = Array.isArray(value) ? value.filter(i => matchesLegacy({...i,__group:group},q)) : flattenLegacyItems(value,group).filter(i => matchesLegacy(i,q));
-      if (!items.length) return '';
-      return `<section class="legacy-group"><h3>${esc(group)}<span>${items.length} items</span></h3><div class="legacy-items">${items.map(legacyItemHTML).join('')}</div></section>`;
-    }).join('');
+  function shouldShowEnhancement(q) {
+    const t = String(q || '').replace(/\s+/g,'').toLowerCase();
+    return !!t && /강화/.test(t) && /(세이지|곡괭이|괭이|낚싯대|대검|도구|라이프스톤|라이프스톤)/.test(t);
   }
 
   function renderReference() {
     const root = $('#page-reference');
-    const scopes = ['wild','grindel','collection','expert'];
-    const scopeData = legacyScopeData();
-    const subs = legacySubKeys(scopeData);
-    if (subs.length && !subs.includes(state.legacySub)) state.legacySub = subs[0];
-
-    let body = '';
-    if (state.legacyLoading) {
-      body = `<div class="card empty"><strong>원본 DB를 불러오는 중이야.</strong>공개 GitHub 원본 데이터를 읽고 있어.</div>`;
-    } else if (!state.legacy) {
-      body = `<div class="card empty"><strong>원본 DB를 아직 불러오지 못했어.</strong>${state.legacyError ? esc(state.legacyError) : '인터넷 연결이 있으면 자동으로 공개 원본 데이터를 가져와.'}<br><button class="btn" id="reloadLegacy" style="margin-top:12px">다시 불러오기</button></div>`;
-    } else {
-      const rendered = renderLegacyGroups(scopeData);
-      body = `<div class="legacy-toolbar"><div class="legacy-subtabs">${subs.map(k => `<button class="pill ${state.legacySub === k ? 'active' : ''}" data-legacy-sub="${k}">${esc(legacySubLabels[k] || (k === 'all' ? '전체' : k))}</button>`).join('')}</div><span class="reference-status">원본 공개 데이터 snapshot</span></div><div class="card legacy-card">${rendered || `<div class="empty"><strong>검색 결과가 없어.</strong>현재 탭에서 다른 검색어를 써봐.</div>`}</div>`;
-    }
-
-    root.innerHTML = `<div class="content-shell">
-      <div class="reference-intro"><div><h2>원본 DB 탐색</h2><p>기존 ddingtasearch의 정보 구조를 새 인터페이스 안에 보존했어. 데이터 자체는 공개 원본 GitHub의 regionData.json을 읽어오며, 이 개인DB의 최신 요리 데이터와는 별개로 참고용으로 보여줘.</p></div><div class="scope-tabs">${scopes.map(k => `<button class="scope-tab ${state.legacyScope === k ? 'active' : ''}" data-legacy-scope="${k}">${scopeLabels[k]}</button>`).join('')}</div></div>
-      ${body}
-      <p class="source-note">원본 공개 사이트/저장소 정보는 참고용이며 일부 값은 현재 게임과 다를 수 있어. 최신 요리·농장 데이터는 이 개인DB 메뉴를 우선해서 봐.</p>
+    if (!root) return;
+    const q = state.query.trim();
+    const filters = [['all','전체'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
+    const matches = guideMatches(q,state.guideFilter);
+    const compactQ = q.replace(/\s+/g,'');
+    const isNoctilaWeaponEnhance = /강화/.test(compactQ) && (/노크틸라무기/.test(compactQ) || noctilaWeaponNames().some(n=>compactQ.includes(n.replace(/\s+/g,''))));
+    const isAccessoryEnhance = /강화/.test(compactQ) && (/장신구/.test(compactQ) || ['카르벤','세리온','브렉사','오브레'].some(n=>compactQ.includes(n)));
+    let answer;
+    if (shouldShowEnhancement(q)) answer = renderGuideEnhancement();
+    else if (isNoctilaWeaponEnhance) answer = renderNoctilaWeaponEnhancement();
+    else if (isAccessoryEnhance) answer = renderNoctilaAccessoryEnhancement();
+    else answer = renderGuideHome(matches);
+    const examples=['세이지 곡괭이 강화하려면?','하급 라이프스톤 어디서 구해?','카르세나의 룬이 뭐야?','루트바인 스태프 강화','좌표 스크롤 어디서 사?','중급 라이프스톤 재료'];
+    root.innerHTML = `<div class="content-shell guide-shell">
+      <section class="guide-hero">
+        <div class="guide-hero-copy"><span class="eyebrow">NEWBIE SERVER ENCYCLOPEDIA</span><h2>몰라도 돼. <b>그냥 하고 싶은 걸 물어봐.</b></h2><p>요리·채집이 메인인 개인DB는 그대로 두고, 서버에서 처음 보는 아이템·강화·제작·상점·수급처를 여기서 끝까지 따라갈 수 있게 정리했어. 현재 인덱스 <strong>${GUIDE.items.length.toLocaleString('ko-KR')}개</strong>.</p></div>
+        <div class="guide-searchbox"><svg><use href="#i-search"/></svg><input id="guideSearchInput" value="${esc(q)}" placeholder="예: 세이지 곡괭이 강화하려면 어떻게 해야해?" autocomplete="off"><button id="guideRunSearch" class="btn primary">찾기</button></div>
+        <div class="guide-examples"><span>바로 질문</span>${examples.map(x=>`<button data-guide-example="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+      </section>
+      <div class="guide-quality-strip"><div><b>초뉴비용</b><span>“이게 뭐야?”부터 설명</span></div><div><b>재귀형 재료 추적</b><span>재료 → 재료의 재료까지 클릭</span></div><div><b>가격·NPC까지</b><span>공식 상점 거래값과 장소 연결</span></div><div><b>${GUIDE.items.length.toLocaleString('ko-KR')} items</b><span>공식 아이템·상점·강화·확률 통합</span></div></div>
+      <div class="guide-filterbar">${filters.map(([k,l])=>`<button class="${state.guideFilter===k?'active':''}" data-guide-filter="${k}">${l}</button>`).join('')}</div>
+      ${answer}
+      <p class="source-note guide-footnote">기준: 띵타이쿤 공식 위키의 아이템 정보·공식 상점·제작 시설·도구/노크틸라 강화·스킬·룬·보물상자·확률표와 현재 사이트 요리/채집 DB. 공식 문서에 사용처가 적혀 있지 않은 항목은 지어내지 않고 “미확인/세부 설명 없음”으로 남겼어. 이벤트·확률표·상점은 운영 중 변경될 수 있으니 각 항목의 원문 링크가 최종 기준이야.</p>
     </div>`;
+  }
+
+  function openGuideItemDrawer(item) {
+    if (!item) return;
+    const recipe = item.recipe || [];
+    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero"><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p></div>
+      ${item.probability?`<div class="drawer-section"><h3>확률 / 조건</h3><div class="drawer-text"><b>${esc(item.probability)}</b></div></div>`:''}
+      ${item.trade?`<div class="drawer-section"><h3>거래 / 가격</h3><div class="drawer-text"><b>${esc(item.trade)}</b></div></div>`:''}
+      <div class="drawer-section"><h3>이게 뭐고, 어디서 구해?</h3><div class="drawer-text">${esc(item.acquire || '세부 획득처 미확인')}</div></div>
+      <div class="drawer-section"><h3>뭐에 써?</h3><div class="drawer-text">${esc(item.use || '세부 사용처 미확인')}</div></div>
+      ${guideShopTable(item)}
+      ${recipe.length?`<div class="drawer-section"><h3>필요 재료</h3><div class="guide-materials drawer-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><div class="drawer-text guide-drawer-help">재료를 클릭하면 그 재료의 수급처와 하위 재료로 계속 내려갈 수 있어.</div></div>`:''}
+      ${item.note?`<div class="drawer-section"><h3>참고 / 주의</h3><div class="drawer-text">${esc(item.note)}</div></div>`:''}
+      ${(item.related||[]).length?`<div class="drawer-section"><h3>관련 항목</h3><div class="guide-materials drawer-materials">${item.related.map(n=>guideItemChip(n)).join('')}</div></div>`:''}
+      <div class="drawer-section"><h3>자료 상태</h3><div class="drawer-text">${item.official===false?'기본 게임/참고 데이터. 서버 전용 규칙이 있으면 공식 서버 자료가 우선이야.':'공식 위키 기반 데이터.'}<br>${guideSourceLink(item)}</div></div></div>`;
+    $('#drawerBackdrop').hidden = false;
+    $('#detailDrawer').classList.add('open');
+    $('#detailDrawer').setAttribute('aria-hidden','false');
   }
 
   function renderPrices() {
@@ -1196,7 +1375,6 @@
     $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
     $('#pageEyebrow').textContent = pages[page][0];
     $('#pageTitle').textContent = pages[page][1];
-    if (page === 'reference' && !state.legacy && !state.legacyLoading) loadLegacyData();
     window.scrollTo({top:0, behavior:'smooth'});
   }
 
@@ -1323,38 +1501,6 @@
     t.hidden = false;
     clearTimeout(t._tm);
     t._tm = setTimeout(() => t.hidden = true, 2400);
-  }
-
-  async function loadLegacyData(force = false) {
-    if (state.legacyLoading) return;
-    if (!force) {
-      try {
-        const cached = JSON.parse(localStorage.getItem(LEGACY_CACHE_KEY) || 'null');
-        if (cached?.data && Date.now() - cached.savedAt < 1000*60*60*24) {
-          state.legacy = cached.data;
-          renderReference();
-          return;
-        }
-      } catch(e) {}
-    }
-    state.legacyLoading = true;
-    state.legacyError = '';
-    renderReference();
-    try {
-      const r = await fetch(LEGACY_URL, {cache:'no-store'});
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      state.legacy = await r.json();
-      localStorage.setItem(LEGACY_CACHE_KEY, JSON.stringify({savedAt:Date.now(), data:state.legacy}));
-    } catch(e) {
-      state.legacyError = '공개 원본 데이터를 가져오지 못했어. 인터넷 연결 뒤 다시 시도해줘.';
-      try {
-        const cached = JSON.parse(localStorage.getItem(LEGACY_CACHE_KEY) || 'null');
-        if (cached?.data) state.legacy = cached.data;
-      } catch (_) {}
-    } finally {
-      state.legacyLoading = false;
-      renderReference();
-    }
   }
 
   function openTool(tool) {
@@ -1573,10 +1719,22 @@
     if (fil) { state.cookingFilter=fil.dataset.filter; renderCooking(); return; }
     const view = e.target.closest('[data-view]');
     if (view) { state.cookingView=view.dataset.view; localStorage.setItem('ddingCookingView',state.cookingView); renderCooking(); return; }
-    const scope = e.target.closest('[data-legacy-scope]');
-    if (scope) { state.legacyScope=scope.dataset.legacyScope; state.legacySub=''; localStorage.setItem('ddingLegacyScope',state.legacyScope); renderReference(); return; }
-    const sub = e.target.closest('[data-legacy-sub]');
-    if (sub) { state.legacySub=sub.dataset.legacySub; renderReference(); return; }
+    const guideExample = e.target.closest('[data-guide-example]');
+    if (guideExample) {
+      state.query = guideExample.dataset.guideExample || ''; state.guideExpanded=false;
+      $('#globalSearch').value = state.query;
+      switchPage('reference'); renderReference(); return;
+    }
+    const guideFilter = e.target.closest('[data-guide-filter]');
+    if (guideFilter) { state.guideFilter=guideFilter.dataset.guideFilter; state.guideExpanded=false; localStorage.setItem('ddingGuideFilter',state.guideFilter); renderReference(); return; }
+    const guideItem = e.target.closest('[data-guide-item]');
+    if (guideItem) { openGuideItemDrawer(guideByName(guideItem.dataset.guideItem)); return; }
+    const guideOpen = e.target.closest('[data-guide-open]');
+    if (guideOpen) { openGuideItemDrawer(guideByName(guideOpen.dataset.guideOpen)); return; }
+    if (e.target.closest('#guideRunSearch')) {
+      const input=$('#guideSearchInput'); state.query=(input?.value||'').trim(); $('#globalSearch').value=state.query; renderReference(); return;
+    }
+    if (e.target.closest('[data-guide-expand]')) { state.guideExpanded=true; renderReference(); return; }
     const finderFilter = e.target.closest('[data-finder-filter]');
     if (finderFilter) { state.finderFilter=finderFilter.dataset.finderFilter; localStorage.setItem('ddingFinderFilter',state.finderFilter); renderFinder(); return; }
     const profitFilter = e.target.closest('[data-profit-filter]');
@@ -1584,7 +1742,6 @@
     const fontChoice = e.target.closest('[data-font-choice]');
     if (fontChoice) { state.fontChoice=fontChoice.dataset.fontChoice; localStorage.setItem('ddingFontChoice',state.fontChoice); applyDisplayPrefs(); renderTool(); return; }
     if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
-    if (e.target.closest('#reloadLegacy')) { loadLegacyData(true); return; }
     const trendFood = e.target.closest('[data-trend-food]');
     if (trendFood && !trendFood.disabled) { state.selectedTrendFood=trendFood.dataset.trendFood; localStorage.setItem('ddingTrendFood',state.selectedTrendFood); if(state.page!=='dashboard') switchPage('dashboard'); else renderDashboard(); return; }
     const card = e.target.closest('.food-card');
@@ -1634,10 +1791,19 @@
       renderProfit();
       return;
     }
+    if (e.target.id === 'guideTargetStage') {
+      state.guideTarget=Math.min(15,Math.max(1,Number(e.target.value)||15)); localStorage.setItem('ddingGuideTarget',String(state.guideTarget)); renderReference(); return;
+    }
+    if (e.target.id === 'noctilaWeaponSelect') {
+      state.query = `${e.target.value} 강화`; const g=$('#globalSearch'); if(g) g.value=state.query; renderReference(); return;
+    }
     if (e.target.id === 'calcFood') { selectCalcFood(e.target.value); return; }
   });
 
   document.addEventListener('input', e => {
+    if (e.target.id === 'guideSearchInput') {
+      state.query=e.target.value; const g=$('#globalSearch'); if(g) g.value=state.query;
+    }
     if (['calcSale','calcQty','calcCost','calcExtra'].includes(e.target.id)) updateCalc();
     if (e.target.id === 'memoArea') {
       if (!state.memoEditingId) localStorage.setItem('ddingMemoDraft', e.target.value);
@@ -1650,10 +1816,16 @@
     }
   });
 
+  document.addEventListener('keydown', e => {
+    if (e.target.id === 'guideSearchInput' && e.key === 'Enter') {
+      state.query=e.target.value.trim(); const g=$('#globalSearch'); if(g) g.value=state.query; renderReference();
+    }
+  });
+
   $('#globalSearch').addEventListener('input', e => { state.query=e.target.value; renderCurrent(); });
   $('#globalSearch').addEventListener('keydown', e => {
     if(e.key==='Escape'){e.target.value='';state.query='';renderCurrent();e.target.blur();}
-    if(e.key==='Enter' && state.query.trim()){switchPage('finder');renderFinder();}
+    if(e.key==='Enter' && state.query.trim()){switchPage('reference');renderReference();}
   });
 
   // Ingredient help is rendered in a body-level floating layer.
