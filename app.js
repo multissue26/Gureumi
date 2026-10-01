@@ -276,6 +276,65 @@
     localStorage.setItem(PROFIT_FARM_KEY, JSON.stringify(state.profitFarm));
   }
 
+  function cropAverageHourlyRate(cropId) {
+    const meta = profitCropMeta(cropId);
+    return meta.yieldAvg * (60 / meta.growthMinutes);
+  }
+
+  function recommendedProfitAllocation(totalPlots, current = {}) {
+    const total = Math.max(0, Math.floor(Number(totalPlots) || 0));
+    const finalPlots = Object.fromEntries(PROFIT_CROP_IDS.map(id => [id, Math.max(0, Math.floor(Number(current[id]) || 0))]));
+    const used = PROFIT_CROP_IDS.reduce((sum,id) => sum + finalPlots[id], 0);
+    const additional = Object.fromEntries(PROFIT_CROP_IDS.map(id => [id, 0]));
+    if (total <= used) return {finalPlots, additional, remaining:Math.max(0,total-used), over:Math.max(0,used-total)};
+
+    // Existing plots are treated as fixed. Every remaining slot goes to the
+    // crop with the lowest projected average hourly output. This naturally
+    // compensates for different average yields (tomato 8/h, onion 6/h, garlic 10/h).
+    for (let n = used; n < total; n++) {
+      const nextId = [...PROFIT_CROP_IDS].sort((a,b) => {
+        const outA = finalPlots[a] * cropAverageHourlyRate(a);
+        const outB = finalPlots[b] * cropAverageHourlyRate(b);
+        if (outA !== outB) return outA - outB;
+        const rateA = cropAverageHourlyRate(a), rateB = cropAverageHourlyRate(b);
+        if (rateA !== rateB) return rateA - rateB;
+        return PROFIT_CROP_IDS.indexOf(a) - PROFIT_CROP_IDS.indexOf(b);
+      })[0];
+      finalPlots[nextId] += 1;
+      additional[nextId] += 1;
+    }
+    return {finalPlots, additional, remaining:0, over:0};
+  }
+
+  function profitRecommendationCard(total, used) {
+    const rec = recommendedProfitAllocation(total, state.profitFarm);
+    const hasTotal = total > 0;
+    const remaining = Math.max(0, total - used);
+    return `<div class="card profit-recommend-card">
+      <div class="section-head profit-recommend-head"><div><h2>경작지 균형 추천</h2><p>${hasTotal ? `현재 설치량은 고정하고 남은 ${remaining.toLocaleString('ko-KR')}칸을 평균 생산량이 가장 비슷해지도록 자동 배분해.` : '전체 경작지 수를 입력하면 토마토·양파·마늘의 평균 수율 차이를 반영해 추천해.'}</p></div><span class="profit-recommend-badge">AUTO BALANCE</span></div>
+      ${!hasTotal ? `<div class="profit-recommend-empty">전체 경작지 수를 먼저 입력해줘.</div>` : `
+      <div class="profit-recommend-table">
+        <div class="profit-recommend-row head"><span>작물</span><span>현재</span><span>추가 추천</span><span>최종 추천</span><span>평균 시간당</span></div>
+        ${PROFIT_CROP_IDS.map(id => {
+          const c = profitCropMeta(id);
+          const current = Number(state.profitFarm[id] || 0);
+          const add = rec.additional[id] || 0;
+          const final = rec.finalPlots[id] || current;
+          const hourly = final * cropAverageHourlyRate(id);
+          return `<div class="profit-recommend-row">
+            <span class="profit-recommend-crop">${c.icon ? `<img src="${esc(c.icon)}" alt="">` : `<i>${esc(c.emoji || '·')}</i>`}<b>${esc(c.name)}</b></span>
+            <span>${current.toLocaleString('ko-KR')}칸</span>
+            <span class="profit-recommend-add ${add ? 'active' : 'done'}">${add ? `+${add.toLocaleString('ko-KR')}칸` : '충족'}</span>
+            <strong>${final.toLocaleString('ko-KR')}칸</strong>
+            <span>${compactNumber(hourly,1)}개</span>
+          </div>`;
+        }).join('')}
+        <div class="profit-recommend-row total"><span><b>합계</b></span><span>${used.toLocaleString('ko-KR')}칸</span><span>${remaining > 0 && !rec.over ? `+${remaining.toLocaleString('ko-KR')}칸` : rec.over ? '초과' : '완료'}</span><strong>${PROFIT_CROP_IDS.reduce((sum,id)=>sum+(rec.finalPlots[id]||0),0).toLocaleString('ko-KR')}칸</strong><span>균형 생산</span></div>
+      </div>
+      ${rec.over ? `<div class="profit-recommend-warning">현재 입력이 전체 경작지보다 ${rec.over.toLocaleString('ko-KR')}칸 많아서 추가 추천을 멈췄어. 현재 설치량이나 전체 경작지 수를 조정해줘.</div>` : `<div class="profit-recommend-note">추천은 <b>평균 시간당 생산량 균형</b> 기준이야. 이미 많이 설치한 작물은 추가 추천에서 자동으로 빠지고, 남은 칸만 다시 계산해.</div>`}` }
+    </div>`;
+  }
+
   function ingredientChip(id, qty) {
     const ing = resolveIngredient(id);
     return `<div class="ingredient-chip" data-tip="1">
@@ -311,6 +370,10 @@
     const g = gold ? food.gold.grade : food.grade;
     const name = gold ? food.gold.name : food.name;
     const image = gold ? food.goldImage : food.image;
+    const missing = gold ? [] : missingCrops(food).map(cropName);
+    const readyHelp = missing.length
+      ? `추가 필요 · ${missing.join(', ')}`
+      : '필요 농작물 조건 충족';
     return `<article class="card food-card" data-food="${food.slug}" data-gold="${gold ? '1' : '0'}">
       <div class="food-top">
         <div class="pixel-wrap"><img class="pixel" src="${image}" alt="${esc(name)}"></div>
@@ -319,7 +382,7 @@
       </div>
       <div class="recipe-row">${modeRecipe.map(([id, n]) => ingredientChip(id, n)).join('')}</div>
       <div class="card-lower">
-        ${!gold ? `<div class="readiness"><span style="width:${r}%"></span></div><div class="ready-caption"><span>농장 준비도</span><span>${r}%</span></div>` : ''}
+        ${!gold ? `<div class="readiness-wrap" tabindex="0" aria-label="${esc(readyHelp)}"><div class="readiness"><span style="width:${r}%"></span></div><div class="ready-caption"><span>농장 준비도</span><span>${r}%</span></div><div class="readiness-hover"><b>${r === 100 ? '준비 완료' : '더 심어야 할 작물'}</b><span>${esc(readyHelp)}</span></div></div>` : ''}
         <div class="food-actions"><button class="detail-btn">상세 보기</button>${gold ? `<button class="gold-toggle normal-mode">일반 보기</button>` : `<button class="gold-toggle">황금 보기</button>`}</div>
       </div>
     </article>`;
@@ -723,7 +786,8 @@
 
   function renderFarm() {
     const groups = [...new Set(D.crops.map(c => c.group))];
-    const foods = [...D.foods].sort((a,b) => readiness(b) - readiness(a) || ((normalizedPrice(b) || 0) - (normalizedPrice(a) || 0)));
+    const readyFoods = [...D.foods].filter(f => readiness(f) >= 1).sort((a,b) => ((normalizedPrice(b) || 0) - (normalizedPrice(a) || 0)) || a.name.localeCompare(b.name,'ko'));
+    const nearFoods = [...D.foods].filter(f => readiness(f) < 1).sort((a,b) => readiness(b) - readiness(a) || ((normalizedPrice(b) || 0) - (normalizedPrice(a) || 0)));
     const unlocks = calcCropUnlocks();
     $('#page-farm').innerHTML = `<div class="content-shell">
       <div class="farm-layout">
@@ -740,7 +804,12 @@
           }).join('') : `<div class="empty">모든 작물이 체크되어 있어.</div>`}
         </div>
       </div>
-      <section class="section"><div class="section-head"><div><h2>내 농장으로 가까운 요리</h2><p>농작물 조건 위주로 정렬했어. 세부 구매·사냥 재료는 상세에서 확인해.</p></div></div><div class="food-grid">${foods.map(f => foodCard(f,false)).join('')}</div></section>
+
+      <section class="section farm-ready-section"><div class="section-head"><div><h2>지금 만들 수 있는 요리</h2><p>내 농장에 체크한 작물만 대조해서 농작물 조건이 100% 충족된 음식이야.</p></div><div class="reference-status">${readyFoods.length} / ${D.foods.length}</div></div>
+        ${readyFoods.length ? `<div class="food-grid">${readyFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>아직 농작물 조건이 완성된 요리가 없어.</strong>위의 다음 작물 후보를 참고해서 작물을 추가해봐.</div>`}
+      </section>
+
+      <section class="section"><div class="section-head"><div><h2>조금만 더 심으면 되는 요리</h2><p>아직 부족한 음식만 농장 준비도 높은 순으로 정렬했어. 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 농작물 조건을 충족했어.</strong></div>`}</section>
     </div>`;
   }
 
@@ -857,14 +926,10 @@
           <div class="profit-allocation ${over ? 'over' : ''}"><span>배정 ${used.toLocaleString('ko-KR')} / ${total.toLocaleString('ko-KR')}칸</span><b>${esc(allocationText)}</b></div>
         </div>
 
-        <div class="card profit-summary-card">
-          <span class="profit-summary-kicker">ESTIMATED FARM REVENUE</span>
-          <h2>${best ? `${esc(best.food.name)} 기준` : '경작지와 가격을 입력해줘'}</h2>
-          <div class="profit-summary-money">${best ? compactGold(best.revenue.hour.avg) : '—'}</div>
-          <p>${best ? `현재 배정에서 평균 시간당 예상 수익이 가장 큰 음식. 최소 ${compactGold(best.revenue.hour.min)} ~ 최대 ${compactGold(best.revenue.hour.max)}.` : '경작지를 배정하면 제작량은 바로 계산되고, 가격이 연결되면 예상 수익도 자동으로 계산돼.'}</p>
-          <div class="profit-summary-metrics"><div><span>계산 주기</span><b>15분</b></div><div><span>가격 기준</span><b>${priceLabel}</b></div><div><span>수율 기준</span><b>최소·평균·최대</b></div></div>
-        </div>
+        ${profitRecommendationCard(total, used)}
       </section>
+
+      ${best ? `<div class="profit-best-strip"><span>현재 배정 최고 평균 수익</span><b>${esc(best.food.name)}</b><strong>${compactGold(best.revenue.hour.avg)} / 시간</strong><small>${priceLabel} · 최소 ${compactGold(best.revenue.hour.min)} ~ 최대 ${compactGold(best.revenue.hour.max)}</small></div>` : ''}
 
       <div class="note-strip profit-assumption">계산 가정 · 토마토/양파/마늘 경작지가 생산 병목이라고 보고 계산해. 감자·호박·고기·과일·구매 재료 등 다른 재료는 충분히 확보되어 있고, 가공/조리 대기시간은 없다고 가정한다. 실제 수익은 재료 수급과 플레이 방식에 따라 달라질 수 있어.</div>
 
@@ -1088,7 +1153,7 @@
         return `<div class="recipe-line">${iconHTML(ing)}<div><div class="rname">${esc(ing.name)}</div><div class="rsource">${esc(ing.source)}</div></div><div class="qty">×${n}</div></div>`;
       }).join('')}</div></div>` : ''}
       ${!gold ? `<div class="drawer-section"><h3>내 농장 관점</h3><div class="drawer-text">필요 농작물 · ${crops.length ? esc(crops.join(', ')) : '없음'}<br>${miss.length ? `아직 없는 작물 · <b>${esc(miss.join(', '))}</b>` : '<b>농작물 조건은 모두 충족했어.</b>'}</div></div><div class="drawer-section"><h3>실제 NPC 구매비</h3><div class="drawer-text"><b>${fmt(npcCashCostFood(food))}</b><br>직접 수급 재료의 가치는 넣지 않고 실제 NPC 구매가 필요한 재료만 합산.</div></div>` : ''}
-      <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p ? `기준 ${fmt(p.marketPrice)} · 나의 판매가 <b>${fmt(p.myPrice ?? p.marketPrice)}</b>` : '가격 파일에서 아직 이 음식 값을 읽지 못했어.'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map(h => `<div class="mini-row"><span>${esc(h.date || h.day + '일')}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
+      <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p ? `기준 ${fmt(p.marketPrice)} · 나의 판매가 <b>${fmt(p.myPrice ?? p.marketPrice)}</b>` : '가격 파일에서 아직 이 음식 값을 읽지 못했어.'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map((h,i) => `<div class="mini-row"><span>${esc(historyLabel(h,i))}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
       <p class="source-note">개인DB 정리 데이터와 업로드된 서버 리소스 이미지를 기준으로 표시.</p></div>`;
     $('#drawerBackdrop').hidden = false;
     $('#detailDrawer').classList.add('open');
