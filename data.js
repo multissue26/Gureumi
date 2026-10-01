@@ -1003,7 +1003,7 @@ window.DDING_DATA = {
       "id": "carrot",
       "name": "당근",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/carrot.png",
       "emoji": "🥕",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1020,7 +1020,7 @@ window.DDING_DATA = {
       "id": "potato",
       "name": "감자",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/potato.png",
       "emoji": "🥔",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1037,7 +1037,7 @@ window.DDING_DATA = {
       "id": "beetroot",
       "name": "비트",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/beetroot.png",
       "emoji": "🫜",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1054,7 +1054,7 @@ window.DDING_DATA = {
       "id": "pumpkin",
       "name": "호박",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "assets/ingredient/pumpkin-bundle.png",
       "emoji": "🎃",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1071,7 +1071,7 @@ window.DDING_DATA = {
       "id": "melon",
       "name": "수박",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/melon_slice.png",
       "emoji": "🍉",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1088,7 +1088,7 @@ window.DDING_DATA = {
       "id": "sweet_berries",
       "name": "달콤한 열매",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sweet_berries.png",
       "emoji": "🍓",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1105,7 +1105,7 @@ window.DDING_DATA = {
       "id": "wheat",
       "name": "밀",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/wheat.png",
       "emoji": "🌾",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1122,7 +1122,7 @@ window.DDING_DATA = {
       "id": "sugar_cane",
       "name": "사탕수수",
       "type": "바닐라 작물",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar_cane.png",
       "emoji": "🎋",
       "source": "바닐라 농사",
       "detail": "일반 마인크래프트 작물처럼 직접 재배해 수급합니다. 이 사이트의 내 농장에서 재배 여부를 체크해 두면 요리 준비도를 계산합니다.",
@@ -1139,7 +1139,7 @@ window.DDING_DATA = {
       "id": "sugar",
       "name": "설탕",
       "type": "바닐라 가공",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar.png",
       "emoji": "🧂",
       "source": "바닐라 제작",
       "detail": "사탕수수를 설탕으로 제작합니다.",
@@ -1168,7 +1168,7 @@ window.DDING_DATA = {
       "recipe": [],
       "npcPrice": null,
       "opportunityValue": 1,
-      "crop": null,
+      "crop": "pineapple",
       "tags": [
         "채집"
       ]
@@ -1184,7 +1184,7 @@ window.DDING_DATA = {
       "recipe": [],
       "npcPrice": null,
       "opportunityValue": 1,
-      "crop": null,
+      "crop": "coconut",
       "tags": [
         "채집"
       ]
@@ -1567,7 +1567,7 @@ window.DDING_DATA = {
       "id": "cooked_pork",
       "name": "익힌 돼지고기",
       "type": "야생 고기",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_porkchop.png",
       "emoji": "🥩",
       "source": "야생 돼지 사냥",
       "detail": "야생에 있는 돼지을 사냥해 해당 생고기를 얻고 익혀서 사용합니다. 특수 부위도 같은 동물 사냥에서 얻습니다.",
@@ -1615,7 +1615,7 @@ window.DDING_DATA = {
       "id": "cooked_mutton",
       "name": "익힌 양고기",
       "type": "야생 고기",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_mutton.png",
       "emoji": "🍖",
       "source": "야생 양 사냥",
       "detail": "야생에 있는 양을 사냥해 해당 생고기를 얻고 익혀서 사용합니다. 특수 부위도 같은 동물 사냥에서 얻습니다.",
@@ -1647,7 +1647,7 @@ window.DDING_DATA = {
       "id": "cooked_lamb_leg",
       "name": "익힌 양 다리살",
       "type": "야생 고기",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_mutton.png",
       "emoji": "🍖",
       "source": "야생 양 사냥",
       "detail": "야생에 있는 양을 사냥해 해당 생고기를 얻고 익혀서 사용합니다. 특수 부위도 같은 동물 사냥에서 얻습니다.",
@@ -1663,7 +1663,7 @@ window.DDING_DATA = {
       "id": "cooked_chicken",
       "name": "익힌 닭고기",
       "type": "야생 고기",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_chicken.png",
       "emoji": "🍗",
       "source": "야생 닭 사냥",
       "detail": "야생에 있는 닭을 사냥해 해당 생고기를 얻고 익혀서 사용합니다. 특수 부위도 같은 동물 사냥에서 얻습니다.",
@@ -1711,7 +1711,7 @@ window.DDING_DATA = {
       "id": "steak",
       "name": "스테이크",
       "type": "야생 고기",
-      "icon": null,
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_beef.png",
       "emoji": "🥩",
       "source": "야생 소 사냥",
       "detail": "야생에 있는 소을 사냥해 해당 생고기를 얻고 익혀서 사용합니다. 특수 부위도 같은 동물 사냥에서 얻습니다.",
@@ -1823,49 +1823,71 @@ window.DDING_DATA = {
       "id": "carrot",
       "name": "당근",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/carrot.png",
       "emoji": "🥕"
     },
     {
       "id": "potato",
       "name": "감자",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/potato.png",
       "emoji": "🥔"
     },
     {
       "id": "beetroot",
       "name": "비트",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/beetroot.png",
       "emoji": "🫜"
     },
     {
       "id": "pumpkin",
       "name": "호박",
       "group": "바닐라 작물",
+      "icon": "assets/ingredient/pumpkin-bundle.png",
       "emoji": "🎃"
     },
     {
       "id": "melon",
       "name": "수박",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/melon_slice.png",
       "emoji": "🍉"
     },
     {
       "id": "sweet_berries",
       "name": "달콤한 열매",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sweet_berries.png",
       "emoji": "🍓"
     },
     {
       "id": "wheat",
       "name": "밀",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/wheat.png",
       "emoji": "🌾"
     },
     {
       "id": "sugar_cane",
       "name": "사탕수수",
       "group": "바닐라 작물",
+      "icon": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar_cane.png",
       "emoji": "🎋"
+    },
+    {
+      "id": "pineapple",
+      "name": "파인애플",
+      "group": "과수원/채집",
+      "icon": "assets/ingredient/pineapple.png",
+      "emoji": "🍍"
+    },
+    {
+      "id": "coconut",
+      "name": "코코넛",
+      "group": "과수원/채집",
+      "icon": "assets/ingredient/coconut.png",
+      "emoji": "🥥"
     }
   ],
   "sources": {
@@ -7472,7 +7494,7 @@ window.DDING_RESOURCE_ITEMS = [{"id":"1","name":"1","nameVerified":false,"region
   // ─────────────────────────────────────────────────────────────
   addMany('크기 강화권|멤버 강화권|워프 강화권|호퍼 강화권|경작지 강화권|트로피 강화권', {
     region:'스폰', category:'마을', subcategory:'마을 업그레이드권',
-    acquire:'스폰 그린 마을회관의 소피에게서 구입합니다.', use:'마을의 해당 기능/한도를 업그레이드할 때 사용하는 아이템입니다.', sourceUrl:OFFICIAL.general
+    acquire:'스폰 그린 마을회관의 소피에게서 구입합니다.', use:'마을의 해당 기능/한도를 업그레이드할 때 사용하는 아이템입니다.', finalUse:'마을의 해당 기능/한도를 1단계 확장하는 데 사용하고 소모됩니다.', noviceTip:'강화권 이름이 곧 업그레이드 대상입니다. 필요한 기능을 올릴 때만 구매하면 됩니다.', sourceUrl:OFFICIAL.general
   });
   addMany('상자 정리 도구|상자 잠금 자물쇠|상자 잠금 해제 열쇠', {
     region:'스폰', category:'마을', subcategory:'상자 기능', acquire:'스폰 그린 마을회관의 소피에게서 구입합니다.', use:'마을 상자의 정리·잠금·잠금 해제 기능에 사용합니다.', sourceUrl:OFFICIAL.general
@@ -7926,6 +7948,7 @@ window.DDING_RESOURCE_ITEMS = [{"id":"1","name":"1","nameVerified":false,"region
     if (!item.trade && rows.length) item.trade = rows.map(x=>`${x.action==='buy'?'구매':x.action==='sell'?'판매':'교환'} ${x.value} · ${x.region}/${x.location}/${x.npc}`).join(' | ');
   });
 
+
   const coreData = window.DDING_DATA || {};
   (coreData.foods || []).forEach(f=>{
     if (f?.name && !byName.has(f.name)) addItem(f.name,{region:'세레니티',category:'요리',acquire:'세레니티 요리 제작 시설에서 제작합니다.',use:'골드 수급용 요리이며 다른 제작의 재료가 될 수 있습니다.',sourceUrl:OFFICIAL.crafting});
@@ -8029,11 +8052,34 @@ window.DDING_RESOURCE_ITEMS = [{"id":"1","name":"1","nameVerified":false,"region
     }
   });
 
+  // v0.10 · 공식 한글 아이템명 ↔ 리소스팩 모델 수동 연결 보정
+  // 영문 리소스 ID와 한글 공식명이 달라 자동 매칭이 안 되는 항목만 명시적으로 연결합니다.
+  const resourceNameOverrides = {
+    '크기 강화권':'town_size_upgrade',
+    '멤버 강화권':'town_member_upgrade',
+    '워프 강화권':'town_warp_upgrade',
+    '호퍼 강화권':'town_hopper_upgrade',
+    '경작지 강화권':'town_pot_upgrade',
+    '트로피 강화권':'town_trophy_upgrade'
+  };
+  Object.entries(resourceNameOverrides).forEach(([name,rid])=>{
+    const item=byName.get(name);
+    const r=resourceItems.find(x=>x.id===rid);
+    if(!item || !r) return;
+    item.icon=r.icon||item.icon||'';
+    item.resourceId=r.id;
+    item.resourceTexture=r.texture;
+    item.resourceVerified=true;
+    item.aliases=[...new Set([...(item.aliases||[]),rid,...(r.aliases||[])])];
+    item.tags=[...new Set([...(item.tags||[]),'리소스팩',rid])];
+  });
+
+
   window.DDING_GUIDE = {
     meta:{
-      version:'0.9.0',
+      version:'0.10.0',
       verified:'2026-10-02',
-      scope:'공식 위키/상점/제작/강화 데이터 + 2026-09-30 서버 리소스팩 + 아이템 시작→중간→최종 사용처 라이프사이클 추적',
+      scope:'공식 위키/상점/제작/강화 데이터 + 2026-09-30 서버 리소스팩 + 아이템 흐름 UI + 농장/채집 체크 확장 + 아이콘 매핑 보정',
       disclaimer:'리소스팩 루트 아이템 모델은 전수 편입했습니다. 단, 리소스팩에는 서버 표시명·획득처·사용처가 없는 항목이 있어 공식 문서로 확인되지 않는 정보는 식별명/미확인으로 명확히 표시합니다.',
       resourcePackVersion:'260930', resourceModelCount:resourceItems.length, resourceLinked, resourceAdded
     },

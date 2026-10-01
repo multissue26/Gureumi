@@ -8,7 +8,7 @@
   // 배포 과정에서 guide-data.js가 누락되어도 리소스팩 전수 목록 자체는 0개가 되지 않도록 안전망을 둔다.
   if (!Array.isArray(GUIDE.items)) GUIDE.items = [];
   if (!GUIDE.items.length && RESOURCE_ITEMS.length) {
-    GUIDE.meta = {...(GUIDE.meta||{}), version:'0.9.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
+    GUIDE.meta = {...(GUIDE.meta||{}), version:'0.10.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
     GUIDE.items = RESOURCE_ITEMS.map(r => ({
       name:r.name, aliases:r.aliases||[], region:r.region||'리소스팩', category:r.category||'기타/미분류',
       acquire:'리소스팩에서 존재가 확인된 항목입니다. 서버 내 정확한 획득처는 공식 설명 데이터가 로드되지 않아 확인이 필요합니다.',
@@ -372,7 +372,7 @@
     const missing = gold ? [] : missingCrops(food).map(cropName);
     const readyHelp = missing.length
       ? `추가 필요 · ${missing.join(', ')}`
-      : '필요 농작물 조건 충족';
+      : '필요 재배·채집 재료 조건 충족';
     return `<article class="card food-card" data-food="${food.slug}" data-gold="${gold ? '1' : '0'}">
       <div class="food-top">
         <div class="pixel-wrap"><img class="pixel" src="${image}" alt="${esc(name)}"></div>
@@ -381,7 +381,7 @@
       </div>
       <div class="recipe-row">${modeRecipe.map(([id, n]) => ingredientChip(id, n)).join('')}</div>
       <div class="card-lower">
-        ${!gold ? `<div class="readiness-wrap" tabindex="0" aria-label="${esc(readyHelp)}"><div class="readiness"><span style="width:${r}%"></span></div><div class="ready-caption"><span>농장 준비도</span><span>${r}%</span></div><div class="readiness-hover"><b>${r === 100 ? '준비 완료' : '더 심어야 할 작물'}</b><span>${esc(readyHelp)}</span></div></div>` : ''}
+        ${!gold ? `<div class="readiness-wrap" tabindex="0" aria-label="${esc(readyHelp)}"><div class="readiness"><span style="width:${r}%"></span></div><div class="ready-caption"><span>식재료 준비도</span><span>${r}%</span></div><div class="readiness-hover"><b>${r === 100 ? '준비 완료' : '더 확보해야 할 재료'}</b><span>${esc(readyHelp)}</span></div></div>` : ''}
         <div class="food-actions"><button class="detail-btn">상세 보기</button>${gold ? `<button class="gold-toggle normal-mode">일반 보기</button>` : `<button class="gold-toggle">황금 보기</button>`}</div>
       </div>
     </article>`;
@@ -791,12 +791,12 @@
     $('#page-farm').innerHTML = `<div class="content-shell">
       <div class="farm-layout">
         <div class="card farm-card">
-          <div class="section-head" style="margin:0 0 18px"><div><h2>현재 농장</h2><p>체크한 작물은 브라우저에 바로 저장돼.</p></div><button id="clearFarm" class="btn ghost">전체 해제</button></div>
+          <div class="section-head" style="margin:0 0 18px"><div><h2>현재 농장·채집</h2><p>체크한 재배·채집 재료는 브라우저에 바로 저장돼.</p></div><button id="clearFarm" class="btn ghost">전체 해제</button></div>
           <div class="crop-groups">${groups.map(g => `<div class="crop-group"><h3>${esc(g)}</h3>${D.crops.filter(c => c.group === g).map(c => `<label class="crop-check"><input type="checkbox" data-crop="${c.id}" ${state.farm.has(c.id) ? 'checked' : ''}>${c.icon ? `<img src="${c.icon}" alt="">` : `<span style="font-size:20px">${esc(c.emoji || '·')}</span>`}<span>${esc(c.name)}</span></label>`).join('')}</div>`).join('')}</div>
           <div class="note-strip" style="margin-top:16px">세레니티 전용 작물은 기존 정리 기준 성장 15분. 드롭 범위 등은 게임 업데이트에 따라 달라질 수 있어.</div>
         </div>
         <div class="card farm-recommend">
-          <div class="section-head" style="margin:0 0 10px"><div><h2>다음 작물 후보</h2><p>1종 추가 시 완성되는 요리 수 기준</p></div></div>
+          <div class="section-head" style="margin:0 0 10px"><div><h2>다음 확보 후보</h2><p>재배·채집 재료 1종 추가 시 완성되는 요리 수 기준</p></div></div>
           ${unlocks.length ? unlocks.map((x,i) => {
             const c = D.crops.find(c => c.id === x.id);
             return `<div class="recommend-item">${c.icon ? `<img src="${c.icon}" alt="">` : `<span style="font-size:25px">${esc(c.emoji || '·')}</span>`}<div><div class="name">${String(i + 1).padStart(2,'0')} · ${esc(c.name)}</div><div class="why">관련 ${x.improves}종 · 즉시 완성 ${x.unlock}종</div></div><div class="score">+${x.unlock}</div></div>`;
@@ -804,11 +804,11 @@
         </div>
       </div>
 
-      <section class="section farm-ready-section"><div class="section-head"><div><h2>지금 만들 수 있는 요리</h2><p>내 농장에 체크한 작물만 대조해서 농작물 조건이 100% 충족된 음식이야.</p></div><div class="reference-status">${readyFoods.length} / ${D.foods.length}</div></div>
-        ${readyFoods.length ? `<div class="food-grid">${readyFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>아직 농작물 조건이 완성된 요리가 없어.</strong>위의 다음 작물 후보를 참고해서 작물을 추가해봐.</div>`}
+      <section class="section farm-ready-section"><div class="section-head"><div><h2>지금 만들 수 있는 요리</h2><p>내 농장·채집 목록에 체크한 재료를 대조해서 재배·채집 조건이 100% 충족된 음식이야.</p></div><div class="reference-status">${readyFoods.length} / ${D.foods.length}</div></div>
+        ${readyFoods.length ? `<div class="food-grid">${readyFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>아직 재배·채집 재료 조건이 완성된 요리가 없어.</strong>위의 다음 확보 후보를 참고해서 작물을 추가해봐.</div>`}
       </section>
 
-      <section class="section"><div class="section-head"><div><h2>조금만 더 심으면 되는 요리</h2><p>아직 부족한 음식만 농장 준비도 높은 순으로 정렬했어. 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 농작물 조건을 충족했어.</strong></div>`}</section>
+      <section class="section"><div class="section-head"><div><h2>조금만 더 확보하면 되는 요리</h2><p>아직 부족한 음식만 식재료 준비도 높은 순으로 정렬했어. 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 재배·채집 재료 조건을 충족했어.</strong></div>`}</section>
     </div>`;
   }
 
@@ -1084,7 +1084,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────
-  // v0.9 · 아이템 시작 → 중간 → 최종 사용처 추적
+  // v0.10 · 아이템 획득 → 사용 → 최종 목적 흐름 추적
   // 공개 제작식은 자동으로 역방향 인덱스를 만들고, 공식 문서의 개념 연결은 usedIn/lifecyclePaths로 보강한다.
   let _guideFlowCache = null;
   function guideFlowIndex() {
@@ -1188,24 +1188,67 @@
   }
 
   function guideLifecyclePanel(item, compact=false) {
-    const bases=guideBaseSources(item);
     const uses=guideDirectUses(item);
-    const paths=guideEndPaths(item);
-    const examples=[...(item.usageExamples||[])];
+    const rawPaths=guideEndPaths(item);
     const recipe=item.recipe||[];
+    const bases=guideBaseSources(item);
     const startLabel=recipe.length && bases.length
       ? bases.slice(0,4).map(x=>x.name).join(' · ') + (bases.length>4?` 외 ${bases.length-4}종`:'')
       : (item.acquire||'획득처 확인 필요');
-    uses.slice(0,10).forEach(u=>examples.push(`${u.name}${u.qty!=null?` 제작에 ×${u.qty}`:' 제작/진행에 사용'}`));
-    const exampleUniq=[...new Set(examples)].slice(0,12);
-    const pathHtml=paths.slice(0,compact?3:6).map((path,pi)=>`<div class="guide-flow-path"><span class="guide-flow-label">경로 ${pi+1}</span><div class="guide-flow-nodes">${path.map((n,i)=>{const linked=guideByName(n); return `${i?'<i>→</i>':''}${linked?`<button type="button" data-guide-open="${esc(linked.name)}">${esc(n)}</button>`:`<span class="terminal">${esc(n)}</span>`}`}).join('')}</div></div>`).join('');
+
+    const normalizePath=(path)=>{
+      let p=(path||[]).map(String).filter(Boolean);
+      // 수동 경로가 "커먼/레어 등급 결정"처럼 범주명으로 적힌 경우 현재 아이템명으로 바꿔 읽기 쉽게 만든다.
+      if(item.subcategory?.includes('커먼')) p=p.map(x=>x==='커먼 등급 결정'?item.name:x);
+      if(item.subcategory?.includes('레어')) p=p.map(x=>x==='레어 등급 결정'?item.name:x);
+      if(!p.some(x=>x===item.name)) {
+        if(p.length) p=[p[0],item.name,...p.slice(1)];
+        else p=[item.name];
+      }
+      // 자동 경로는 현재 아이템부터 시작하므로 실제 획득 시작점을 앞에 붙인다.
+      if(p[0]===item.name && startLabel && startLabel!==item.name) p=[startLabel,...p];
+      return p;
+    };
+
+    let paths=rawPaths.map(normalizePath);
+    if(!paths.length) paths=[[startLabel,item.name,guideFinalLabel(item)].filter(Boolean)];
+    // 같은 표시 경로 제거
+    const seen=new Set();
+    paths=paths.filter(p=>{const k=p.join('>'); if(seen.has(k)) return false; seen.add(k); return true;});
+
+    const primary=paths[0];
+    const secondary=paths.slice(1,compact?3:6);
+    const stepType=(name,idx,path)=>{
+      if(name===item.name) return '현재 아이템';
+      if(idx===0) return '획득 / 시작';
+      if(idx===path.length-1) return '최종 목적';
+      return '다음 단계';
+    };
+    const stepNode=(name,idx,path)=>{
+      const linked=guideByName(name);
+      const current=name===item.name;
+      const cls=`guide-journey-step${current?' current':''}${idx===path.length-1?' terminal':''}`;
+      const body=linked && !current
+        ? `<button type="button" data-guide-open="${esc(linked.name)}"><b>${esc(name)}</b><small>눌러서 상세 보기</small></button>`
+        : `<div><b>${esc(name)}</b>${current?'<small>지금 보고 있는 아이템</small>':''}</div>`;
+      return `<div class="${cls}"><em>${idx+1}</em><span>${stepType(name,idx,path)}</span>${body}</div>`;
+    };
+    const primaryHtml=primary.map((n,i)=>`${i?'<div class="guide-journey-arrow" aria-hidden="true">→</div>':''}${stepNode(n,i,primary)}`).join('');
+    const secondaryHtml=secondary.map((path,pi)=>{
+      const condensed=path.map((n,i)=>{const linked=guideByName(n); return linked?`<button type="button" data-guide-open="${esc(linked.name)}">${esc(n)}</button>`:`<span>${esc(n)}</span>`}).join('<i>→</i>');
+      return `<div class="guide-route-row"><strong>경로 ${pi+2}</strong><div>${condensed}</div></div>`;
+    }).join('');
+
+    const examples=[...(item.usageExamples||[])];
+    uses.slice(0,8).forEach(u=>examples.push(`${u.name}${u.qty!=null?` 제작에 ×${u.qty}`:' 제작/진행에 사용'}`));
+    const exampleUniq=[...new Set(examples)].slice(0,8);
+
     return `<section class="guide-lifecycle ${compact?'compact':''}">
-      <div class="guide-lifecycle-head"><div><span>START → END</span><h3>이 아이템, 어디서 시작해서 결국 어디에 써?</h3></div><strong>${uses.length?`${uses.length}개 연결 확인`:'직접 연결 없음'}</strong></div>
-      <div class="guide-life-summary"><article><span>${recipe.length?'가장 아래 시작 재료':'획득 시작'}</span><b>${esc(startLabel)}</b></article><article><span>현재</span><b>${esc(item.name)}</b></article><article><span>끝 / 목적</span><b>${esc(guideFinalLabel(item))}</b></article></div>
-      ${pathHtml?`<div class="guide-flow-list">${pathHtml}</div>`:''}
-      ${exampleUniq.length?`<div class="guide-use-examples"><b>실제 사용 예시</b><div>${exampleUniq.map(x=>`<span>${esc(x)}</span>`).join('')}</div></div>`:''}
-      ${bases.length&&!compact?`<div class="guide-origin-box"><b>가장 아래 원재료/시작점</b><div>${bases.map(x=>x.item?`<button type="button" data-guide-open="${esc(x.item.name)}">${esc(x.name)}</button>`:`<span>${esc(x.name)}</span>`).join('')}</div></div>`:''}
-      <div class="guide-life-conclusion"><b>그래서 결국 뭐 하는 아이템이야?</b><p>${esc(guideFinalLabel(item))}</p></div>
+      <div class="guide-lifecycle-head"><div><span>ITEM FLOW</span><h3>어디서 얻고, 어디에 쓰는지</h3><p>같은 설명을 반복하지 않고 실제 흐름만 순서대로 정리했어.</p></div></div>
+      <div class="guide-journey" role="list">${primaryHtml}</div>
+      ${secondaryHtml?`<div class="guide-route-table"><div class="guide-route-title"><b>다른 사용 경로</b><span>여러 곳에 쓰이는 아이템만 표시</span></div>${secondaryHtml}</div>`:''}
+      ${exampleUniq.length&&!compact?`<div class="guide-use-examples"><b>실제 사용 예시</b><div>${exampleUniq.map(x=>`<span>${esc(x)}</span>`).join('')}</div></div>`:''}
+      <div class="guide-life-conclusion"><b>한줄 결론</b><p>${esc(guideFinalLabel(item))}</p></div>
       ${item.noviceTip?`<div class="guide-life-tip"><b>초뉴비 팁</b><p>${esc(item.noviceTip)}</p></div>`:''}
     </section>`;
   }

@@ -1,0 +1,23 @@
+띵타 v0.10.0 검증 보고서
+
+[코드]
+- data.js node --check: PASS
+- app.js node --check: PASS
+
+[내 농장]
+- 파인애플: crops 등록 + ingredients.pineapple.crop="pineapple"
+- 코코넛: crops 등록 + ingredients.coconut.crop="coconut"
+- 그룹: 과수원/채집
+
+[아이콘]
+- 바닐라 작물: 당근/감자/비트/수박/달콤한 열매/밀/사탕수수 Minecraft 1.21.4 텍스처 URL 연결
+- 호박: 서버 리소스팩 픽셀 아이콘 사용
+- 기본 익힌 고기: 돼지고기/양고기/닭고기/스테이크 Minecraft 1.21.4 텍스처 URL 연결
+- 마을 강화권 6종: town_*_upgrade 리소스 모델과 한글 공식명 수동 매핑
+
+[아이템 흐름 UI]
+- 기존 획득/현재/끝 3박스 + 경로 반복 구조 제거
+- 대표 경로는 번호 타임라인 1개로 표시
+- 분기 경로가 있을 때만 별도 compact route table 표시
+- 한줄 결론/초뉴비 팁 유지
+- 모바일에서는 타임라인을 세로형으로 자동 전환
