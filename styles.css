@@ -435,3 +435,5 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 
 @media(max-width:1180px){.profit-setup-grid{grid-template-columns:1fr}.profit-recommend-card{min-height:0}}
 @media(max-width:720px){.profit-recommend-card{padding:15px}.profit-recommend-table{overflow:auto}.profit-recommend-row{min-width:610px}.profit-best-strip{grid-template-columns:1fr auto}.profit-best-strip>strong,.profit-best-strip>small{text-align:right}.profit-best-strip>small{grid-column:1/-1}.readiness-hover{max-width:min(260px,75vw)}}
+
+/* ===== v0.6.2 sugar cube data fix (no visual CSS changes) ===== */

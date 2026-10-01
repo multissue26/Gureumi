@@ -1449,10 +1449,10 @@ window.DDING_DATA = {
       "icon": "assets/ingredient/sugar-cube.png",
       "emoji": "⬜",
       "source": "농작물 가공 시설",
-      "detail": "설탕을 농작물 가공 시설에서 가공합니다.",
+      "detail": "사탕수수 64개를 농작물 가공 시설에서 설탕 큐브로 가공합니다.",
       "recipe": [
         [
-          "sugar",
+          "sugar_cane",
           64
         ]
       ],
