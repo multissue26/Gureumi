@@ -1794,21 +1794,30 @@ window.DDING_DATA = {
       "name": "토마토",
       "group": "세레니티 전용",
       "icon": "assets/crop/tomato.png",
-      "emoji": "🍅"
+      "emoji": "🍅",
+      "growthMinutes": 15,
+      "yieldMin": 1,
+      "yieldMax": 3
     },
     {
       "id": "onion",
       "name": "양파",
       "group": "세레니티 전용",
       "icon": "assets/crop/onion.png",
-      "emoji": "🧅"
+      "emoji": "🧅",
+      "growthMinutes": 15,
+      "yieldMin": 1,
+      "yieldMax": 2
     },
     {
       "id": "garlic",
       "name": "마늘",
       "group": "세레니티 전용",
       "icon": "assets/crop/garlic.png",
-      "emoji": "🧄"
+      "emoji": "🧄",
+      "growthMinutes": 15,
+      "yieldMin": 1,
+      "yieldMax": 4
     },
     {
       "id": "carrot",

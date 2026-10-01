@@ -9,6 +9,22 @@
   const LEGACY_CACHE_KEY = 'ddingLegacyCacheV1';
   const PRICE_API = 'https://dding-price-api.hansuyeon191-6fe.workers.dev';
   const PRICE_CHANGE_DAYS = [1,3,6,9,12,15,18,21,24,27,30];
+  const PROFIT_CROP_IDS = ['tomato','onion','garlic'];
+  const PROFIT_FARM_KEY = 'ddingProfitFarmV1';
+
+  function loadProfitFarm() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PROFIT_FARM_KEY) || '{}');
+      return {
+        total: Math.max(0, Math.floor(Number(raw.total) || 0)),
+        tomato: Math.max(0, Math.floor(Number(raw.tomato) || 0)),
+        onion: Math.max(0, Math.floor(Number(raw.onion) || 0)),
+        garlic: Math.max(0, Math.floor(Number(raw.garlic) || 0)),
+      };
+    } catch (_) {
+      return {total:0,tomato:0,onion:0,garlic:0};
+    }
+  }
 
   const state = {
     page: 'dashboard',
@@ -28,6 +44,10 @@
     cloudError: '',
     uiCycleKey: '',
     farm: new Set(JSON.parse(localStorage.getItem('ddingFarm') || '[]')),
+    profitFarm: loadProfitFarm(),
+    profitSort: localStorage.getItem('ddingProfitSort') || 'avgRevenue',
+    profitFilter: localStorage.getItem('ddingProfitFilter') || 'all',
+    profitPriceMode: localStorage.getItem('ddingProfitPriceMode') || 'mine',
     legacy: null,
     legacyLoading: false,
     legacyError: '',
@@ -47,6 +67,7 @@
     dashboard: ['OVERVIEW', '홈'],
     cooking: ['COOKING INDEX', '요리 제작법'],
     farm: ['FARM PLANNER', '내 농장'],
+    profit: ['FARM REVENUE', '예상 수익'],
     ingredients: ['INGREDIENT INDEX', '재료 도감'],
     finder: ['TRADE FINDER', '아이템 찾기'],
     reference: ['REFERENCE ARCHIVE', '원본 DB 탐색'],
@@ -84,7 +105,8 @@
 
   function iconHTML(item, cls = '') {
     if (item?.icon) {
-      return `<img class="${cls}" src="${esc(item.icon)}" alt="${esc(item.name)}" onerror="this.outerHTML='<span class=\'fallback-icon\'>${esc(item.emoji || '□')}</span>'">`;
+      const fallbackClass = cls.includes('big') ? 'big-fallback' : 'fallback-icon';
+      return `<img class="${cls}" src="${esc(item.icon)}" alt="${esc(item.name)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="${fallbackClass}" hidden>${esc(item.emoji || '□')}</span>`;
     }
     return `<span class="${cls.includes('big') ? 'big-fallback' : 'fallback-icon'}">${esc(item?.emoji || '□')}</span>`;
   }
@@ -156,6 +178,102 @@
 
   function npcCashCostFood(food) {
     return food.recipe.reduce((sum, [id, n]) => sum + npcCashCostIngredient(id, n), 0);
+  }
+
+  function profitCropMeta(id) {
+    const crop = D.crops.find(c => c.id === id) || {id,name:id,emoji:'·'};
+    const min = Number(crop.yieldMin ?? 0);
+    const max = Number(crop.yieldMax ?? min);
+    return {
+      ...crop,
+      growthMinutes: Math.max(1, Number(crop.growthMinutes || 15)),
+      yieldMin: min,
+      yieldAvg: (min + max) / 2,
+      yieldMax: max,
+    };
+  }
+
+  function addProfitCropRequirement(id, qty, out, stack = new Set()) {
+    if (PROFIT_CROP_IDS.includes(id)) {
+      out[id] = (out[id] || 0) + qty;
+      return;
+    }
+    if (stack.has(id)) return;
+    const ing = resolveIngredient(id);
+    if (!ing?.recipe?.length) return;
+    const next = new Set(stack).add(id);
+    for (const [child, n] of ing.recipe) addProfitCropRequirement(child, qty * n, out, next);
+  }
+
+  function profitCropRequirements(food) {
+    const out = {};
+    for (const [id, qty] of (food.recipe || [])) addProfitCropRequirement(id, qty, out, new Set());
+    return out;
+  }
+
+  function profitSalePrice(food) {
+    const p = getPrice(food);
+    if (!p) return null;
+    if (state.profitPriceMode === 'market') return p.marketPrice ?? p.myPrice ?? null;
+    return p.myPrice ?? p.marketPrice ?? null;
+  }
+
+  function cropUnitsForMinutes(cropId, minutes, scenario = 'avg') {
+    const meta = profitCropMeta(cropId);
+    const plots = Number(state.profitFarm[cropId] || 0);
+    const yieldValue = scenario === 'min' ? meta.yieldMin : scenario === 'max' ? meta.yieldMax : meta.yieldAvg;
+    return plots * yieldValue * (minutes / meta.growthMinutes);
+  }
+
+  function foodUnitsForMinutes(requirements, minutes, scenario = 'avg') {
+    const entries = Object.entries(requirements).filter(([, qty]) => qty > 0);
+    if (!entries.length) return 0;
+    return Math.min(...entries.map(([id, qty]) => cropUnitsForMinutes(id, minutes, scenario) / qty));
+  }
+
+  function profitFoodStats(food) {
+    const requirements = profitCropRequirements(food);
+    const periods = {minute:1, quarter:15, hour:60};
+    const units = {};
+    for (const [period, minutes] of Object.entries(periods)) {
+      units[period] = {
+        min: foodUnitsForMinutes(requirements, minutes, 'min'),
+        avg: foodUnitsForMinutes(requirements, minutes, 'avg'),
+        max: foodUnitsForMinutes(requirements, minutes, 'max'),
+      };
+    }
+    const avgRatios = Object.entries(requirements).map(([id, qty]) => ({
+      id,
+      ratio: cropUnitsForMinutes(id, 60, 'avg') / qty,
+    })).sort((a,b) => a.ratio - b.ratio);
+    const bottleneck = avgRatios[0]?.id || '';
+    const price = profitSalePrice(food);
+    const npcCost = npcCashCostFood(food);
+    const revenue = {};
+    for (const period of Object.keys(periods)) {
+      revenue[period] = price == null ? null : {
+        min: units[period].min * price,
+        avg: units[period].avg * price,
+        max: units[period].max * price,
+      };
+    }
+    return {food, requirements, units, revenue, price, npcCost, bottleneck};
+  }
+
+  function compactNumber(n, digits = 2) {
+    if (!Number.isFinite(Number(n))) return '—';
+    const v = Number(n);
+    const maxDigits = Math.abs(v) >= 100 ? 1 : digits;
+    return v.toLocaleString('ko-KR', {maximumFractionDigits:maxDigits});
+  }
+
+  function compactGold(n) {
+    if (!Number.isFinite(Number(n))) return '—';
+    return `${Math.round(Number(n)).toLocaleString('ko-KR')} G`;
+  }
+
+  function saveProfitFarm() {
+    localStorage.setItem(PROFIT_FARM_KEY, JSON.stringify(state.profitFarm));
   }
 
   function ingredientChip(id, qty) {
@@ -626,6 +744,151 @@
     </div>`;
   }
 
+  function profitCropCard(cropId) {
+    const meta = profitCropMeta(cropId);
+    const plots = Number(state.profitFarm[cropId] || 0);
+    const periods = [
+      ['15분',15],
+      ['분당',1],
+      ['시간당',60],
+    ];
+    return `<article class="card profit-crop-card">
+      <div class="profit-crop-head">
+        <div class="profit-crop-icon">${meta.icon ? `<img src="${esc(meta.icon)}" alt="">` : `<span>${esc(meta.emoji || '·')}</span>`}</div>
+        <div><h3>${esc(meta.name)}</h3><p>${plots.toLocaleString('ko-KR')}칸 · 성장 ${meta.growthMinutes}분 · 수율 ${compactNumber(meta.yieldMin,1)}~${compactNumber(meta.yieldMax,1)}개</p></div>
+      </div>
+      <div class="profit-crop-periods">${periods.map(([label,minutes]) => {
+        const min = cropUnitsForMinutes(cropId, minutes, 'min');
+        const avg = cropUnitsForMinutes(cropId, minutes, 'avg');
+        const max = cropUnitsForMinutes(cropId, minutes, 'max');
+        return `<div><span>${label}</span><b>${compactNumber(avg)}개</b><small>${compactNumber(min)} ~ ${compactNumber(max)}개</small></div>`;
+      }).join('')}</div>
+    </article>`;
+  }
+
+  function profitRequirementChips(stats) {
+    return Object.entries(stats.requirements).map(([id, qty]) => {
+      const c = profitCropMeta(id);
+      return `<span class="profit-req-chip ${stats.bottleneck === id ? 'bottleneck' : ''}">${c.icon ? `<img src="${esc(c.icon)}" alt="">` : `<span>${esc(c.emoji || '·')}</span>`}<b>${esc(c.name)}</b><em>×${compactNumber(qty,1)}</em></span>`;
+    }).join('');
+  }
+
+  function profitPeriodCard(stats, key, label) {
+    const u = stats.units[key];
+    const r = stats.revenue[key];
+    return `<div class="profit-period-card">
+      <span class="profit-period-label">${label}</span>
+      ${r ? `<b class="profit-period-money">${compactGold(r.avg)}</b><small class="profit-period-range">최소 ${compactGold(r.min)} · 최대 ${compactGold(r.max)}</small>` : `<b class="profit-period-money muted">가격 대기</b><small class="profit-period-range">가격 연동 후 수익 자동 계산</small>`}
+      <div class="profit-period-output"><span>기대 제작량</span><strong>${compactNumber(u.avg)}개</strong></div>
+      <div class="profit-period-output range"><span>수율 범위</span><strong>${compactNumber(u.min)} ~ ${compactNumber(u.max)}개</strong></div>
+    </div>`;
+  }
+
+  function profitFoodCard(stats) {
+    const {food, price, npcCost, bottleneck} = stats;
+    const avgHour = stats.units.hour.avg;
+    const avgRevenueHour = stats.revenue.hour?.avg ?? null;
+    const knownNetHour = avgRevenueHour == null ? null : avgHour * (price - npcCost);
+    const bottleneckName = bottleneck ? profitCropMeta(bottleneck).name : '—';
+    return `<article class="card profit-food-card">
+      <div class="profit-food-head">
+        <div class="profit-food-title">
+          <div class="profit-food-icon"><img src="${esc(food.image)}" alt="${esc(food.name)}"></div>
+          <div><span class="grade ${esc(food.grade)}">${esc(gradeText(food.grade))}</span><h3>${esc(food.name)}</h3><p>평균 병목 · <b>${esc(bottleneckName)}</b></p></div>
+        </div>
+        <div class="profit-food-price"><span>${state.profitPriceMode === 'market' ? '시장 기준가' : '나의 판매가'}</span><b>${price == null ? '—' : compactGold(price)}</b></div>
+      </div>
+      <div class="profit-requirements"><span class="profit-mini-label">1개 제작에 필요한 핵심 작물</span><div>${profitRequirementChips(stats)}</div></div>
+      <div class="profit-period-grid">
+        ${profitPeriodCard(stats,'quarter','15분')}
+        ${profitPeriodCard(stats,'minute','분당')}
+        ${profitPeriodCard(stats,'hour','시간당')}
+      </div>
+      <div class="profit-food-foot">
+        <span>15분 평균 기준 즉시 제작 가능 <b>${Math.floor(stats.units.quarter.avg).toLocaleString('ko-KR')}개</b></span>
+        <span>확인 가능한 NPC 구매비/개 <b>${compactGold(npcCost)}</b>${knownNetHour == null ? '' : ` · 평균 시간당 순수익 참고 <b>${compactGold(knownNetHour)}</b>`}</span>
+      </div>
+    </article>`;
+  }
+
+  function renderProfit() {
+    const used = PROFIT_CROP_IDS.reduce((sum,id) => sum + Number(state.profitFarm[id] || 0), 0);
+    const total = Number(state.profitFarm.total || 0);
+    const remaining = total - used;
+    const over = total > 0 && remaining < 0;
+    const stats = D.foods.map(profitFoodStats).filter(x => Object.keys(x.requirements).length);
+    const filtered = stats.filter(x => {
+      const ids = Object.keys(x.requirements);
+      if (state.profitFilter === 'all') return true;
+      if (state.profitFilter === 'mixed') return ids.length > 1;
+      return ids.includes(state.profitFilter);
+    });
+    const sortValue = x => {
+      if (state.profitSort === 'minRevenue') return x.revenue.hour?.min ?? -1;
+      if (state.profitSort === 'maxRevenue') return x.revenue.hour?.max ?? -1;
+      if (state.profitSort === 'avgUnits') return x.units.hour.avg;
+      return x.revenue.hour?.avg ?? -1;
+    };
+    filtered.sort((a,b) => state.profitSort === 'name'
+      ? a.food.name.localeCompare(b.food.name,'ko')
+      : sortValue(b) - sortValue(a) || a.food.name.localeCompare(b.food.name,'ko'));
+    const priced = stats.filter(x => x.revenue.hour?.avg != null && x.units.hour.avg > 0).sort((a,b) => b.revenue.hour.avg - a.revenue.hour.avg);
+    const best = priced[0] || null;
+    const priceLabel = state.profitPriceMode === 'market' ? '시장 기준가' : '나의 판매가';
+    const allocationText = total <= 0
+      ? '전체 경작지 수를 입력하면 남은 칸을 계산해.'
+      : over
+        ? `${Math.abs(remaining).toLocaleString('ko-KR')}칸 초과 배정됐어. 계산은 입력값 기준이야.`
+        : remaining === 0
+          ? '모든 경작지를 배정했어.'
+          : `${remaining.toLocaleString('ko-KR')}칸이 아직 미배정이야.`;
+
+    $('#page-profit').innerHTML = `<div class="content-shell profit-page">
+      <section class="profit-setup-grid">
+        <div class="card profit-input-card">
+          <div class="section-head" style="margin:0 0 16px"><div><h2>경작지 설정</h2><p>입력값은 이 브라우저에 자동 저장돼.</p></div><button id="profitReset" class="btn ghost">초기화</button></div>
+          <div class="profit-input-list">
+            <label class="profit-input-row total"><span><b>현재 전체 경작지</b><small>배정 가능한 총 칸 수</small></span><input data-profit-field="total" type="number" min="0" step="1" value="${total}"><em>칸</em></label>
+            ${PROFIT_CROP_IDS.map(id => {
+              const c = profitCropMeta(id);
+              return `<label class="profit-input-row"><span>${c.icon ? `<img src="${esc(c.icon)}" alt="">` : `<i>${esc(c.emoji || '·')}</i>`}<span><b>${esc(c.name)}</b><small>${c.growthMinutes}분 · 평균 수율 ${compactNumber(c.yieldAvg,1)}개</small></span></span><input data-profit-field="${id}" type="number" min="0" step="1" value="${Number(state.profitFarm[id] || 0)}"><em>칸</em></label>`;
+            }).join('')}
+          </div>
+          <div class="profit-allocation ${over ? 'over' : ''}"><span>배정 ${used.toLocaleString('ko-KR')} / ${total.toLocaleString('ko-KR')}칸</span><b>${esc(allocationText)}</b></div>
+        </div>
+
+        <div class="card profit-summary-card">
+          <span class="profit-summary-kicker">ESTIMATED FARM REVENUE</span>
+          <h2>${best ? `${esc(best.food.name)} 기준` : '경작지와 가격을 입력해줘'}</h2>
+          <div class="profit-summary-money">${best ? compactGold(best.revenue.hour.avg) : '—'}</div>
+          <p>${best ? `현재 배정에서 평균 시간당 예상 수익이 가장 큰 음식. 최소 ${compactGold(best.revenue.hour.min)} ~ 최대 ${compactGold(best.revenue.hour.max)}.` : '경작지를 배정하면 제작량은 바로 계산되고, 가격이 연결되면 예상 수익도 자동으로 계산돼.'}</p>
+          <div class="profit-summary-metrics"><div><span>계산 주기</span><b>15분</b></div><div><span>가격 기준</span><b>${priceLabel}</b></div><div><span>수율 기준</span><b>최소·평균·최대</b></div></div>
+        </div>
+      </section>
+
+      <div class="note-strip profit-assumption">계산 가정 · 토마토/양파/마늘 경작지가 생산 병목이라고 보고 계산해. 감자·호박·고기·과일·구매 재료 등 다른 재료는 충분히 확보되어 있고, 가공/조리 대기시간은 없다고 가정한다. 실제 수익은 재료 수급과 플레이 방식에 따라 달라질 수 있어.</div>
+
+      <section class="section">
+        <div class="section-head"><div><h2>작물 생산량</h2><p>각 경작지의 드롭 범위에서 평균값을 계산하고, 최소·최대도 함께 보여줘.</p></div></div>
+        <div class="profit-crop-grid">${PROFIT_CROP_IDS.map(profitCropCard).join('')}</div>
+      </section>
+
+      <section class="section">
+        <div class="section-head profit-food-section-head"><div><h2>음식별 예상 수익</h2><p>여러 핵심 작물이 필요한 음식은 가장 부족한 작물을 자동으로 병목 처리해.</p></div>
+          <div class="profit-controls">
+            <div class="pillbar">
+              ${[['all','전체'],['tomato','토마토'],['onion','양파'],['garlic','마늘'],['mixed','복합']].map(([id,label]) => `<button class="pill ${state.profitFilter === id ? 'active' : ''}" data-profit-filter="${id}">${label}</button>`).join('')}
+            </div>
+            <label class="profit-select"><span>가격</span><select id="profitPriceMode"><option value="mine" ${state.profitPriceMode === 'mine' ? 'selected' : ''}>나의 판매가</option><option value="market" ${state.profitPriceMode === 'market' ? 'selected' : ''}>시장 기준가</option></select></label>
+            <label class="profit-select"><span>정렬</span><select id="profitSort"><option value="avgRevenue" ${state.profitSort === 'avgRevenue' ? 'selected' : ''}>평균 시간당 수익</option><option value="minRevenue" ${state.profitSort === 'minRevenue' ? 'selected' : ''}>최소 시간당 수익</option><option value="maxRevenue" ${state.profitSort === 'maxRevenue' ? 'selected' : ''}>최대 시간당 수익</option><option value="avgUnits" ${state.profitSort === 'avgUnits' ? 'selected' : ''}>시간당 제작량</option><option value="name" ${state.profitSort === 'name' ? 'selected' : ''}>이름순</option></select></label>
+          </div>
+        </div>
+        <div class="profit-food-list">${filtered.map(profitFoodCard).join('')}</div>
+        <p class="source-note">수익 = 해당 기간의 기대 제작량 × 선택한 현재 판매가. 최소/최대 수익은 작물 드롭 수율 범위만 반영하며 가격 변동폭은 섞지 않아.</p>
+      </section>
+    </div>`;
+  }
+
   function renderIngredients() {
     const q = state.query.trim().toLowerCase();
     const arr = Object.values(D.ingredients).filter(i => !q || (i.name + ' ' + i.type + ' ' + i.source + ' ' + i.detail).toLowerCase().includes(q));
@@ -842,6 +1105,7 @@
     renderDashboard();
     renderCooking();
     renderFarm();
+    renderProfit();
     renderIngredients();
     renderFinder();
     renderReference();
@@ -853,6 +1117,7 @@
     if (state.page === 'dashboard') renderDashboard();
     if (state.page === 'cooking') renderCooking();
     if (state.page === 'farm') renderFarm();
+    if (state.page === 'profit') renderProfit();
     if (state.page === 'ingredients') renderIngredients();
     if (state.page === 'finder') renderFinder();
     if (state.page === 'reference') renderReference();
@@ -1249,6 +1514,8 @@
     if (sub) { state.legacySub=sub.dataset.legacySub; renderReference(); return; }
     const finderFilter = e.target.closest('[data-finder-filter]');
     if (finderFilter) { state.finderFilter=finderFilter.dataset.finderFilter; localStorage.setItem('ddingFinderFilter',state.finderFilter); renderFinder(); return; }
+    const profitFilter = e.target.closest('[data-profit-filter]');
+    if (profitFilter) { state.profitFilter=profitFilter.dataset.profitFilter; localStorage.setItem('ddingProfitFilter',state.profitFilter); renderProfit(); return; }
     const fontChoice = e.target.closest('[data-font-choice]');
     if (fontChoice) { state.fontChoice=fontChoice.dataset.fontChoice; localStorage.setItem('ddingFontChoice',state.fontChoice); applyDisplayPrefs(); renderTool(); return; }
     if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
@@ -1260,6 +1527,13 @@
     if (card && e.target.closest('.gold-toggle')) { openDrawer(foodBySlug(card.dataset.food), card.dataset.gold !== '1'); return; }
     if (e.target.closest('.drawer-close') || e.target.id === 'drawerBackdrop') { closeDrawer(); return; }
     if (e.target.closest('#clearFarm')) { state.farm.clear(); saveFarm(); return; }
+    if (e.target.closest('#profitReset')) {
+      state.profitFarm = {total:0,tomato:0,onion:0,garlic:0};
+      saveProfitFarm();
+      renderProfit();
+      toast('예상 수익 경작지 설정을 초기화했어.');
+      return;
+    }
     if (e.target.closest('#memoSave')) { saveMemoFromTool(); return; }
     if (e.target.closest('#memoCancelEdit')) { state.memoEditingId=null; localStorage.setItem('ddingMemoDraft',''); renderTool(); return; }
     const memoEdit = e.target.closest('[data-memo-edit]');
@@ -1275,6 +1549,26 @@
   document.addEventListener('change', e => {
     const c = e.target.closest('[data-crop]');
     if (c) { c.checked ? state.farm.add(c.dataset.crop) : state.farm.delete(c.dataset.crop); saveFarm(); return; }
+    const profitField = e.target.closest('[data-profit-field]');
+    if (profitField) {
+      const key = profitField.dataset.profitField;
+      state.profitFarm[key] = Math.max(0, Math.floor(Number(profitField.value) || 0));
+      saveProfitFarm();
+      renderProfit();
+      return;
+    }
+    if (e.target.id === 'profitPriceMode') {
+      state.profitPriceMode = e.target.value === 'market' ? 'market' : 'mine';
+      localStorage.setItem('ddingProfitPriceMode', state.profitPriceMode);
+      renderProfit();
+      return;
+    }
+    if (e.target.id === 'profitSort') {
+      state.profitSort = e.target.value;
+      localStorage.setItem('ddingProfitSort', state.profitSort);
+      renderProfit();
+      return;
+    }
     if (e.target.id === 'calcFood') { selectCalcFood(e.target.value); return; }
   });
 

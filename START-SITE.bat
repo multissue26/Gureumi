@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
@@ -32,17 +32,17 @@ if not "%PORT%"=="8088" (
   echo.
   echo [INFO] Port 8088 is already in use.
   echo        An older Dding DB server may still be running.
-  echo        v0.5.1 will use port %PORT% instead.
+  echo        v0.6.0 will use port %PORT% instead.
 )
 
 echo.
 echo ===============================================
-echo  Dding Personal DB v0.5.1
+echo  Dding Personal DB v0.6.0
 echo ===============================================
-echo URL: http://127.0.0.1:%PORT%/?v=0.5.1
+echo URL: http://127.0.0.1:%PORT%/?v=0.6.0
 echo Keep this window open while using the site.
 echo.
-start "" "http://127.0.0.1:%PORT%/?v=0.5.1"
+start "" "http://127.0.0.1:%PORT%/?v=0.6.0"
 %PYTHON_CMD% -m http.server %PORT% --bind 127.0.0.1
 
 if errorlevel 1 (

@@ -336,3 +336,65 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
 .memo-list{display:grid;gap:8px}.memo-item{border:1px solid var(--line);border-radius:10px;background:#fff;padding:11px 12px}.memo-item-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.memo-item time{font-size:7.5px;color:#929893}.memo-item-meta>div{display:flex;gap:8px}.memo-link{border:0;background:transparent;padding:0;color:#5f7568;font-size:7.5px;font-weight:800;cursor:pointer}.memo-link.danger{color:#a15b54}.memo-item p{margin:0;font-size:9.5px;line-height:1.65;color:#3d443f;overflow-wrap:anywhere}.memo-empty{padding:24px 8px;text-align:center;color:#9aa09b;font-size:8.5px;border:1px dashed #d8dbd5;border-radius:10px}
 .update-help-pop{display:none!important}
 .update-help-floating{position:fixed;z-index:10000;display:none;width:min(300px,calc(100vw - 24px));padding:11px 12px;border-radius:9px;background:#18201c;color:#eef2ef;font-size:8.5px;line-height:1.65;box-shadow:0 12px 32px rgba(16,25,20,.24);pointer-events:none}
+
+/* ===== v0.6.0 expected farm revenue ===== */
+.profit-page{padding-bottom:10px}
+.profit-setup-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr);gap:14px}
+.profit-input-card,.profit-summary-card{padding:20px}
+.profit-input-list{display:grid;gap:8px}
+.profit-input-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 24px;align-items:center;gap:9px;min-height:55px;padding:8px 10px;border:1px solid #e1e3dd;border-radius:11px;background:#fff}
+.profit-input-row.total{background:#f4f6f3;border-color:#d8ddd7}
+.profit-input-row>span:first-child{display:flex;align-items:center;gap:10px;min-width:0}
+.profit-input-row>span:first-child>img{width:31px;height:31px;object-fit:contain;image-rendering:pixelated;flex:0 0 auto}
+.profit-input-row>span:first-child>i{width:31px;text-align:center;font-style:normal;font-size:23px}
+.profit-input-row b{display:block;font-size:11px}
+.profit-input-row small{display:block;margin-top:3px;color:#909792;font-size:8px;line-height:1.4}
+.profit-input-row input{width:100%;height:35px;border:1px solid #d6d9d3;border-radius:8px;background:#fbfbf8;padding:0 10px;text-align:right;font-family:var(--font-display);font-weight:650;color:var(--ink)}
+.profit-input-row input:focus{background:#fff;border-color:#9eaea4;outline:0}
+.profit-input-row>em{font-style:normal;font-size:9px;color:#7f8781}
+.profit-allocation{display:flex;justify-content:space-between;gap:12px;margin-top:12px;padding:11px 12px;border-radius:9px;background:#edf4ef;color:#50645a;font-size:8.5px;line-height:1.45}
+.profit-allocation b{color:#315342;text-align:right}
+.profit-allocation.over{background:#fbefed;color:#8f554f}.profit-allocation.over b{color:#983f37}
+.profit-summary-card{display:flex;flex-direction:column;justify-content:center;background:#202623;color:#edf2ee;border-color:#2d3530;overflow:hidden;position:relative}
+.profit-summary-card:after{content:"";position:absolute;right:-90px;top:-100px;width:240px;height:240px;border-radius:50%;border:1px solid rgba(190,215,198,.08);box-shadow:0 0 0 35px rgba(190,215,198,.025),0 0 0 70px rgba(190,215,198,.018);pointer-events:none}
+.profit-summary-kicker{font-size:8px;letter-spacing:.15em;color:#84938a;font-weight:800;position:relative;z-index:1}
+.profit-summary-card h2{font-family:var(--font-display);font-size:21px;font-weight:500;margin:13px 0 5px;position:relative;z-index:1}
+.profit-summary-money{font-family:var(--font-display);font-size:37px;line-height:1.15;color:#cfe2d5;letter-spacing:-.035em;position:relative;z-index:1}
+.profit-summary-card>p{margin:11px 0 20px;color:#98a69d;font-size:9px;line-height:1.7;max-width:520px;position:relative;z-index:1}
+.profit-summary-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #343d37;position:relative;z-index:1}
+.profit-summary-metrics>div{padding:12px 11px 0;border-right:1px solid #343d37}.profit-summary-metrics>div:first-child{padding-left:0}.profit-summary-metrics>div:last-child{border-right:0}
+.profit-summary-metrics span{display:block;color:#76847b;font-size:7.5px;margin-bottom:5px}.profit-summary-metrics b{display:block;color:#dde6e0;font-size:9px}
+.profit-assumption{margin-top:14px}
+.profit-crop-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.profit-crop-card{padding:16px}
+.profit-crop-head{display:flex;align-items:center;gap:11px;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.profit-crop-icon{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:#f2f2ee;display:grid;place-items:center;flex:0 0 auto}
+.profit-crop-icon img{width:34px;height:34px;object-fit:contain;image-rendering:pixelated}.profit-crop-icon span{font-size:28px}
+.profit-crop-head h3{font-family:var(--font-display);font-size:15px;font-weight:600;margin:0}.profit-crop-head p{font-size:8px;color:#89908b;margin:5px 0 0}
+.profit-crop-periods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px}
+.profit-crop-periods>div{padding:2px 10px;border-right:1px solid var(--line)}.profit-crop-periods>div:first-child{padding-left:0}.profit-crop-periods>div:last-child{border-right:0;padding-right:0}
+.profit-crop-periods span{display:block;color:#8e9590;font-size:7.5px}.profit-crop-periods b{display:block;font-family:var(--font-display);font-size:14px;font-weight:600;margin-top:5px}.profit-crop-periods small{display:block;font-size:7px;color:#9ba19d;margin-top:4px;white-space:nowrap}
+.profit-food-section-head{align-items:flex-start}
+.profit-controls{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.profit-controls .pillbar{padding:3px;border:1px solid var(--line);border-radius:9px;background:#f8f7f4}
+.profit-controls .pill{height:29px;padding:0 8px;font-size:8px}
+.profit-select{height:37px;display:flex;align-items:center;gap:7px;padding:0 8px 0 10px;border:1px solid var(--line);border-radius:9px;background:#faf9f6}
+.profit-select>span{font-size:7.5px;color:#919893}.profit-select select{border:0;background:transparent;color:#353b37;font-size:8.5px;font-weight:750;outline:0;max-width:140px}
+.profit-food-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.profit-food-card{padding:17px;min-width:0}
+.profit-food-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.profit-food-title{display:flex;align-items:center;gap:11px;min-width:0}.profit-food-icon{width:52px;height:52px;border:1px solid var(--line);border-radius:11px;background:#f2f1ed;display:grid;place-items:center;flex:0 0 auto}.profit-food-icon img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
+.profit-food-title .grade{margin:0 0 5px}.profit-food-title h3{font-family:var(--font-display);font-size:14px;font-weight:600;line-height:1.35;margin:0;word-break:keep-all}.profit-food-title p{margin:4px 0 0;font-size:7.5px;color:#8c938e}.profit-food-title p b{color:#4e6558}
+.profit-food-price{text-align:right;flex:0 0 auto}.profit-food-price span{display:block;color:#969c98;font-size:7px;margin-bottom:5px}.profit-food-price b{font-family:var(--font-display);font-size:15px;font-weight:650;white-space:nowrap}
+.profit-requirements{padding:11px 0 10px}.profit-mini-label{display:block;color:#939a95;font-size:7px;margin-bottom:7px}.profit-requirements>div{display:flex;gap:5px;flex-wrap:wrap}
+.profit-req-chip{display:inline-grid;grid-template-columns:19px auto auto;align-items:center;gap:5px;border:1px solid #dfe1dc;border-radius:8px;padding:5px 7px;background:#f8f7f4;font-size:8px}.profit-req-chip img{width:18px;height:18px;object-fit:contain;image-rendering:pixelated}.profit-req-chip>span{font-size:15px;line-height:18px}.profit-req-chip b{font-size:8px}.profit-req-chip em{font-style:normal;color:#727a74;font-size:7.5px}.profit-req-chip.bottleneck{border-color:#b8d1c2;background:#eef5f0;box-shadow:inset 0 0 0 1px rgba(47,117,86,.05)}
+.profit-period-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.profit-period-card{padding:12px 10px;border-right:1px solid var(--line);min-width:0}.profit-period-card:last-child{border-right:0}
+.profit-period-label{display:block;color:#89908b;font-size:7.5px;font-weight:800}.profit-period-money{display:block;font-family:var(--font-display);font-size:14px;font-weight:650;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profit-period-money.muted{color:#9aa19c;font-size:12px}
+.profit-period-range{display:block;color:#9a9f9b;font-size:6.5px;line-height:1.5;margin-top:4px;min-height:20px}
+.profit-period-output{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:10px;padding-top:8px;border-top:1px solid #ecece8}.profit-period-output.range{margin-top:4px;padding-top:0;border-top:0}.profit-period-output span{font-size:6.5px;color:#9ba19d}.profit-period-output strong{font-size:7.5px;white-space:nowrap}
+.profit-food-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:11px;color:#858d87;font-size:7px;line-height:1.6}.profit-food-foot b{color:#4c5750}
+
+@media(max-width:1180px){.profit-setup-grid{grid-template-columns:1fr}.profit-food-list{grid-template-columns:1fr}.profit-summary-card{min-height:260px}}
+@media(max-width:920px){.profit-crop-grid{grid-template-columns:1fr}.profit-food-section-head{flex-direction:column}.profit-controls{width:100%;justify-content:flex-start}.profit-controls .pillbar{width:100%}}
+@media(max-width:680px){.profit-input-row{grid-template-columns:minmax(0,1fr) 84px 20px}.profit-summary-metrics{grid-template-columns:1fr}.profit-summary-metrics>div{border-right:0;border-bottom:1px solid #343d37;padding:10px 0}.profit-summary-metrics>div:last-child{border-bottom:0}.profit-period-grid{grid-template-columns:1fr}.profit-period-card{border-right:0;border-bottom:1px solid var(--line)}.profit-period-card:last-child{border-bottom:0}.profit-food-head{flex-direction:column}.profit-food-price{text-align:left}.profit-controls{display:grid;grid-template-columns:1fr 1fr}.profit-controls .pillbar{grid-column:1/-1}.profit-select{justify-content:space-between}.profit-allocation{flex-direction:column}.profit-allocation b{text-align:left}}
