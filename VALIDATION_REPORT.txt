@@ -1,0 +1,46 @@
+띵타 v0.8.0 validation
+foods= 15
+shop_rows= 422
+resource_root_models= 1846
+resource_icons= 1845
+guide_total= 3266
+pages_48= 69
+resource_linked= 91 resource_added= 1755
+
+QUERY 익힌 소 등심
+737 익힌 소 등심 cooked_cow_loin
+58 익히지 않은 소 등심 cow_loin
+46 익힌 닭 가슴살 cooked_chicken_chest
+46 익힌 닭 다리살 cooked_chicken_leg
+46 익힌 닭고기 
+
+QUERY 익힌소등심
+605 익힌 소 등심 cooked_cow_loin
+
+QUERY 하급 라이프스톤
+857 하급 라이프스톤 greendell_tool_enhancestone1
+98 상급 라이프스톤 greendell_tool_enhancestone3
+98 중급 라이프스톤 greendell_tool_enhancestone2
+64 도구 강화 
+64 세이지 곡괭이 
+
+QUERY 카르세나의 룬
+691 카르세나의 룬 
+52 전설 보물상자 
+
+QUERY 세이지 곡괭이 강화하려면?
+382 세이지 곡괭이 
+58 단정한 곡괭이 각인석 
+58 정교한 곡괭이 각인석 
+58 투박한 곡괭이 각인석 
+46 금 곡괭이 
+
+COOKED_COW_LOIN {
+  "name": "익힌 소 등심",
+  "resourceId": "cooked_cow_loin",
+  "icon": "assets/resource_items/cooked_cow_loin.png",
+  "acquire": "야생의 소를 사냥해 얻습니다. 익힌 항목은 해당 고기를 조리해 얻습니다.",
+  "use": "요리/제작 재료로 사용합니다."
+}
+
+ALL_REQUIRED_CHECKS=PASS

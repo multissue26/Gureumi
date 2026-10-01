@@ -4,6 +4,19 @@
   const D = window.DDING_DATA;
   const SHOP = window.DDING_SHOP_DATA || {meta:{},items:[]};
   const GUIDE = window.DDING_GUIDE || {meta:{},sources:{},items:[],enhancement:[],sagePickaxeStats:[]};
+  const RESOURCE_ITEMS = window.DDING_RESOURCE_ITEMS || [];
+  // 배포 과정에서 guide-data.js가 누락되어도 리소스팩 전수 목록 자체는 0개가 되지 않도록 안전망을 둔다.
+  if (!Array.isArray(GUIDE.items)) GUIDE.items = [];
+  if (!GUIDE.items.length && RESOURCE_ITEMS.length) {
+    GUIDE.meta = {...(GUIDE.meta||{}), version:'0.8.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
+    GUIDE.items = RESOURCE_ITEMS.map(r => ({
+      name:r.name, aliases:r.aliases||[], region:r.region||'리소스팩', category:r.category||'기타/미분류',
+      acquire:'리소스팩에서 존재가 확인된 항목입니다. 서버 내 정확한 획득처는 공식 설명 데이터가 로드되지 않아 확인이 필요합니다.',
+      use:'리소스팩 모델/아이콘이 확인되었습니다. 서버 표시명·사용처는 공식 설명 데이터가 로드되면 함께 표시됩니다.',
+      icon:r.icon, resourceId:r.id, resourceTexture:r.texture, resourceVerified:!!r.nameVerified,
+      official:false, sourceLabel:'RESOURCE PACK 260930'
+    }));
+  }
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const PRICE_API = 'https://dding-price-api.hansuyeon191-6fe.workers.dev';
@@ -49,7 +62,8 @@
     profitPriceMode: localStorage.getItem('ddingProfitPriceMode') || 'mine',
     guideFilter: localStorage.getItem('ddingGuideFilter') || 'all',
     guideTarget: Math.min(15, Math.max(1, Number(localStorage.getItem('ddingGuideTarget') || 15))),
-    guideExpanded: false,
+    guidePage: 1,
+    guidePageSize: 48,
     activeTool: null,
     memoEditingId: null,
     timer: {
@@ -1004,7 +1018,7 @@
 
   function guideText(item) {
     const shopText = (item.shopEntries || []).flatMap(x => [x.action,x.value,x.region,x.location,x.npc,x.category,x.note]);
-    return [item.name,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[])].filter(Boolean).join(' ').toLowerCase();
+    return [item.name,item.resourceId,item.resourceTexture,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[])].filter(Boolean).join(' ').toLowerCase();
   }
 
   function cleanGuideQuery(q) {
@@ -1038,6 +1052,8 @@
 
   function guideFilterMatch(item, filter) {
     if (!filter || filter === 'all') return true;
+    if (filter === 'resource') return !!item.resourceId;
+    if (filter === 'official') return item.official !== false;
     const r = `${item.region} ${item.category} ${item.subcategory}`;
     if (filter === 'general') return /공통|스폰|마을|특별/.test(r) && !/야생|세레니티|루미디아|파라다이스/.test(item.region);
     if (filter === 'wild') return /야생/.test(r);
@@ -1051,11 +1067,19 @@
   }
 
   function guideMatches(raw, filter = state.guideFilter) {
+    const q = String(raw || '').trim();
     return GUIDE.items
-      .filter(item => guideFilterMatch(item, filter))
-      .map(item => ({item,score:guideScore(item,raw)}))
-      .filter(x => !raw.trim() || x.score > 0)
-      .sort((a,b) => b.score-a.score || a.item.name.localeCompare(b.item.name,'ko'));
+      .map((item,index) => ({item,index}))
+      .filter(x => guideFilterMatch(x.item, filter))
+      .map(x => ({...x,score:guideScore(x.item,raw)}))
+      .filter(x => !q || x.score > 0)
+      .sort((a,b) => {
+        if (q) return b.score-a.score || a.item.name.localeCompare(b.item.name,'ko');
+        // 기본 백과에서는 검증된 한글/공식 항목을 먼저 보여주고,
+        // 표시명이 아직 확인되지 않은 리소스팩 식별 항목은 뒤쪽 페이지에 보존한다.
+        const rank = x => x.item.official !== false ? 0 : (x.item.resourceVerified ? 1 : 2);
+        return rank(a)-rank(b) || a.index-b.index;
+      });
   }
 
   function guideSourceLink(item) {
@@ -1214,7 +1238,7 @@
   function renderGuideItemAnswer(item) {
     const recipe = item.recipe || [];
     return `<section class="guide-answer">
-      <div class="guide-answer-head item"><div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p></div>${guideSourceLink(item)}</div>
+      <div class="guide-answer-head item"><div class="guide-answer-item-title">${item.icon?`<div class="guide-answer-item-icon"><img src="${esc(item.icon)}" alt=""></div>`:''}<div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>${guideSourceLink(item)}</div>
       ${item.probability ? `<div class="guide-inline-fact"><span>확률/조건</span><b>${esc(item.probability)}</b></div>`:''}
       ${item.trade ? `<div class="guide-inline-fact"><span>거래/가격</span><b>${esc(item.trade)}</b></div>`:''}
       <div class="guide-info-grid">
@@ -1231,16 +1255,32 @@
 
   function guideCard(item) {
     const recipe = (item.recipe || []).slice(0,3);
-    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3><p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></article>`;
+    const sourceBadge = item.resourceId ? (item.resourceVerified ? '공식명+RP' : 'RESOURCE PACK') : (item.official===false ? '참고' : '공식');
+    const icon = item.icon ? `<img class="guide-card-icon-img" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('missing');this.remove()">` : '';
+    const rid = item.resourceId ? `<span class="guide-resource-id">${esc(item.resourceId)}</span>` : '';
+    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${item.icon?'':'missing'}">${icon}<span>RP</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-bottom"><span class="guide-data-badge ${item.resourceId?'rp':''}">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
+  }
+
+  function guidePagination(totalPages,current){
+    if(totalPages<=1) return '';
+    const nums=[];
+    const from=Math.max(1,Math.min(current-2,totalPages-4));
+    const to=Math.min(totalPages,from+4);
+    for(let i=from;i<=to;i++) nums.push(`<button class="${i===current?'active':''}" data-guide-page="${i}">${i}</button>`);
+    return `<nav class="guide-pagination" aria-label="아이템 페이지"><button data-guide-page="1" ${current===1?'disabled':''}>«</button><button data-guide-page="${Math.max(1,current-1)}" ${current===1?'disabled':''}>이전</button>${from>1?'<span>…</span>':''}${nums.join('')}${to<totalPages?'<span>…</span>':''}<button data-guide-page="${Math.min(totalPages,current+1)}" ${current===totalPages?'disabled':''}>다음</button><button data-guide-page="${totalPages}" ${current===totalPages?'disabled':''}>»</button></nav>`;
   }
 
   function renderGuideHome(matches) {
     const q = state.query.trim();
-    const limit = q ? 160 : (state.guideExpanded ? matches.length : 72);
-    const visible = matches.slice(0,limit).map(x=>guideCard(x.item)).join('');
+    const pageSize = Number(state.guidePageSize)||48;
+    const totalPages = Math.max(1,Math.ceil(matches.length/pageSize));
+    state.guidePage = Math.min(totalPages,Math.max(1,Number(state.guidePage)||1));
+    const start=(state.guidePage-1)*pageSize;
+    const visible = matches.slice(start,start+pageSize).map(x=>guideCard(x.item)).join('');
     const exactish = q ? matches.filter(x=>x.score>=100).slice(0,4) : [];
     const itemAnswer = exactish.length ? renderGuideItemAnswer(exactish[0].item) : '';
-    return `${itemAnswer}<section class="guide-catalog-section"><div class="section-head guide-catalog-head"><div><h2>${q ? '관련 아이템·시스템' : '서버 아이템 백과'}</h2><p>${q ? `검색어 “${esc(q)}”와 관련도가 높은 순서야.` : '공식 위키 아이템/제작/확률표를 한 곳에서 검색할 수 있게 묶었어.'}</p></div><b>${matches.length.toLocaleString('ko-KR')}개</b></div><div class="guide-catalog">${visible || '<div class="card empty"><strong>검색 결과가 없어.</strong>띄어쓰기를 바꾸거나 아이템 이름 일부만 입력해봐.</div>'}</div>${matches.length>limit?`<div class="guide-sourcebar guide-expandbar"><span>빠르게 열리도록 앞 ${limit}개만 먼저 표시 중 · 데이터에는 전체 ${matches.length.toLocaleString('ko-KR')}개가 들어 있어.</span>${!q?`<button class="btn" data-guide-expand>전체 ${matches.length.toLocaleString('ko-KR')}개 펼치기</button>`:`<span>검색을 더 구체적으로 쓰면 전체 인덱스에서 다시 찾음</span>`}</div>`:''}</section>`;
+    const rpCount = GUIDE.meta?.resourceModelCount || 0;
+    return `${itemAnswer}<section class="guide-catalog-section"><div class="section-head guide-catalog-head"><div><h2>${q ? '관련 아이템·시스템' : '서버 아이템 백과'}</h2><p>${q ? `검색어 “${esc(q)}”와 관련도가 높은 순서야.` : `검색하지 않아도 전체 목록을 페이지로 넘겨 볼 수 있어. 리소스팩 260930 루트 아이템 모델 ${Number(rpCount).toLocaleString('ko-KR')}개를 전수 인덱싱했어.`}</p></div><div class="guide-count-stack"><b>${matches.length.toLocaleString('ko-KR')}개</b><span>${state.guidePage} / ${totalPages} 페이지</span></div></div><div class="guide-catalog">${visible || '<div class="card empty"><strong>검색 결과가 없어.</strong>띄어쓰기를 바꾸거나 아이템 이름 일부만 입력해봐.</div>'}</div>${guidePagination(totalPages,state.guidePage)}</section>`;
   }
 
   function shouldShowEnhancement(q) {
@@ -1252,7 +1292,7 @@
     const root = $('#page-reference');
     if (!root) return;
     const q = state.query.trim();
-    const filters = [['all','전체'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
+    const filters = [['all','전체'],['official','공식 설명'],['resource','리소스팩 전체'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
     const matches = guideMatches(q,state.guideFilter);
     const compactQ = q.replace(/\s+/g,'');
     const isNoctilaWeaponEnhance = /강화/.test(compactQ) && (/노크틸라무기/.test(compactQ) || noctilaWeaponNames().some(n=>compactQ.includes(n.replace(/\s+/g,''))));
@@ -1265,28 +1305,28 @@
     const examples=['세이지 곡괭이 강화하려면?','하급 라이프스톤 어디서 구해?','카르세나의 룬이 뭐야?','루트바인 스태프 강화','좌표 스크롤 어디서 사?','중급 라이프스톤 재료'];
     root.innerHTML = `<div class="content-shell guide-shell">
       <section class="guide-hero">
-        <div class="guide-hero-copy"><span class="eyebrow">NEWBIE SERVER ENCYCLOPEDIA</span><h2>몰라도 돼. <b>그냥 하고 싶은 걸 물어봐.</b></h2><p>요리·채집이 메인인 개인DB는 그대로 두고, 서버에서 처음 보는 아이템·강화·제작·상점·수급처를 여기서 끝까지 따라갈 수 있게 정리했어. 현재 인덱스 <strong>${GUIDE.items.length.toLocaleString('ko-KR')}개</strong>.</p></div>
+        <div class="guide-hero-copy"><span class="eyebrow">NEWBIE SERVER ENCYCLOPEDIA</span><h2>몰라도 돼. <b>그냥 하고 싶은 걸 물어봐.</b></h2><p>요리·채집이 메인인 개인DB는 그대로 두고, 서버에서 처음 보는 아이템·강화·제작·상점·수급처를 여기서 끝까지 따라갈 수 있게 정리했어. 현재 통합 인덱스 <strong>${GUIDE.items.length.toLocaleString('ko-KR')}개</strong> · 리소스팩 모델 <strong>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 전수 확인</strong>.</p></div>
         <div class="guide-searchbox"><svg><use href="#i-search"/></svg><input id="guideSearchInput" value="${esc(q)}" placeholder="예: 세이지 곡괭이 강화하려면 어떻게 해야해?" autocomplete="off"><button id="guideRunSearch" class="btn primary">찾기</button></div>
         <div class="guide-examples"><span>바로 질문</span>${examples.map(x=>`<button data-guide-example="${esc(x)}">${esc(x)}</button>`).join('')}</div>
       </section>
-      <div class="guide-quality-strip"><div><b>초뉴비용</b><span>“이게 뭐야?”부터 설명</span></div><div><b>재귀형 재료 추적</b><span>재료 → 재료의 재료까지 클릭</span></div><div><b>가격·NPC까지</b><span>공식 상점 거래값과 장소 연결</span></div><div><b>${GUIDE.items.length.toLocaleString('ko-KR')} items</b><span>공식 아이템·상점·강화·확률 통합</span></div></div>
+      <div class="guide-quality-strip"><div><b>초뉴비용</b><span>“이게 뭐야?”부터 설명</span></div><div><b>리소스팩 전수</b><span>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 모델 + 아이콘</span></div><div><b>재귀형 추적</b><span>재료 → 재료의 재료까지 클릭</span></div><div><b>${GUIDE.items.length.toLocaleString('ko-KR')}개 통합</b><span>공식 설명 + 리소스팩 식별 항목</span></div></div>
       <div class="guide-filterbar">${filters.map(([k,l])=>`<button class="${state.guideFilter===k?'active':''}" data-guide-filter="${k}">${l}</button>`).join('')}</div>
       ${answer}
-      <p class="source-note guide-footnote">기준: 띵타이쿤 공식 위키의 아이템 정보·공식 상점·제작 시설·도구/노크틸라 강화·스킬·룬·보물상자·확률표와 현재 사이트 요리/채집 DB. 공식 문서에 사용처가 적혀 있지 않은 항목은 지어내지 않고 “미확인/세부 설명 없음”으로 남겼어. 이벤트·확률표·상점은 운영 중 변경될 수 있으니 각 항목의 원문 링크가 최종 기준이야.</p>
+      <p class="source-note guide-footnote">기준: 띵타이쿤 공식 위키의 아이템/상점/제작/강화 자료 + 사용자가 제공한 2026-09-30 서버 리소스팩(assets/minecraft/models 루트 모델 전수) + 현재 사이트 요리/채집 DB. 공식 문서에 사용처가 적혀 있지 않은 항목은 지어내지 않고 “미확인/세부 설명 없음”으로 남겼어. 이벤트·확률표·상점은 운영 중 변경될 수 있으니 각 항목의 원문 링크가 최종 기준이야.</p>
     </div>`;
   }
 
   function openGuideItemDrawer(item) {
     if (!item) return;
     const recipe = item.recipe || [];
-    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero"><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p></div>
+    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero with-icon">${item.icon?`<div class="guide-drawer-icon"><img src="${esc(item.icon)}" alt=""></div>`:''}<div><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>
       ${item.probability?`<div class="drawer-section"><h3>확률 / 조건</h3><div class="drawer-text"><b>${esc(item.probability)}</b></div></div>`:''}
       ${item.trade?`<div class="drawer-section"><h3>거래 / 가격</h3><div class="drawer-text"><b>${esc(item.trade)}</b></div></div>`:''}
       <div class="drawer-section"><h3>이게 뭐고, 어디서 구해?</h3><div class="drawer-text">${esc(item.acquire || '세부 획득처 미확인')}</div></div>
       <div class="drawer-section"><h3>뭐에 써?</h3><div class="drawer-text">${esc(item.use || '세부 사용처 미확인')}</div></div>
       ${guideShopTable(item)}
       ${recipe.length?`<div class="drawer-section"><h3>필요 재료</h3><div class="guide-materials drawer-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><div class="drawer-text guide-drawer-help">재료를 클릭하면 그 재료의 수급처와 하위 재료로 계속 내려갈 수 있어.</div></div>`:''}
-      ${item.note?`<div class="drawer-section"><h3>참고 / 주의</h3><div class="drawer-text">${esc(item.note)}</div></div>`:''}
+      ${item.resourceId?`<div class="drawer-section"><h3>리소스팩 확인</h3><div class="drawer-text"><b>모델 ID:</b> ${esc(item.resourceId)}<br><b>텍스처:</b> ${esc(item.resourceTexture||'—')}<br>${item.resourceVerified?'공식/사이트 표시명과 리소스팩 모델을 연결한 항목이야.':'리소스팩에 모델은 존재하지만 서버 표시명은 리소스팩만으로 확정할 수 없어. 획득처·사용처는 확인 자료가 없으면 추측하지 않아.'}</div></div>`:''}${item.note?`<div class="drawer-section"><h3>참고 / 주의</h3><div class="drawer-text">${esc(item.note)}</div></div>`:''}
       ${(item.related||[]).length?`<div class="drawer-section"><h3>관련 항목</h3><div class="guide-materials drawer-materials">${item.related.map(n=>guideItemChip(n)).join('')}</div></div>`:''}
       <div class="drawer-section"><h3>자료 상태</h3><div class="drawer-text">${item.official===false?'기본 게임/참고 데이터. 서버 전용 규칙이 있으면 공식 서버 자료가 우선이야.':'공식 위키 기반 데이터.'}<br>${guideSourceLink(item)}</div></div></div>`;
     $('#drawerBackdrop').hidden = false;
@@ -1721,20 +1761,21 @@
     if (view) { state.cookingView=view.dataset.view; localStorage.setItem('ddingCookingView',state.cookingView); renderCooking(); return; }
     const guideExample = e.target.closest('[data-guide-example]');
     if (guideExample) {
-      state.query = guideExample.dataset.guideExample || ''; state.guideExpanded=false;
+      state.query = guideExample.dataset.guideExample || ''; state.guidePage=1;
       $('#globalSearch').value = state.query;
       switchPage('reference'); renderReference(); return;
     }
     const guideFilter = e.target.closest('[data-guide-filter]');
-    if (guideFilter) { state.guideFilter=guideFilter.dataset.guideFilter; state.guideExpanded=false; localStorage.setItem('ddingGuideFilter',state.guideFilter); renderReference(); return; }
+    if (guideFilter) { state.guideFilter=guideFilter.dataset.guideFilter; state.guidePage=1; localStorage.setItem('ddingGuideFilter',state.guideFilter); renderReference(); return; }
     const guideItem = e.target.closest('[data-guide-item]');
     if (guideItem) { openGuideItemDrawer(guideByName(guideItem.dataset.guideItem)); return; }
     const guideOpen = e.target.closest('[data-guide-open]');
     if (guideOpen) { openGuideItemDrawer(guideByName(guideOpen.dataset.guideOpen)); return; }
+    const guidePageBtn = e.target.closest('[data-guide-page]');
+    if (guidePageBtn && !guidePageBtn.disabled) { state.guidePage=Math.max(1,Number(guidePageBtn.dataset.guidePage)||1); renderReference(); const sec=document.querySelector('.guide-catalog-section'); if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'}); return; }
     if (e.target.closest('#guideRunSearch')) {
-      const input=$('#guideSearchInput'); state.query=(input?.value||'').trim(); $('#globalSearch').value=state.query; renderReference(); return;
+      const input=$('#guideSearchInput'); state.query=(input?.value||'').trim(); state.guidePage=1; $('#globalSearch').value=state.query; renderReference(); return;
     }
-    if (e.target.closest('[data-guide-expand]')) { state.guideExpanded=true; renderReference(); return; }
     const finderFilter = e.target.closest('[data-finder-filter]');
     if (finderFilter) { state.finderFilter=finderFilter.dataset.finderFilter; localStorage.setItem('ddingFinderFilter',state.finderFilter); renderFinder(); return; }
     const profitFilter = e.target.closest('[data-profit-filter]');
@@ -1818,11 +1859,11 @@
 
   document.addEventListener('keydown', e => {
     if (e.target.id === 'guideSearchInput' && e.key === 'Enter') {
-      state.query=e.target.value.trim(); const g=$('#globalSearch'); if(g) g.value=state.query; renderReference();
+      state.query=e.target.value.trim(); state.guidePage=1; const g=$('#globalSearch'); if(g) g.value=state.query; renderReference();
     }
   });
 
-  $('#globalSearch').addEventListener('input', e => { state.query=e.target.value; renderCurrent(); });
+  $('#globalSearch').addEventListener('input', e => { state.query=e.target.value; state.guidePage=1; renderCurrent(); });
   $('#globalSearch').addEventListener('keydown', e => {
     if(e.key==='Escape'){e.target.value='';state.query='';renderCurrent();e.target.blur();}
     if(e.key==='Enter' && state.query.trim()){switchPage('reference');renderReference();}
