@@ -7,6 +7,7 @@
     wild: 'https://wiki.ddingtycoon.kr/ko/articles/%EC%95%BC%EC%83%9D-%EC%95%84%EC%9D%B4%ED%85%9C-df9f70ad',
     badge: 'https://wiki.ddingtycoon.kr/ko/articles/%EB%B1%83%EC%A7%80-%EC%95%84%EC%9D%B4%ED%85%9C-febe63a3',
     serenity: 'https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935',
+    stamina: 'https://wiki.ddingtycoon.kr/ko/articles/%EC%8A%A4%ED%83%9C%EB%AF%B8%EB%82%98-0167182d',
     lumidia: 'https://wiki.ddingtycoon.kr/ko/articles/%EB%A3%A8%EB%AF%B8%EB%94%94%EC%95%84-%EC%95%84%EC%9D%B4%ED%85%9C-be51372a',
     paradise: 'https://wiki.ddingtycoon.kr/ko/articles/%ED%8C%8C%EB%9D%BC%EB%8B%A4%EC%9D%B4%EC%8A%A4-%EC%95%84%EC%9D%B4%ED%85%9C-82875065',
     capsule: 'https://wiki.ddingtycoon.kr/ko/articles/%EC%BA%A1%EC%8A%90-%ED%99%95%EB%A5%A0-aabb235b',
@@ -52,6 +53,11 @@
       recipe: meta.recipe || [],
       related: meta.related || [],
       aliases: meta.aliases || [],
+      usedIn: meta.usedIn || [],
+      usageExamples: meta.usageExamples || [],
+      lifecyclePaths: meta.lifecyclePaths || [],
+      noviceTip: meta.noviceTip || '',
+      finalUse: meta.finalUse || '',
       note: meta.note || '',
       official: meta.official !== false,
       sourceUrl: meta.sourceUrl || OFFICIAL.itemCategory,
@@ -107,10 +113,10 @@
   addMany('익히지 않은 새우|익힌 새우|익히지 않은 도미|익힌 도미|익히지 않은 청어|익힌 청어|금붕어|농어',{region:'야생',category:'낚시',subcategory:'물고기',acquire:'야생에서 낚시로 얻습니다. 익힌 항목은 조리해 얻습니다.',use:'세이지 낚싯대 제작, 회 제작 등 여러 제작에 사용합니다.',sourceUrl:OFFICIAL.wild});
   addMany('깐 새우|도미 회|청어 회|금붕어 회|농어 회',{region:'야생',category:'낚시',subcategory:'회',acquire:'야생 물고기를 대형 제작대에서 가공해 제작합니다.',use:'세레니티 연금 제작 등에 사용합니다.',sourceUrl:OFFICIAL.wild});
   addItem('켈프 더미',{region:'야생',category:'채집',acquire:'켈프를 대형 제작대에서 제작합니다.',use:'세레니티 연금 제작 재료입니다.',sourceUrl:OFFICIAL.wild});
-  addMany('은은한 결정|용감한 결정|고요한 결정|소박한 결정|아련한 결정',{region:'야생',category:'품질',subcategory:'커먼 결정',acquire:'야생의 일반적인 채광·사냥·낚시·벌목·채집으로 얻습니다.',use:'상위 결정/코어 제작 등 품질 시스템 재료입니다.',sourceUrl:OFFICIAL.wild});
-  addMany('광휘의 결정|위대한 결정|청명한 결정|영롱한 결정|화사한 결정',{region:'야생',category:'품질',subcategory:'레어 결정',acquire:'야생의 특정 채광·사냥·낚시·벌목·채집 또는 커먼 결정을 모아 제작해 얻습니다.',use:'상위 코어/품질 시스템 재료입니다.',sourceUrl:OFFICIAL.wild});
-  addItem('순진무구한 코어',{region:'야생',category:'품질',subcategory:'코어',acquire:'커먼 등급 결정을 모아 대형 제작대에서 제작합니다.',sourceUrl:OFFICIAL.wild});
-  addItem('영광스러운 코어',{region:'야생',category:'품질',subcategory:'코어',acquire:'레어 등급 결정을 모아 대형 제작대에서 제작합니다.',sourceUrl:OFFICIAL.wild});
+  addMany('은은한 결정|용감한 결정|고요한 결정|소박한 결정|아련한 결정',{region:'야생',category:'품질',subcategory:'커먼 결정',acquire:'야생의 일반적인 채광·사냥·낚시·벌목·채집 활동에서 얻습니다.',use:'커먼 등급 결정을 모아 레어 등급 결정을 제작하거나, 순진무구한 코어를 제작하는 품질 시스템의 시작 재료입니다.',usedIn:['순진무구한 코어'],usageExamples:['커먼 결정을 모아 상위 레어 등급 결정 제작','커먼 결정을 모아 순진무구한 코어 제작'],lifecyclePaths:[['야생 일반 활동','커먼 등급 결정','레어 등급 결정 제작','레어 등급 결정','영광스러운 코어 제작','공식 공개자료상 이후 소비처 미확인'],['야생 일반 활동','커먼 등급 결정','순진무구한 코어 제작','공식 공개자료상 이후 소비처 미확인']],noviceTip:'당장 쓸 곳이 없어 보여도 상위 결정과 코어로 이어지는 기초 재료라서, 초반에는 무작정 버리기보다 모아두는 편이 안전합니다.',finalUse:'레어 등급 결정 또는 순진무구한 코어로 이어집니다. 레어 등급 결정은 다시 영광스러운 코어 제작으로 이어지며, 두 코어 이후의 소비처는 현재 공식 공개자료에서 확인되지 않습니다.',sourceUrl:OFFICIAL.wild});
+  addMany('광휘의 결정|위대한 결정|청명한 결정|영롱한 결정|화사한 결정',{region:'야생',category:'품질',subcategory:'레어 결정',acquire:'야생의 특정 채광·사냥·낚시·벌목·채집에서 직접 얻거나, 커먼 등급 결정을 모아 제작할 수 있습니다.',use:'레어 등급 결정을 모아 영광스러운 코어를 제작하는 상위 품질 재료입니다.',usedIn:['영광스러운 코어'],usageExamples:['레어 결정을 모아 영광스러운 코어 제작'],lifecyclePaths:[['야생 특정 활동 또는 커먼 결정 제작','레어 등급 결정','영광스러운 코어 제작','공식 공개자료상 이후 소비처 미확인']],noviceTip:'공식 위키는 레어 결정을 영광스러운 코어 제작까지 연결하지만, 그 코어의 이후 최종 소비처는 현재 공개 문서에서 확인되지 않습니다.',finalUse:'영광스러운 코어 제작까지 이어집니다. 영광스러운 코어 이후의 소비처는 현재 공식 공개자료에서 확인되지 않습니다.',sourceUrl:OFFICIAL.wild});
+  addItem('순진무구한 코어',{region:'야생',category:'품질',subcategory:'코어',acquire:'커먼 등급 결정을 모아 대형 제작대에서 제작합니다.',use:'커먼 등급 결정의 상위 가공 결과물입니다. 현재 공식 공개 문서에서는 제작 이후의 구체적인 소비처를 별도로 설명하지 않습니다.',finalUse:'공식 공개자료 기준: 순진무구한 코어 제작 이후의 최종 소비처는 미확인',usageExamples:['커먼 등급 결정의 집약/상위 가공 결과물'],lifecyclePaths:[['야생 일반 활동','커먼 등급 결정','순진무구한 코어','공식 공개자료상 이후 소비처 미확인']],noviceTip:'사이트가 다음 단계를 모르는 것이 아니라, 공식 위키에서 확인 가능한 연결이 여기까지입니다. 이후 사용처가 공식 자료에 추가되면 연결해야 합니다.',sourceUrl:OFFICIAL.wild});
+  addItem('영광스러운 코어',{region:'야생',category:'품질',subcategory:'코어',acquire:'레어 등급 결정을 모아 대형 제작대에서 제작합니다.',use:'레어 등급 결정의 상위 가공 결과물입니다. 현재 공식 공개 문서에서는 제작 이후의 구체적인 소비처를 별도로 설명하지 않습니다.',finalUse:'공식 공개자료 기준: 영광스러운 코어 제작 이후의 최종 소비처는 미확인',usageExamples:['레어 등급 결정의 집약/상위 가공 결과물'],lifecyclePaths:[['야생 특정 활동 또는 커먼 결정 제작','레어 등급 결정','영광스러운 코어','공식 공개자료상 이후 소비처 미확인']],noviceTip:'공식 위키에서 확인 가능한 품질 재료 연결의 끝입니다. 확인되지 않은 장비/강화 사용처를 추측해서 적지 않습니다.',sourceUrl:OFFICIAL.wild});
   ['루키','커먼','노멀','레어','에픽','전설','미식'].forEach(g=>{
     addItem(`${g} 등급 일반 인챈트북`,{region:'야생',category:'강화',subcategory:'일반 인챈트북',acquire:'스폰의 두리 또는 맥스에게 구매하거나 캡슐/풍선에서 얻습니다.',use:'야생 장비 일반 인챈트에 사용합니다.',sourceUrl:OFFICIAL.wild});
     addItem(`${g} 등급 특수 인챈트북`,{region:'야생',category:'강화',subcategory:'특수 인챈트북',acquire:'캡슐과 풍선에서 얻습니다.',use:'야생 장비 특수 인챈트에 사용합니다.',sourceUrl:OFFICIAL.wild});
@@ -294,8 +300,12 @@
   addMany('혼이 깃든 가죽|고독한 영혼의 가죽|신비한 영혼의 가죽|활기찬 영혼의 가죽|특이한 영혼의 가죽|화끈한 영혼의 가죽',{region:'세레니티',category:'화석',subcategory:'영혼 가죽',acquire:'화석 원혼/사냥 후가공 콘텐츠에서 획득 또는 제작합니다.',use:'고급 가죽 공예품 제작 재료입니다.',sourceUrl:OFFICIAL.serenity});
   addMany('반짝 광택제|장인 인증 도장',{region:'세레니티',category:'화석',subcategory:'가공 재료',acquire:'화석/가죽 가공 콘텐츠에서 획득합니다.',use:'영혼 가죽 고급 공예품 제작 보조 재료입니다.',sourceUrl:OFFICIAL.serenity});
   addMany('고독한 가죽 키링|신비한 가죽 팔찌|활기찬 영혼 장갑|특이한 가죽 파우치|화끈한 가죽 샌드백',{region:'세레니티',category:'화석',subcategory:'고급 공예품',acquire:'영혼 가죽과 가공 재료를 사용해 제작합니다.',use:'화석/가죽 콘텐츠의 완성 공예품입니다.',sourceUrl:OFFICIAL.serenity});
-  addMany('스태미나 드링크 I|스태미나 드링크 II|스태미나 드링크 III|스태미나 드링크 IV|스태미나 드링크 V',{region:'세레니티',category:'회복/소모품',subcategory:'스태미나',acquire:'보물상자/해양 제작/기타 보상 등에서 단계별로 얻거나 하위 등급을 모아 제작합니다.',use:'스태미나 회복에 사용하는 소모품입니다.',sourceUrl:OFFICIAL.serenity});
-  update('스태미나 드링크 II',{recipe:[['스태미나 드링크 I',5]]}); update('스태미나 드링크 III',{recipe:[['스태미나 드링크 II',5]]}); update('스태미나 드링크 IV',{recipe:[['스태미나 드링크 III',5]]});
+  addMany('스태미나 드링크 I|스태미나 드링크 II|스태미나 드링크 III|스태미나 드링크 IV|스태미나 드링크 V',{region:'세레니티',category:'회복/소모품',subcategory:'스태미나',acquire:'세레니티 해양 제작 시설에서 조합하거나, 보물상자·샤키 구매·추천 보상 등으로 얻습니다.',use:'세레니티 활동에 필요한 스태미나를 즉시 회복하는 소모품입니다. 종류와 관계없이 하루 최대 5번까지 마실 수 있고, 기본 최대 스태미나 3,000을 넘겨 사용할 수 없습니다.',usageExamples:['세이지 괭이·곡괭이·낚싯대·대검 활동 후 부족한 스태미나 회복','하위 등급 드링크를 모아 상위 등급 드링크로 조합'],noviceTip:'낚싯대로 일반 물고기를 낚는 행위는 스태미나를 소모하지 않습니다. 드링크는 최대치 초과 사용이 안 되므로 어느 정도 소모한 뒤 마시는 게 좋습니다.',sourceUrl:OFFICIAL.stamina});
+  update('스태미나 드링크 I',{aliases:['Stamina Drink 1','stamina_drink_1'],use:'사용하면 스태미나 100을 회복합니다. 하루 드링크 사용 횟수 5회 제한을 공유합니다.',finalUse:'직접 마셔 스태미나 100 회복 또는 상위 드링크 조합 재료',lifecyclePaths:[['보물상자·샤키·추천 보상·해양 제작','스태미나 드링크 I','직접 마시기 → 스태미나 +100'],['스태미나 드링크 I','하위 드링크 조합','스태미나 드링크 II 이상','더 큰 회복량']]});
+  update('스태미나 드링크 II',{aliases:['Stamina Drink 2','stamina_drink_2'],recipe:[['스태미나 드링크 I',5]],use:'사용하면 스태미나 300을 회복합니다. 하루 드링크 사용 횟수 5회 제한을 공유합니다.',finalUse:'직접 마셔 스태미나 300 회복 또는 상위 드링크 조합 재료'});
+  update('스태미나 드링크 III',{aliases:['Stamina Drink 3','stamina_drink_3'],recipe:[['스태미나 드링크 II',5]],use:'사용하면 스태미나 500을 회복합니다. 하루 드링크 사용 횟수 5회 제한을 공유합니다.',finalUse:'직접 마셔 스태미나 500 회복 또는 상위 드링크 조합 재료'});
+  update('스태미나 드링크 IV',{aliases:['Stamina Drink 4','stamina_drink_4'],recipe:[['스태미나 드링크 III',5]],use:'사용하면 스태미나 700을 회복합니다. 하루 드링크 사용 횟수 5회 제한을 공유합니다.',finalUse:'직접 마셔 스태미나 700 회복 또는 상위 드링크 조합 재료'});
+  update('스태미나 드링크 V',{aliases:['Stamina Drink 5','stamina_drink_5'],use:'사용하면 스태미나 1,000을 회복합니다. 하루 드링크 사용 횟수 5회 제한을 공유합니다.',finalUse:'직접 마셔 스태미나 1,000 회복'});
 
   // ─────────────────────────────────────────────────────────────
   // 루미디아 / 노크틸라
@@ -594,11 +604,16 @@
   // 공식 위키 이름과 매칭되는 항목은 기존 상세 정보에 아이콘/리소스 ID를 결합하고,
   // 표시명을 확인하지 못한 항목도 리소스팩 식별명을 숨기지 않고 별도 항목으로 보존합니다.
   const resourceItems = window.DDING_RESOURCE_ITEMS || [];
-  const officialByLower = new Map(items.map(x=>[String(x.name).toLowerCase(),x]));
+  const officialByLower = new Map();
+  const itemKey = v => String(v||'').toLowerCase().replace(/[\s_-]+/g,'');
+  items.forEach(x=>{
+    [x.name,...(x.aliases||[])].forEach(k=>{ const key=itemKey(k); if(key && !officialByLower.has(key)) officialByLower.set(key,x); });
+  });
   let resourceLinked = 0;
   let resourceAdded = 0;
   resourceItems.forEach(r=>{
-    const exact = r.nameVerified ? officialByLower.get(String(r.name).toLowerCase()) : null;
+    const candidates=[r.id,r.name,...(r.aliases||[])].map(itemKey).filter(Boolean);
+    const exact = candidates.map(k=>officialByLower.get(k)).find(Boolean) || null;
     if (exact) {
       exact.icon = r.icon || exact.icon || '';
       exact.resourceId = r.id;
@@ -625,9 +640,9 @@
 
   window.DDING_GUIDE = {
     meta:{
-      version:'0.8.0',
+      version:'0.9.0',
       verified:'2026-10-02',
-      scope:'공식 위키/상점/제작/강화 데이터 + 2026-09-30 서버 리소스팩 루트 아이템 모델 전수 인덱스',
+      scope:'공식 위키/상점/제작/강화 데이터 + 2026-09-30 서버 리소스팩 + 아이템 시작→중간→최종 사용처 라이프사이클 추적',
       disclaimer:'리소스팩 루트 아이템 모델은 전수 편입했습니다. 단, 리소스팩에는 서버 표시명·획득처·사용처가 없는 항목이 있어 공식 문서로 확인되지 않는 정보는 식별명/미확인으로 명확히 표시합니다.',
       resourcePackVersion:'260930', resourceModelCount:resourceItems.length, resourceLinked, resourceAdded
     },

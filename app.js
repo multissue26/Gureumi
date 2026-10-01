@@ -8,7 +8,7 @@
   // 배포 과정에서 guide-data.js가 누락되어도 리소스팩 전수 목록 자체는 0개가 되지 않도록 안전망을 둔다.
   if (!Array.isArray(GUIDE.items)) GUIDE.items = [];
   if (!GUIDE.items.length && RESOURCE_ITEMS.length) {
-    GUIDE.meta = {...(GUIDE.meta||{}), version:'0.8.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
+    GUIDE.meta = {...(GUIDE.meta||{}), version:'0.9.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
     GUIDE.items = RESOURCE_ITEMS.map(r => ({
       name:r.name, aliases:r.aliases||[], region:r.region||'리소스팩', category:r.category||'기타/미분류',
       acquire:'리소스팩에서 존재가 확인된 항목입니다. 서버 내 정확한 획득처는 공식 설명 데이터가 로드되지 않아 확인이 필요합니다.',
@@ -1018,7 +1018,8 @@
 
   function guideText(item) {
     const shopText = (item.shopEntries || []).flatMap(x => [x.action,x.value,x.region,x.location,x.npc,x.category,x.note]);
-    return [item.name,item.resourceId,item.resourceTexture,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[])].filter(Boolean).join(' ').toLowerCase();
+    const lifecycleText=[...(item.usedIn||[]),...(item.usageExamples||[]),...(item.lifecyclePaths||[]).flat(),item.noviceTip,item.finalUse];
+    return [item.name,item.resourceId,item.resourceTexture,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[]),...lifecycleText].filter(Boolean).join(' ').toLowerCase();
   }
 
   function cleanGuideQuery(q) {
@@ -1080,6 +1081,133 @@
         const rank = x => x.item.official !== false ? 0 : (x.item.resourceVerified ? 1 : 2);
         return rank(a)-rank(b) || a.index-b.index;
       });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // v0.9 · 아이템 시작 → 중간 → 최종 사용처 추적
+  // 공개 제작식은 자동으로 역방향 인덱스를 만들고, 공식 문서의 개념 연결은 usedIn/lifecyclePaths로 보강한다.
+  let _guideFlowCache = null;
+  function guideFlowIndex() {
+    if (_guideFlowCache) return _guideFlowCache;
+    const byName = new Map();
+    const usedBy = new Map();
+    GUIDE.items.forEach(item => {
+      byName.set(String(item.name).toLowerCase(), item);
+      (item.aliases||[]).forEach(a=>byName.set(String(a).toLowerCase(),item));
+    });
+    const addUse=(source,target,qty=null,kind='recipe')=>{
+      const rawKey=String(source||'').trim().toLowerCase();
+      if(!rawKey || !target) return;
+      // 제작식이 별칭/리소스 ID를 쓰더라도 실제 한국어 아이템 카드로 묶는다.
+      const canonical=byName.get(rawKey);
+      const key=String(canonical?.name || source || '').trim().toLowerCase();
+      if(!key) return;
+      if(!usedBy.has(key)) usedBy.set(key,[]);
+      const arr=usedBy.get(key);
+      if(!arr.some(x=>x.name===target.name && x.kind===kind)) arr.push({name:target.name,item:target,qty,kind});
+    };
+    GUIDE.items.forEach(target=>{
+      (target.recipe||[]).forEach(([source,qty])=>addUse(source,target,qty,'recipe'));
+    });
+    GUIDE.items.forEach(source=>{
+      (source.usedIn||[]).forEach(targetName=>{
+        const target=byName.get(String(targetName).toLowerCase());
+        if(target) addUse(source.name,target,null,'official-link');
+      });
+    });
+    _guideFlowCache={byName,usedBy};
+    return _guideFlowCache;
+  }
+
+  function guideDirectUses(item) {
+    const idx=guideFlowIndex();
+    return idx.usedBy.get(String(item.name).toLowerCase()) || [];
+  }
+
+  function guideBaseSources(item, depth=0, seen=new Set()) {
+    if (!item || depth>6 || seen.has(item.name)) return [];
+    const nextSeen=new Set(seen); nextSeen.add(item.name);
+    const recipe=item.recipe||[];
+    if (!recipe.length) return [{name:item.name,item,reason:item.acquire||'직접 획득/구매'}];
+    const out=[];
+    recipe.forEach(([n])=>{
+      const child=guideByName(n);
+      if(!child) out.push({name:n,item:null,reason:'기초/외부 재료'});
+      else out.push(...guideBaseSources(child,depth+1,nextSeen));
+    });
+    const dedup=[]; const keys=new Set();
+    out.forEach(x=>{const k=x.name.toLowerCase(); if(!keys.has(k)){keys.add(k); dedup.push(x);}});
+    return dedup.slice(0,14);
+  }
+
+  function guideEndPaths(item, maxDepth=6, maxPaths=10) {
+    const manual=(item.lifecyclePaths||[]).map(path=>path.map(String));
+    const paths=[];
+    const walk=(cur,path,seen,depth)=>{
+      if(paths.length>=maxPaths || depth>maxDepth) return;
+      const uses=guideDirectUses(cur).filter(x=>!seen.has(x.name));
+      const sells=(cur.shopEntries||[]).filter(x=>x.action==='sell');
+      // 중간 재료도 바로 판매할 수 있다면 '지금 팔기'를 하나의 실제 종착점으로 보여준다.
+      if(sells.length && paths.length<maxPaths){
+        const s=sells[0];
+        const who=s.npc||s.location||'상점';
+        const value=s.value?` · ${s.value}`:'';
+        paths.push([...path,`판매 → ${who}${value}`,'골드/재화 회수']);
+      }
+      if(!uses.length){
+        const terminal=cur.finalUse || (!sells.length ? cur.use : '');
+        if(terminal && !path.includes(terminal)) paths.push([...path,terminal]);
+        else if(!sells.length) paths.push(path);
+        return;
+      }
+      uses.slice(0,8).forEach(u=>{
+        if(paths.length>=maxPaths) return;
+        const ns=new Set(seen); ns.add(u.name);
+        walk(u.item,[...path,u.name],ns,depth+1);
+      });
+    };
+    walk(item,[item.name],new Set([item.name]),0);
+    const all=[...manual,...paths];
+    const uniq=[]; const sig=new Set();
+    all.forEach(path=>{const k=path.join('>'); if(!sig.has(k)){sig.add(k); uniq.push(path);}});
+    return uniq.slice(0,maxPaths);
+  }
+
+  function guideFinalLabel(item) {
+    if(item.finalUse) return item.finalUse;
+    const sells=(item.shopEntries||[]).filter(x=>x.action==='sell');
+    const uses=guideDirectUses(item);
+    const useNames=uses.slice(0,3).map(x=>x.name);
+    const useText=useNames.length ? `${useNames.join(' · ')}${uses.length>3?` 외 ${uses.length-3}개`:''} 제작/진행으로 이어짐` : '';
+    const sellText=sells.length ? `NPC 판매/환금 가능 · ${sells.slice(0,2).map(x=>`${x.npc||x.location||'상점'} ${x.value||''}`.trim()).join(' · ')}` : '';
+    if(sellText && useText) return `${sellText} / 또는 ${useText}`;
+    if(useText) return useText;
+    if(sellText) return sellText;
+    if(item.use) return item.use;
+    return '공식 공개자료에서 최종 사용처를 확인하지 못함';
+  }
+
+  function guideLifecyclePanel(item, compact=false) {
+    const bases=guideBaseSources(item);
+    const uses=guideDirectUses(item);
+    const paths=guideEndPaths(item);
+    const examples=[...(item.usageExamples||[])];
+    const recipe=item.recipe||[];
+    const startLabel=recipe.length && bases.length
+      ? bases.slice(0,4).map(x=>x.name).join(' · ') + (bases.length>4?` 외 ${bases.length-4}종`:'')
+      : (item.acquire||'획득처 확인 필요');
+    uses.slice(0,10).forEach(u=>examples.push(`${u.name}${u.qty!=null?` 제작에 ×${u.qty}`:' 제작/진행에 사용'}`));
+    const exampleUniq=[...new Set(examples)].slice(0,12);
+    const pathHtml=paths.slice(0,compact?3:6).map((path,pi)=>`<div class="guide-flow-path"><span class="guide-flow-label">경로 ${pi+1}</span><div class="guide-flow-nodes">${path.map((n,i)=>{const linked=guideByName(n); return `${i?'<i>→</i>':''}${linked?`<button type="button" data-guide-open="${esc(linked.name)}">${esc(n)}</button>`:`<span class="terminal">${esc(n)}</span>`}`}).join('')}</div></div>`).join('');
+    return `<section class="guide-lifecycle ${compact?'compact':''}">
+      <div class="guide-lifecycle-head"><div><span>START → END</span><h3>이 아이템, 어디서 시작해서 결국 어디에 써?</h3></div><strong>${uses.length?`${uses.length}개 연결 확인`:'직접 연결 없음'}</strong></div>
+      <div class="guide-life-summary"><article><span>${recipe.length?'가장 아래 시작 재료':'획득 시작'}</span><b>${esc(startLabel)}</b></article><article><span>현재</span><b>${esc(item.name)}</b></article><article><span>끝 / 목적</span><b>${esc(guideFinalLabel(item))}</b></article></div>
+      ${pathHtml?`<div class="guide-flow-list">${pathHtml}</div>`:''}
+      ${exampleUniq.length?`<div class="guide-use-examples"><b>실제 사용 예시</b><div>${exampleUniq.map(x=>`<span>${esc(x)}</span>`).join('')}</div></div>`:''}
+      ${bases.length&&!compact?`<div class="guide-origin-box"><b>가장 아래 원재료/시작점</b><div>${bases.map(x=>x.item?`<button type="button" data-guide-open="${esc(x.item.name)}">${esc(x.name)}</button>`:`<span>${esc(x.name)}</span>`).join('')}</div></div>`:''}
+      <div class="guide-life-conclusion"><b>그래서 결국 뭐 하는 아이템이야?</b><p>${esc(guideFinalLabel(item))}</p></div>
+      ${item.noviceTip?`<div class="guide-life-tip"><b>초뉴비 팁</b><p>${esc(item.noviceTip)}</p></div>`:''}
+    </section>`;
   }
 
   function guideSourceLink(item) {
@@ -1239,6 +1367,7 @@
     const recipe = item.recipe || [];
     return `<section class="guide-answer">
       <div class="guide-answer-head item"><div class="guide-answer-item-title">${item.icon?`<div class="guide-answer-item-icon"><img src="${esc(item.icon)}" alt=""></div>`:''}<div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>${guideSourceLink(item)}</div>
+      ${guideLifecyclePanel(item,true)}
       ${item.probability ? `<div class="guide-inline-fact"><span>확률/조건</span><b>${esc(item.probability)}</b></div>`:''}
       ${item.trade ? `<div class="guide-inline-fact"><span>거래/가격</span><b>${esc(item.trade)}</b></div>`:''}
       <div class="guide-info-grid">
@@ -1258,7 +1387,8 @@
     const sourceBadge = item.resourceId ? (item.resourceVerified ? '공식명+RP' : 'RESOURCE PACK') : (item.official===false ? '참고' : '공식');
     const icon = item.icon ? `<img class="guide-card-icon-img" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('missing');this.remove()">` : '';
     const rid = item.resourceId ? `<span class="guide-resource-id">${esc(item.resourceId)}</span>` : '';
-    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${item.icon?'':'missing'}">${icon}<span>RP</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-bottom"><span class="guide-data-badge ${item.resourceId?'rp':''}">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
+    const endpoint=guideFinalLabel(item);
+    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${item.icon?'':'missing'}">${icon}<span>RP</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge ${item.resourceId?'rp':''}">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
   }
 
   function guidePagination(totalPages,current){
@@ -1305,11 +1435,11 @@
     const examples=['세이지 곡괭이 강화하려면?','하급 라이프스톤 어디서 구해?','카르세나의 룬이 뭐야?','루트바인 스태프 강화','좌표 스크롤 어디서 사?','중급 라이프스톤 재료'];
     root.innerHTML = `<div class="content-shell guide-shell">
       <section class="guide-hero">
-        <div class="guide-hero-copy"><span class="eyebrow">NEWBIE SERVER ENCYCLOPEDIA</span><h2>몰라도 돼. <b>그냥 하고 싶은 걸 물어봐.</b></h2><p>요리·채집이 메인인 개인DB는 그대로 두고, 서버에서 처음 보는 아이템·강화·제작·상점·수급처를 여기서 끝까지 따라갈 수 있게 정리했어. 현재 통합 인덱스 <strong>${GUIDE.items.length.toLocaleString('ko-KR')}개</strong> · 리소스팩 모델 <strong>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 전수 확인</strong>.</p></div>
+        <div class="guide-hero-copy"><span class="eyebrow">NEWBIE SERVER ENCYCLOPEDIA</span><h2>몰라도 돼. <b>그냥 하고 싶은 걸 물어봐.</b></h2><p>요리·채집이 메인인 개인DB는 그대로 두고, 서버에서 처음 보는 아이템의 획득처뿐 아니라 <b>왜 모으는지, 다음에 뭘 만드는지, 최종적으로 어디까지 이어지는지</b>까지 따라가게 정리했어. 현재 통합 인덱스 <strong>${GUIDE.items.length.toLocaleString('ko-KR')}개</strong> · 리소스팩 모델 <strong>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 전수 확인</strong>.</p></div>
         <div class="guide-searchbox"><svg><use href="#i-search"/></svg><input id="guideSearchInput" value="${esc(q)}" placeholder="예: 세이지 곡괭이 강화하려면 어떻게 해야해?" autocomplete="off"><button id="guideRunSearch" class="btn primary">찾기</button></div>
         <div class="guide-examples"><span>바로 질문</span>${examples.map(x=>`<button data-guide-example="${esc(x)}">${esc(x)}</button>`).join('')}</div>
       </section>
-      <div class="guide-quality-strip"><div><b>초뉴비용</b><span>“이게 뭐야?”부터 설명</span></div><div><b>리소스팩 전수</b><span>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 모델 + 아이콘</span></div><div><b>재귀형 추적</b><span>재료 → 재료의 재료까지 클릭</span></div><div><b>${GUIDE.items.length.toLocaleString('ko-KR')}개 통합</b><span>공식 설명 + 리소스팩 식별 항목</span></div></div>
+      <div class="guide-quality-strip"><div><b>초뉴비용</b><span>“이게 뭐야?”부터 설명</span></div><div><b>리소스팩 전수</b><span>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 모델 + 아이콘</span></div><div><b>시작→끝 추적</b><span>원재료 → 중간재 → 최종 사용처</span></div><div><b>${GUIDE.items.length.toLocaleString('ko-KR')}개 통합</b><span>공식 설명 + 리소스팩 식별 항목</span></div></div>
       <div class="guide-filterbar">${filters.map(([k,l])=>`<button class="${state.guideFilter===k?'active':''}" data-guide-filter="${k}">${l}</button>`).join('')}</div>
       ${answer}
       <p class="source-note guide-footnote">기준: 띵타이쿤 공식 위키의 아이템/상점/제작/강화 자료 + 사용자가 제공한 2026-09-30 서버 리소스팩(assets/minecraft/models 루트 모델 전수) + 현재 사이트 요리/채집 DB. 공식 문서에 사용처가 적혀 있지 않은 항목은 지어내지 않고 “미확인/세부 설명 없음”으로 남겼어. 이벤트·확률표·상점은 운영 중 변경될 수 있으니 각 항목의 원문 링크가 최종 기준이야.</p>
@@ -1320,6 +1450,7 @@
     if (!item) return;
     const recipe = item.recipe || [];
     $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero with-icon">${item.icon?`<div class="guide-drawer-icon"><img src="${esc(item.icon)}" alt=""></div>`:''}<div><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>
+      ${guideLifecyclePanel(item,false)}
       ${item.probability?`<div class="drawer-section"><h3>확률 / 조건</h3><div class="drawer-text"><b>${esc(item.probability)}</b></div></div>`:''}
       ${item.trade?`<div class="drawer-section"><h3>거래 / 가격</h3><div class="drawer-text"><b>${esc(item.trade)}</b></div></div>`:''}
       <div class="drawer-section"><h3>이게 뭐고, 어디서 구해?</h3><div class="drawer-text">${esc(item.acquire || '세부 획득처 미확인')}</div></div>
