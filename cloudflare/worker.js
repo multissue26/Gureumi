@@ -65,7 +65,7 @@ export default {
 
     try {
       if (path === "/" && method === "GET") {
-        return json({ ok: true, service: "Dding Price API", version: "1.1.0" });
+        return json({ ok: true, service: "Dding Price API", version: "1.2.0" });
       }
 
       if (path === "/health" && method === "GET") {
@@ -86,7 +86,12 @@ export default {
         }
 
         const itemCount = Object.keys(body.prices).length;
-        if (itemCount < 15) return json({ ok: false, error: "Incomplete price table", itemCount }, 400);
+        // v1.2 requires the full regular 15 + golden 15 table. This also keeps
+        // old v0.5.0 clients from replacing a complete 30-item candidate with
+        // an incomplete 15-item regular-only snapshot.
+        if (itemCount < 30) {
+          return json({ ok: false, error: "Incomplete price table: 30 items required", itemCount, required: 30 }, 400);
+        }
 
         const pricesJson = stableStringify(body.prices);
         const contentHash = await sha256(pricesJson);
@@ -152,9 +157,13 @@ export default {
           SELECT * FROM published_prices WHERE cycle_key = ? LIMIT 1
         `).bind(candidate.cycle_key).first();
 
-        if (existing) {
+        if (existing && Number(existing.item_count || 0) >= Number(candidate.item_count || 0)) {
           return json({ ok: true, updated: false, message: "This price cycle is already published and frozen", prices: parsePrices(existing) });
         }
+
+        // Migration path from the old regular-only 15-item publication: if the
+        // same cycle now has a richer 30-item candidate, upgrade that row once.
+        const upgradingExistingCycle = !!existing;
 
         await env.DB.prepare(`
           INSERT OR REPLACE INTO published_prices
@@ -173,7 +182,13 @@ export default {
           SELECT * FROM published_prices WHERE cycle_key = ? LIMIT 1
         `).bind(candidate.cycle_key).first();
 
-        return json({ ok: true, updated: true, message: "Candidate published", prices: parsePrices(published) });
+        return json({
+          ok: true,
+          updated: true,
+          upgraded: upgradingExistingCycle,
+          message: upgradingExistingCycle ? "Published cycle upgraded with complete 30-item table" : "Candidate published",
+          prices: parsePrices(published),
+        });
       }
 
       if (path === "/prices" && method === "GET") {
