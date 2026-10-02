@@ -44,6 +44,7 @@
     cookingView: localStorage.getItem('ddingCookingView') || 'grid',
     finderFilter: localStorage.getItem('ddingFinderFilter') || 'all',
     selectedTrendFood: localStorage.getItem('ddingTrendFood') || '',
+    selectedTrendGold: localStorage.getItem('ddingTrendGold') === '1',
     fontChoice: localStorage.getItem('ddingFontChoice') || 'gmarket',
     fontScale: Number(localStorage.getItem('ddingFontScale') || 1),
     query: '',
@@ -426,6 +427,14 @@
     return p?.marketPrice ?? p?.myPrice ?? null;
   }
 
+  function trendName(food, gold = false) {
+    return gold ? food?.gold?.name || `황금 ${food?.name || ''}` : food?.name || '';
+  }
+
+  function trendImage(food, gold = false) {
+    return gold ? food?.goldImage || food?.image || '' : food?.image || '';
+  }
+
   function historyLabel(h, i) {
     if (h?.label) return String(h.label).replace(/일$/, '');
     if (h?.date) return String(h.date);
@@ -449,8 +458,8 @@
     return `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;
   }
 
-  function tooltipHistoryForFood(food) {
-    const p = getPrice(food);
+  function tooltipHistoryForFood(food, gold = false) {
+    const p = getPrice(food, gold);
     if (!p) return [];
     const hist = Array.isArray(p.history) ? p.history.filter(h => Number.isFinite(Number(h?.price))) : [];
     if (!hist.length) return [];
@@ -482,10 +491,10 @@
     });
   }
 
-  function cloudHistoryForFood(food) {
+  function cloudHistoryForFood(food, gold = false) {
     const rows = [];
     for (const snap of [...state.cloudHistory].reverse()) {
-      const entry = snap?.prices?.[food.name];
+      const entry = snap?.prices?.[priceKey(food, gold)];
       const price = Number(entry?.marketPrice ?? entry?.myPrice);
       if (!Number.isFinite(price)) continue;
       const stamp = snap?.capturedAt || snap?.publishedAt || snap?.cycleKey;
@@ -503,9 +512,9 @@
     return rows;
   }
 
-  function priceHistory(food) {
-    const seedRows = tooltipHistoryForFood(food);
-    const cloudRows = cloudHistoryForFood(food);
+  function priceHistory(food, gold = false) {
+    const seedRows = tooltipHistoryForFood(food, gold);
+    const cloudRows = cloudHistoryForFood(food, gold);
     const rows = [];
     const dateIndex = new Map();
 
@@ -529,17 +538,17 @@
     // Backward/local fallback: before any Cloudflare history exists, append the
     // currently published market price after the tooltip's past observations.
     if (!cloudRows.length) {
-      const now = marketPrice(food);
-      if (now != null) rows.push({label:'현재', price:Number(now), delta:getPrice(food)?.marketDelta ?? null, current:true, source:'current'});
+      const now = marketPrice(food, gold);
+      if (now != null) rows.push({label:'현재', price:Number(now), delta:getPrice(food, gold)?.marketDelta ?? null, current:true, source:'current'});
     }
 
     return rows;
   }
 
-  function priceChange(food) {
-    const rows = priceHistory(food);
+  function priceChange(food, gold = false) {
+    const rows = priceHistory(food, gold);
     if (rows.length < 2) {
-      const current = marketPrice(food);
+      const current = marketPrice(food, gold);
       return {current, previous:null, diff:null, pct:null};
     }
     const current = Number(rows[rows.length - 1].price);
@@ -578,8 +587,8 @@
       .sort((a,b) => b.sale - a.sale);
   }
 
-  function trendChartSvg(food) {
-    const rows = priceHistory(food);
+  function trendChartSvg(food, gold = false) {
+    const rows = priceHistory(food, gold);
     if (rows.length < 2) return `<div class="market-chart-empty"><strong>가격 기록을 기다리고 있어.</strong><span>밀키 가격표의 과거 기록이나 사이트 확정 기록이 2개 이상 모이면 차트가 표시돼.</span></div>`;
 
     const W = 720, H = 292, L = 58, R = 22, T = 22, B = 45;
@@ -593,7 +602,7 @@
     const area = `${L},${H-B} ${points} ${x(rows.length-1)},${H-B}`;
     const ticks = Array.from({length:5},(_,i) => hi - i * ((hi-lo)/4));
 
-    return `<svg class="market-chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(food.name)} 가격 흐름">
+    return `<svg class="market-chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(trendName(food, gold))} 가격 흐름">
       <defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f7556" stop-opacity=".18"/><stop offset="100%" stop-color="#2f7556" stop-opacity="0"/></linearGradient></defs>
       ${ticks.map(v => `<g><line class="chart-grid-line" x1="${L}" x2="${W-R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text class="chart-y-label" x="${L-10}" y="${(y(v)+3).toFixed(1)}">${Math.round(v).toLocaleString('ko-KR')}</text></g>`).join('')}
       <polygon class="chart-area" points="${area}"/>
@@ -604,7 +613,7 @@
 
   function efficiencyRankHtml(rows) {
     if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
-    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}">
+    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}" data-trend-gold="0">
       <span class="market-rank-no">${i+1}</span>
       <span class="market-rank-food" data-tip="1">
         <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
@@ -617,7 +626,7 @@
 
   function highPriceRankHtml(rows) {
     if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
-    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}">
+    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}" data-trend-gold="0">
       <span class="market-rank-no">${i+1}</span>
       <span class="market-rank-food" data-tip="1">
         <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
@@ -690,12 +699,16 @@
     const efficiency = salesEfficiencyFoods();
     const expensive = highestPriceFoods();
     const pricedFoods = D.foods.filter(f => getPrice(f));
-    const selected = foodBySlug(state.selectedTrendFood) && getPrice(foodBySlug(state.selectedTrendFood))
-      ? foodBySlug(state.selectedTrendFood)
-      : (efficiency[0]?.food || pricedFoods[0] || D.foods[0]);
+    const goldPricedFoods = D.foods.filter(f => getPrice(f, true));
+    const trendGold = state.selectedTrendGold;
+    const trendFoods = trendGold ? goldPricedFoods : pricedFoods;
+    const selectedCandidate = foodBySlug(state.selectedTrendFood);
+    const selected = selectedCandidate && getPrice(selectedCandidate, trendGold)
+      ? selectedCandidate
+      : (trendGold ? (goldPricedFoods[0] || D.foods[0]) : (efficiency[0]?.food || pricedFoods[0] || D.foods[0]));
     state.selectedTrendFood = selected.slug;
-    const selectedPrice = getPrice(selected);
-    const selectedChange = priceChange(selected);
+    const selectedPrice = getPrice(selected, trendGold);
+    const selectedChange = priceChange(selected, trendGold);
     const changes = D.foods.map(food => ({food, ...priceChange(food)}))
       .filter(x => x.current != null)
       .sort((a,b) => (b.pct ?? -9999) - (a.pct ?? -9999));
@@ -746,24 +759,25 @@
 
       <section class="section">
         <div class="section-head"><div><h2>현재가 흐름</h2><p>첫 연결은 밀키 툴팁의 과거 가격을 시드로 쓰고, 이후에는 사이트에서 확정한 가격 주기가 차례로 쌓여.</p></div><button class="btn ghost" data-go="prices">가격 상태 보기</button></div>
+        <div class="chart-mode-tabs" role="tablist" aria-label="가격 흐름 모드"><button class="chart-mode-tab ${trendGold ? '' : 'active'}" data-trend-mode="normal" role="tab" aria-selected="${trendGold ? 'false' : 'true'}">일반 요리</button><button class="chart-mode-tab ${trendGold ? 'active' : ''}" data-trend-mode="gold" role="tab" aria-selected="${trendGold ? 'true' : 'false'}">황금 요리</button></div>
         <div class="card market-chart-card">
           <div class="market-chart-main">
             <div class="market-chart-head">
-              <div class="market-selected-food"><span class="market-selected-icon"><img src="${selected.image}" alt=""></span><div><span class="market-kicker">SELECTED FOOD</span><h3>${esc(selected.name)}</h3></div></div>
-              <div class="market-selected-numbers"><div><small>시장 판매가</small><b>${fmt(marketPrice(selected))}</b></div><div><small>나의 판매가</small><b>${fmt(selectedPrice?.myPrice ?? selectedPrice?.marketPrice)}</b></div>${changeBadge(selectedChange)}</div>
+              <div class="market-selected-food"><span class="market-selected-icon"><img src="${trendImage(selected, trendGold)}" alt=""></span><div><span class="market-kicker">${trendGold ? 'SELECTED GOLD FOOD' : 'SELECTED FOOD'}</span><h3>${esc(trendName(selected, trendGold))}</h3></div></div>
+              <div class="market-selected-numbers"><div><small>시장 판매가</small><b>${fmt(marketPrice(selected, trendGold))}</b></div><div><small>나의 판매가</small><b>${fmt(selectedPrice?.myPrice ?? selectedPrice?.marketPrice)}</b></div>${changeBadge(selectedChange)}</div>
             </div>
-            <div class="market-chart-wrap">${trendChartSvg(selected)}</div>
+            <div class="market-chart-wrap">${trendChartSvg(selected, trendGold)}</div>
           </div>
-          <aside class="market-food-picker"><div class="picker-head"><b>음식 선택</b><span>${pricedFoods.length}/${D.foods.length}</span></div><div class="picker-list">${D.foods.map(food => {
-            const p=getPrice(food), ch=priceChange(food);
-            return `<button class="picker-food ${food.slug===selected.slug?'active':''} ${p?'':'disabled'}" data-trend-food="${food.slug}" ${p?'':'disabled'}><img src="${food.image}" alt=""><span><b>${esc(food.name)}</b><small>${p ? `${fmt(p.myPrice ?? p.marketPrice)} · ${ch.pct == null ? '변동 기록 대기' : `${ch.diff>0?'↑':ch.diff<0?'↓':'→'} ${Math.abs(ch.pct).toFixed(1)}%`}` : '가격 미수집'}</small></span></button>`;
+          <aside class="market-food-picker"><div class="picker-head"><b>${trendGold ? '황금 요리 선택' : '음식 선택'}</b><span>${trendFoods.length}/${D.foods.length}</span></div><div class="picker-list">${D.foods.map(food => {
+            const p=getPrice(food, trendGold), ch=priceChange(food, trendGold), itemName=trendName(food, trendGold), itemImage=trendImage(food, trendGold);
+            return `<button class="picker-food ${food.slug===selected.slug?'active':''} ${p?'':'disabled'}" data-trend-food="${food.slug}" data-trend-gold="${trendGold ? '1' : '0'}" ${p?'':'disabled'}><img src="${itemImage}" alt=""><span><b>${esc(itemName)}</b><small>${p ? `${fmt(p.myPrice ?? p.marketPrice)} · ${ch.pct == null ? '변동 기록 대기' : `${ch.diff>0?'↑':ch.diff<0?'↓':'→'} ${Math.abs(ch.pct).toFixed(1)}%`}` : '가격 미수집'}</small></span></button>`;
           }).join('')}</div></aside>
         </div>
       </section>
 
       <section class="section">
         <div class="section-head"><div><h2>전체 음식 변동</h2><p>직전 확정 가격과 현재 확정 가격을 비교해 얼마나 비싸졌고 싸졌는지 바로 확인해.</p></div></div>
-        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>가격을 두 주기 이상 확정하면 실제 Cloudflare 기록을 기준으로 비교해.</div>`}</div>
+        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}" data-trend-gold="0"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>가격을 두 주기 이상 확정하면 실제 Cloudflare 기록을 기준으로 비교해.</div>`}</div>
       </section>
 
       <section class="section farm-after-market">
@@ -1970,8 +1984,10 @@
     const fontChoice = e.target.closest('[data-font-choice]');
     if (fontChoice) { state.fontChoice=fontChoice.dataset.fontChoice; localStorage.setItem('ddingFontChoice',state.fontChoice); applyDisplayPrefs(); renderTool(); return; }
     if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
+    const trendMode = e.target.closest('[data-trend-mode]');
+    if (trendMode) { state.selectedTrendGold=trendMode.dataset.trendMode==='gold'; localStorage.setItem('ddingTrendGold',state.selectedTrendGold?'1':'0'); renderDashboard(); return; }
     const trendFood = e.target.closest('[data-trend-food]');
-    if (trendFood && !trendFood.disabled) { state.selectedTrendFood=trendFood.dataset.trendFood; localStorage.setItem('ddingTrendFood',state.selectedTrendFood); if(state.page!=='dashboard') switchPage('dashboard'); else renderDashboard(); return; }
+    if (trendFood && !trendFood.disabled) { state.selectedTrendFood=trendFood.dataset.trendFood; if (trendFood.dataset.trendGold != null) state.selectedTrendGold=trendFood.dataset.trendGold==='1'; localStorage.setItem('ddingTrendFood',state.selectedTrendFood); localStorage.setItem('ddingTrendGold',state.selectedTrendGold?'1':'0'); if(state.page!=='dashboard') switchPage('dashboard'); else renderDashboard(); return; }
     const card = e.target.closest('.food-card');
     if (card && e.target.closest('.detail-btn')) { openDrawer(foodBySlug(card.dataset.food), card.dataset.gold === '1'); return; }
     if (card && e.target.closest('.gold-toggle')) { openDrawer(foodBySlug(card.dataset.food), card.dataset.gold !== '1'); return; }
