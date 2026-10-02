@@ -119,3 +119,17 @@ body{letter-spacing:-.02em}
 
 .market-rank-main b{font-size:14px;line-height:1.5}.market-rank-main small{font-size:11px;color:#52675d}
 @media(max-width:760px){.nav-btn svg{display:block;width:16px;height:16px}.nav-btn{gap:7px;padding:9px 12px}}
+
+/* Explicit text colors for the light guide banner. */
+.guide-hero{color:#20392a}
+.guide-hero-copy h2{color:#20392a;font-weight:700}
+.guide-hero-copy h2 b{color:#176449;font-weight:700}
+.guide-hero-copy .eyebrow{color:#52675d}
+.guide-hero-copy p{color:#405f4b}
+.guide-hero-copy p strong{color:#20392a;font-weight:700}
+.guide-examples>span{color:#52675d}
+.guide-examples button{background:#fff;color:#405f4b;border-color:#cbded1}
+.guide-examples button:hover{background:#e0eee5;color:#145d40;border-color:#8ebba0}
+.guide-searchbox{border-color:#d7e5dc;box-shadow:0 4px 18px rgba(24,55,42,.05)}
+.guide-searchbox input::placeholder{color:#617469;opacity:1}
+.guide-hero:after{color:rgba(23,100,73,.035)}
