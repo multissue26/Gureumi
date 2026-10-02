@@ -102,7 +102,17 @@
     return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   }
 
+  function guideIconHTML(item, cls = '') {
+    const sprite = window.DDING_RESOURCE_ATLAS?.html(item, cls);
+    if (sprite) return sprite;
+    if (item?.icon) return `<img class="${esc(cls)}" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('missing');this.remove()">`;
+    return '';
+  }
+  function hasGuideIcon(item) { return item?.iconSprite !== undefined || !!item?.icon; }
+
   function iconHTML(item, cls = '') {
+    const sprite = window.DDING_RESOURCE_ATLAS?.html(item, cls);
+    if (sprite) return sprite;
     if (item?.icon) {
       const fallbackClass = cls.includes('big') ? 'big-fallback' : 'fallback-icon';
       return `<img class="${cls}" src="${esc(item.icon)}" alt="${esc(item.name)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="${fallbackClass}" hidden>${esc(item.emoji || '□')}</span>`;
@@ -1054,6 +1064,8 @@
   function guideFilterMatch(item, filter) {
     if (!filter || filter === 'all') return true;
     if (filter === 'resource') return !!item.resourceId;
+    if (filter === 'images') return hasGuideIcon(item);
+    if (filter === 'missing-images') return !hasGuideIcon(item);
     if (filter === 'official') return item.official !== false;
     const r = `${item.region} ${item.category} ${item.subcategory}`;
     if (filter === 'general') return /공통|스폰|마을|특별/.test(r) && !/야생|세레니티|루미디아|파라다이스/.test(item.region);
@@ -1409,7 +1421,7 @@
   function renderGuideItemAnswer(item) {
     const recipe = item.recipe || [];
     return `<section class="guide-answer">
-      <div class="guide-answer-head item"><div class="guide-answer-item-title">${item.icon?`<div class="guide-answer-item-icon"><img src="${esc(item.icon)}" alt=""></div>`:''}<div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>${guideSourceLink(item)}</div>
+      <div class="guide-answer-head item"><div class="guide-answer-item-title">${hasGuideIcon(item)?`<div class="guide-answer-item-icon">${guideIconHTML(item)}</div>`:''}<div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>${guideSourceLink(item)}</div>
       ${guideLifecyclePanel(item,true)}
       ${item.probability ? `<div class="guide-inline-fact"><span>확률/조건</span><b>${esc(item.probability)}</b></div>`:''}
       ${item.trade ? `<div class="guide-inline-fact"><span>거래/가격</span><b>${esc(item.trade)}</b></div>`:''}
@@ -1428,10 +1440,10 @@
   function guideCard(item) {
     const recipe = (item.recipe || []).slice(0,3);
     const sourceBadge = item.resourceId ? (item.resourceVerified ? '공식명+RP' : 'RESOURCE PACK') : (item.official===false ? '참고' : '공식');
-    const icon = item.icon ? `<img class="guide-card-icon-img" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('missing');this.remove()">` : '';
+    const icon = guideIconHTML(item, 'guide-card-icon-img');
     const rid = item.resourceId ? `<span class="guide-resource-id">${esc(item.resourceId)}</span>` : '';
     const endpoint=guideFinalLabel(item);
-    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${item.icon?'':'missing'}">${icon}<span>RP</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge ${item.resourceId?'rp':''}">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
+    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${hasGuideIcon(item)?'':'missing'}">${icon}<span class="guide-icon-placeholder">이미지<br>미확인</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge ${item.resourceId?'rp':''}">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
   }
 
   function guidePagination(totalPages,current){
@@ -1465,7 +1477,7 @@
     const root = $('#page-reference');
     if (!root) return;
     const q = state.query.trim();
-    const filters = [['all','전체'],['official','공식 설명'],['resource','리소스팩 전체'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
+    const filters = [['all','전체'],['images','이미지 있음'],['missing-images','이미지 미확인'],['official','공식 설명'],['resource','리소스팩 전체'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
     const matches = guideMatches(q,state.guideFilter);
     const compactQ = q.replace(/\s+/g,'');
     const isNoctilaWeaponEnhance = /강화/.test(compactQ) && (/노크틸라무기/.test(compactQ) || noctilaWeaponNames().some(n=>compactQ.includes(n.replace(/\s+/g,''))));
@@ -1492,7 +1504,7 @@
   function openGuideItemDrawer(item) {
     if (!item) return;
     const recipe = item.recipe || [];
-    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero with-icon">${item.icon?`<div class="guide-drawer-icon"><img src="${esc(item.icon)}" alt=""></div>`:''}<div><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>
+    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero with-icon">${hasGuideIcon(item)?`<div class="guide-drawer-icon">${guideIconHTML(item)}</div>`:''}<div><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>
       ${guideLifecyclePanel(item,false)}
       ${item.probability?`<div class="drawer-section"><h3>확률 / 조건</h3><div class="drawer-text"><b>${esc(item.probability)}</b></div></div>`:''}
       ${item.trade?`<div class="drawer-section"><h3>거래 / 가격</h3><div class="drawer-text"><b>${esc(item.trade)}</b></div></div>`:''}
@@ -1500,6 +1512,7 @@
       <div class="drawer-section"><h3>뭐에 써?</h3><div class="drawer-text">${esc(item.use || '세부 사용처 미확인')}</div></div>
       ${guideShopTable(item)}
       ${recipe.length?`<div class="drawer-section"><h3>필요 재료</h3><div class="guide-materials drawer-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><div class="drawer-text guide-drawer-help">재료를 클릭하면 그 재료의 수급처와 하위 재료로 계속 내려갈 수 있어.</div></div>`:''}
+      ${item.iconSourceUrl?`<div class="drawer-section"><h3>아이템 이미지</h3><div class="drawer-text">공식 위키의 이미지와 이름표를 연결했습니다. <a href="${esc(item.iconSourceUrl)}" target="_blank" rel="noopener noreferrer">이미지 출처 확인</a></div></div>`:''}
       ${item.resourceId?`<div class="drawer-section"><h3>리소스팩 확인</h3><div class="drawer-text"><b>모델 ID:</b> ${esc(item.resourceId)}<br><b>텍스처:</b> ${esc(item.resourceTexture||'—')}<br>${item.resourceVerified?'공식/사이트 표시명과 리소스팩 모델을 연결한 항목이야.':'리소스팩에 모델은 존재하지만 서버 표시명은 리소스팩만으로 확정할 수 없어. 획득처·사용처는 확인 자료가 없으면 추측하지 않아.'}</div></div>`:''}${item.note?`<div class="drawer-section"><h3>참고 / 주의</h3><div class="drawer-text">${esc(item.note)}</div></div>`:''}
       ${(item.related||[]).length?`<div class="drawer-section"><h3>관련 항목</h3><div class="guide-materials drawer-materials">${item.related.map(n=>guideItemChip(n)).join('')}</div></div>`:''}
       <div class="drawer-section"><h3>자료 상태</h3><div class="drawer-text">${item.official===false?'기본 게임/참고 데이터. 서버 전용 규칙이 있으면 공식 서버 자료가 우선이야.':'공식 위키 기반 데이터.'}<br>${guideSourceLink(item)}</div></div></div>`;
@@ -2153,3 +2166,4 @@
     updateNextPriceChange();
   },1000);
 })();
+
