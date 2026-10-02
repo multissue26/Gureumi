@@ -690,7 +690,10 @@
     const candidate = state.cloudStatus?.candidate;
     const publishedFresh = !!published && published.cycleKey === cycle.cycleKey && isCurrentCycleStamp(published.capturedAt || published.updatedAt);
     const candidateFresh = !!candidate && candidate.cycleKey === cycle.cycleKey && isCurrentCycleStamp(candidate.capturedAt);
-    return {cycle,published,candidate,publishedFresh,candidateFresh};
+    // Worker v1.2.1 can report a corrected candidate for an already-published cycle.
+    // Keep that state distinct from "already current" so the user can republish it.
+    const hasNewCandidate = candidateFresh && state.cloudStatus?.hasNewCandidate === true;
+    return {cycle,published,candidate,publishedFresh,candidateFresh,hasNewCandidate};
   }
 
   function renderDashboard() {
@@ -714,14 +717,15 @@
       .sort((a,b) => (b.pct ?? -9999) - (a.pct ?? -9999));
     const recommendations = calcCropUnlocks().slice(0, 4);
     const freshness = priceFreshState();
-    const statusLabel = !linked ? 'WAITING' : freshness.publishedFresh ? 'CURRENT' : 'UPDATE';
-    const statusClass = linked && freshness.publishedFresh ? 'on' : '';
+    const updateReady = freshness.candidateFresh && (!freshness.publishedFresh || freshness.hasNewCandidate);
+    const statusLabel = !linked ? 'WAITING' : updateReady ? 'UPDATE' : freshness.publishedFresh ? 'CURRENT' : 'UPDATE';
+    const statusClass = linked && freshness.publishedFresh && !updateReady ? 'on' : '';
     const updateCopy = !linked
       ? 'Cloudflare에 아직 확정 가격이 없어.'
-      : freshness.publishedFresh
-        ? `현재 가격 주기 확인 완료 · ${fmtKst(freshness.published?.capturedAt || state.priceMeta?.capturedAt || state.priceMeta?.updatedAt)}`
-        : freshness.candidateFresh
-          ? `새 가격 후보가 확인됐어 · ${fmtKst(freshness.candidate.capturedAt)}`
+      : updateReady
+        ? `새 가격 후보가 확인됐어 · ${fmtKst(freshness.candidate.capturedAt)}`
+        : freshness.publishedFresh
+          ? `현재 가격 주기 확인 완료 · ${fmtKst(freshness.published?.capturedAt || state.priceMeta?.capturedAt || state.priceMeta?.updatedAt)}`
           : `가격 변동 시각이 지났어. 밀키 상점 확인이 필요해.`;
 
     $('#page-dashboard').innerHTML = `<div class="content-shell market-home">
@@ -739,10 +743,10 @@
         </div>
       </section>
 
-      ${!freshness.publishedFresh && (linked || freshness.candidateFresh) ? `<section class="price-alert ${freshness.candidateFresh?'ready':'warning'}"><div><b>${freshness.candidateFresh?'새 가격 후보가 준비됐습니다.':'가격 업데이트가 필요합니다.'}</b><span>${freshness.candidateFresh ? '밀키 상점에서 현재 주기 가격이 이미 확인됐어. 업데이트 버튼을 누르면 사이트에 반영돼.' : '현재 가격 주기의 실제 가격이 아직 확인되지 않았어.'}</span></div><div class="alert-actions"><span class="update-help" tabindex="0">업데이트 방법 ?<span class="update-help-pop">1. 모드가 설치된 PC에서 Minecraft 서버 접속<br>2. 밀키 → 요리 판매 상점 열기<br>3. 사이트로 돌아와 [최신 가격 업데이트] 클릭</span></span><button id="publishLatestBtn2" class="btn primary">최신 가격 업데이트</button></div></section>` : ''}
+      ${(!freshness.publishedFresh || freshness.hasNewCandidate) && (linked || freshness.candidateFresh) ? `<section class="price-alert ${updateReady?'ready':'warning'}"><div><b>${updateReady?'새 가격 후보가 준비됐습니다.':'가격 업데이트가 필요합니다.'}</b><span>${updateReady ? '밀키 상점에서 현재 주기 가격이 다시 확인됐어. 업데이트 버튼을 누르면 사이트에 반영돼.' : '현재 가격 주기의 실제 가격이 아직 확인되지 않았어.'}</span></div><div class="alert-actions"><span class="update-help" tabindex="0">업데이트 방법 ?<span class="update-help-pop">1. 모드가 설치된 PC에서 Minecraft 서버 접속<br>2. 밀키 → 요리 판매 상점 열기<br>3. 사이트로 돌아와 [최신 가격 업데이트] 클릭</span></span><button id="publishLatestBtn2" class="btn primary">최신 가격 업데이트</button></div></section>` : ''}
 
       <section class="metrics">
-        <div class="metric"><div class="metric-label">가격 상태</div><div class="metric-value">${freshness.publishedFresh ? '최신' : linked ? '확인 필요' : '대기'}</div><div class="metric-foot">${freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : '확정 가격 없음'}</div></div>
+        <div class="metric"><div class="metric-label">가격 상태</div><div class="metric-value">${updateReady ? '새 후보' : freshness.publishedFresh ? '최신' : linked ? '확인 필요' : '대기'}</div><div class="metric-foot">${freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : '확정 가격 없음'}</div></div>
         <div class="metric"><div class="metric-label">상승 음식</div><div class="metric-value">${changes.filter(x => x.diff > 0).length}</div><div class="metric-foot">직전 확정 주기 대비</div></div>
         <div class="metric"><div class="metric-label">하락 음식</div><div class="metric-value">${changes.filter(x => x.diff < 0).length}</div><div class="metric-foot">직전 확정 주기 대비</div></div>
         <div class="metric"><div class="metric-label">다음 가격 변경</div><div class="metric-value" id="nextChange">—</div><div class="metric-foot">1·3·6·9·12·15·18·21·24·27·30일 03:00</div></div>
@@ -1700,11 +1704,12 @@
     if (state.cloudBusy) return;
     const cycle = priceCycleInfo();
     await loadCloudState(false);
-    if (priceFreshState().publishedFresh) {
+    const freshness = priceFreshState();
+    if (freshness.publishedFresh && !freshness.hasNewCandidate) {
       toast('현재 가격 주기는 이미 확정되어 있어.');
       return;
     }
-    const candidate = state.cloudStatus?.candidate;
+    const candidate = freshness.candidate;
     if (!candidate || candidate.cycleKey !== cycle.cycleKey || !isCurrentCycleStamp(candidate.capturedAt)) {
       toast('현재 주기 가격이 아직 없어. 밀키의 요리 판매 상점을 한 번 열어줘.');
       return;
