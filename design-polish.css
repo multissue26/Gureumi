@@ -136,7 +136,7 @@ body{letter-spacing:-.02em}
 
 
 /* Resource-pack and verified wiki icon atlas. */
-.resource-sprite{--icon-size:48px;display:inline-block;width:var(--icon-size);height:var(--icon-size);flex:0 0 var(--icon-size);background-image:url("assets/resource-atlas/icons-260930.png");background-repeat:no-repeat;background-size:calc(var(--atlas-cols) * var(--icon-size)) calc(var(--atlas-rows) * var(--icon-size));background-position:calc(-1 * var(--sprite-x) * var(--icon-size)) calc(-1 * var(--sprite-y) * var(--icon-size));image-rendering:pixelated;vertical-align:middle}
+.resource-sprite{--icon-size:48px;display:inline-block;width:var(--icon-size);height:var(--icon-size);flex:0 0 var(--icon-size);background-image:url("assets/resource-atlas/icons-260930.png?v=2");background-repeat:no-repeat;background-size:calc(var(--atlas-cols) * var(--icon-size)) calc(var(--atlas-rows) * var(--icon-size));background-position:calc(-1 * var(--sprite-x) * var(--icon-size)) calc(-1 * var(--sprite-y) * var(--icon-size));image-rendering:pixelated;vertical-align:middle}
 .guide-card-icon>.resource-sprite{display:block}
 .guide-card-icon.missing>.guide-icon-placeholder{display:block;color:#60756b;font-size:10px;line-height:1.5;text-align:center;font-weight:500}
 .guide-drawer-icon .resource-sprite,.guide-answer-item-icon .resource-sprite{--icon-size:62px}
