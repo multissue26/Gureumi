@@ -12,3 +12,46 @@ body{letter-spacing:-.025em;line-height:1.55}
 @media(min-width:761px) and (max-width:1180px){.main{padding-left:22px;padding-right:22px}.top-actions{flex-wrap:wrap;justify-content:flex-end}.search-wrap{width:240px}.top-actions>.btn{display:none}.hero.market-hero{grid-template-columns:1fr}.hero-side{border-left:0;border-top:1px solid #d8e7dc;display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;padding:18px 26px}.hero-side p{grid-column:1/-1;max-width:none}.hero-side-label{margin:0}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.sidebar{height:auto;padding:16px 14px;background:#fff}.brand{padding:0 4px 15px}.nav{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px;scrollbar-width:thin}.nav-btn{width:auto;flex:0 0 auto;padding:10px 12px;min-height:40px}.nav-btn span{font-size:11px}.nav-btn.active{box-shadow:none}.main{padding:0 16px 40px}.topbar{display:block;margin-bottom:18px;padding:18px 0;height:auto}.page-heading{display:block}.page-heading h1{font-size:21px}.top-actions{display:flex;margin-top:14px;gap:8px}.search-wrap{width:100%;max-width:none;flex:1;min-width:0}.utility-buttons{gap:4px}.icon-btn{width:34px;height:38px}.hero.market-hero{grid-template-columns:1fr;min-height:0}.hero-copy{padding:24px}.hero h2{font-size:24px}.hero-side{border-left:0;border-top:1px solid #d8e7dc;padding:20px 24px;gap:8px}.hero-side-label{margin-bottom:0}.feed-big-status{font-size:20px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{min-width:0;padding:15px 12px;min-height:100px}.metric-value{font-size:21px}.metric-foot{font-size:8px}.section-head h2{font-size:18px}.food-grid{grid-template-columns:minmax(0,1fr)}.guide-hero-copy h2{font-size:23px}.market-home{padding-bottom:20px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Readability revision: normal text remains clear at 100% zoom. */
+:root{--muted:#4e6256;--muted-2:#586d60;--font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;--font-display:var(--font-ui)}
+body{font-size:calc(15px * var(--font-scale));line-height:1.65;color:#20392a}
+.nav-btn{font-size:14px;color:#405a49}.nav-label{font-size:11px;color:#536e5b}.nav-btn em,.nav-btn.active em{font-size:10px;color:#38634a}
+.brand-copy strong{font-size:16px}.brand-copy span{font-size:10px;color:#526b5b}
+.sidebar-footer{font-size:11px;color:#526b5b}.module-head{font-size:11px;color:#526b5b}.price-feed-title{font-size:14px}.side-module small{font-size:12px;color:#4e6657}.text-action{font-size:13px;color:#246644}
+.eyebrow,.hero-kicker,.hero-side-label,.market-kicker{font-size:11px;color:#4a7057}
+.search-wrap{height:44px}.search-wrap input{font-size:14px}.search-wrap input::placeholder{color:#617469}
+.btn{font-size:13px;min-height:42px}.pill{font-size:13px;min-height:36px;height:auto}.page-heading h1{font-size:25px}
+.hero h2{font-size:28px}.hero-copy>p,.market-status-hero p{font-size:14px;color:#405f4b;line-height:1.85}
+.hero .update-help{font-size:13px;color:#355e43}.update-help-pop{font-size:13px;line-height:1.8}
+.metric-label{font-size:13px;color:#4d6555}.metric-value{font-size:26px}.metric-foot{font-size:11px;color:#536c5c}
+.section-head h2{font-size:21px}.section-head p{font-size:14px;color:#4c6355;line-height:1.8}
+.market-card-head h3{font-size:19px}.market-card-head>small{font-size:12px;color:#536b5c}
+.market-rank-no,.rank-no{font-size:15px;color:#526d5b}
+.market-rank-food b,.market-rank-food strong,.rank-name{font-size:14px;color:#243d2d}
+.market-rank-food small,.market-rank-value small,.rank-meta,.rank-price span{font-size:12px;color:#536b5c}
+.market-method-note,.market-chart-head small,.market-food-picker small,.picker-head span,.source-note{font-size:12px;color:#506959;line-height:1.8}
+.market-food-picker button,.picker-list button{font-size:13px}
+.food-card h3,.ingredient-card h3{font-size:17px}
+.food-card p,.ingredient-card p,.crop-suggest-intro,.crop-suggest-item small{font-size:13px;color:#506959}
+.food-card small,.ingredient-card small,.food-tags,.recipe-row,.food-actions,.food-actions button,.crop-suggest-item b{font-size:12px}
+.notice,.note-strip,.empty,.drawer-text,.mini-row,.tool-label{font-size:13px}
+.drawer-section h3{font-size:14px;color:#506959}.recipe-line .rname{font-size:14px}.recipe-line .rsource{font-size:12px;color:#536b5c}
+.field,.tool-panel-body input,.tool-panel-body select,.tool-panel-body textarea{font-size:14px}
+.guide-hero-copy p,.guide-card p,.guide-answer-head p,.guide-panel-copy,.guide-info-grid p{font-size:14px;color:#455e4e;line-height:1.85}
+.guide-card-top span,.guide-card-top em,.guide-resource-id,.guide-data-badge{font-size:12px;color:#506959}
+.guide-card-recipe span,.guide-card>button,.guide-card-bottom button,.guide-filterbar button,.guide-examples button{font-size:13px}
+.guide-journey-step>span,.guide-journey-step small,.guide-route-title span{font-size:12px;color:#536c5b}
+.guide-journey-step b,.guide-route-row button,.guide-route-row span{font-size:14px}
+.guide-journey-step.current>span,.guide-journey-step.current small{color:#d4e8d9}
+.guide-lifecycle-head p,.guide-use-examples span,.guide-life-tip p{font-size:14px;color:#4d6254}
+.guide-life-conclusion p{font-size:14px;color:#f0f7f2}.guide-table th{font-size:13px;color:#536b5b}.guide-table td{font-size:14px}
+@media(max-width:1180px){.topbar{flex-wrap:wrap;height:auto;min-height:100px;padding:18px 0}.top-actions{min-width:0}.search-wrap{width:260px}}
+@media(max-width:760px){.nav-btn span{font-size:13px}.nav-btn{min-height:44px}.search-wrap input{font-size:14px}.top-actions{flex-wrap:wrap}.search-wrap{flex-basis:100%;width:100%;min-width:0}.utility-buttons{margin-left:auto}.hero h2{font-size:25px}.hero-copy>p{font-size:14px}.metric-label{font-size:12px}.metric-value{font-size:23px}.metric-foot{font-size:11px}.metric{min-height:116px}.section-head h2{font-size:20px}.guide-hero-copy h2{font-size:24px}}
+
+.market-selected-numbers>div small{font-size:12px;color:#526b5c}.market-selected-numbers>div b,.market-rank-value>b{font-size:17px}
+.picker-head b,.picker-food b{font-size:13px}.picker-food small{font-size:12px;color:#536b5c}
+.market-chart-empty span{font-size:13px;color:#536b5c}.market-chart-empty strong{font-size:17px}
+.change-pill{font-size:11px}.movement-table-head{font-size:12px;color:#536b5c}.movement-row{font-size:14px}
+.chart-y-label,.chart-x-label{font-size:11px;fill:#536b5c}
+.food-recipe-tip-row span,.food-recipe-tip-row b{font-size:12px}
