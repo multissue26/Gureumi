@@ -149,9 +149,10 @@ body{letter-spacing:-.02em}
 .recipe-preview-floating .food-recipe-tip-row>img.food-recipe-tip-icon{width:19px!important;height:19px!important;min-width:19px;object-fit:contain}
 .recipe-preview-floating .food-recipe-tip-row>span:not(.resource-sprite){min-width:0;padding-left:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recipe-preview-floating .food-recipe-tip-row{overflow:hidden}
-.ingredient-chip>img,.ingredient-chip>.resource-sprite,.ingredient-chip>.fallback-icon{display:block;margin:0 auto 3px}
+.ingredient-chip>img,.ingredient-chip>.resource-sprite{display:block;margin:0 auto 3px}
 .ingredient-chip>.resource-sprite{--icon-size:28px!important}
-.ingredient-chip>img[hidden]+.fallback-icon{display:block!important}
+.ingredient-chip>.fallback-icon:not([hidden]){display:block;margin:0 auto 3px}
+.ingredient-chip>.fallback-icon[hidden]{display:none!important}
 .profit-target-card{margin-top:16px;padding:22px;overflow:hidden}
 .profit-target-head{display:flex;justify-content:space-between;align-items:flex-end;gap:22px;padding-bottom:16px;border-bottom:1px solid var(--line)}
 .profit-target-head h2{font-family:var(--font-display);font-size:22px;line-height:1.25;margin:4px 0 5px}
