@@ -176,6 +176,35 @@
   function missingCrops(food) { return [...foodCrops(food)].filter(c => !state.farm.has(c)); }
   function cropName(id) { return D.crops.find(c => c.id === id)?.name || id; }
 
+  function collectNpcPurchaseIngredient(id, qty = 1, out = new Map(), seen = new Set()) {
+    if (qty <= 0 || seen.has(id)) return out;
+    const ing = resolveIngredient(id);
+    if (ing.npcPrice != null) {
+      const prev = out.get(id) || {id, ingredient:ing, qty:0, unitPrice:Number(ing.npcPrice), cost:0};
+      prev.qty += qty;
+      prev.cost = prev.qty * prev.unitPrice;
+      out.set(id, prev);
+      return out;
+    }
+    if (!ing.recipe?.length) return out;
+    const nextSeen = new Set(seen).add(id);
+    for (const [child, n] of ing.recipe) collectNpcPurchaseIngredient(child, qty * n, out, nextSeen);
+    return out;
+  }
+
+  function npcPurchasePlan(food, qty = 1) {
+    const count = Math.max(1, Math.floor(Number(qty) || 1));
+    const out = new Map();
+    for (const [id, n] of (food.recipe || [])) collectNpcPurchaseIngredient(id, count * n, out, new Set());
+    const rows = [...out.values()].sort((a,b) => b.cost - a.cost || a.ingredient.name.localeCompare(b.ingredient.name,'ko'));
+    return {
+      qty: count,
+      rows,
+      totalItems: rows.reduce((sum,row) => sum + row.qty, 0),
+      totalCost: rows.reduce((sum,row) => sum + row.cost, 0),
+    };
+  }
+
   function npcCashCostIngredient(id, qty = 1, seen = new Set()) {
     if (seen.has(id)) return 0;
     const ing = resolveIngredient(id);
@@ -187,7 +216,43 @@
   }
 
   function npcCashCostFood(food) {
-    return food.recipe.reduce((sum, [id, n]) => sum + npcCashCostIngredient(id, n), 0);
+    return npcPurchasePlan(food, 1).totalCost;
+  }
+
+  function stackBreakdown(qty) {
+    const count = Math.max(0, Math.floor(Number(qty) || 0));
+    const sets = Math.floor(count / 64);
+    const rest = count % 64;
+    return {count, sets, rest, label:`${sets.toLocaleString('ko-KR')}세트, ${rest.toLocaleString('ko-KR')}개`};
+  }
+
+  function npcPurchasePlannerHtml(food, qty = 1) {
+    const plan = npcPurchasePlan(food, qty);
+    if (!plan.rows.length) return '<div class="npc-plan-empty">NPC에서 따로 구매해야 하는 재료가 없어.</div>';
+    const rows = plan.rows.map(row => {
+      const stack = stackBreakdown(row.qty);
+      return `<div class="npc-plan-row">
+        <span class="npc-plan-item">${iconHTML(row.ingredient,'npc-plan-icon')}<span><b>${esc(row.ingredient.name)}</b><small>${fmt(row.unitPrice)} / 개</small></span></span>
+        <span class="npc-plan-qty"><b>${row.qty.toLocaleString('ko-KR')}개</b><small>${stack.label}</small></span>
+        <strong>${fmt(row.cost)}</strong>
+      </div>`;
+    }).join('');
+    return `<div class="npc-plan-list">${rows}</div>
+      <div class="npc-plan-total">
+        <div><span>총 구매 수량</span><b>${plan.totalItems.toLocaleString('ko-KR')}개</b><small>품목별 세트 환산은 위 목록 기준</small></div>
+        <div class="npc-plan-total-cost"><span>총 NPC 구매비</span><strong>${fmt(plan.totalCost)}</strong></div>
+      </div>`;
+  }
+
+  function updateNpcPurchasePlanner(input) {
+    const food = foodBySlug(input?.dataset?.craftFood);
+    if (!food) return;
+    const qty = Math.max(1, Math.floor(Number(input.value) || 1));
+    if (String(qty) !== input.value) input.value = String(qty);
+    const target = $('#npcPurchasePlanner');
+    if (target) target.innerHTML = npcPurchasePlannerHtml(food, qty);
+    const total = $('#craftPlannerTotal');
+    if (total) total.textContent = fmt(npcPurchasePlan(food, qty).totalCost);
   }
 
   function profitCropMeta(id) {
@@ -358,10 +423,13 @@
       const ing = resolveIngredient(id);
       return `<span class="food-recipe-tip-row">${iconHTML(ing, 'food-recipe-tip-icon')}<span>${esc(ing.name)}</span><b>×${qty}</b></span>`;
     }).join('');
-    return `<span class="hover-card">
-      <span class="food-recipe-tip-head"><strong>${esc(food.name)}</strong><em>${esc(gradeText(food.grade))}</em></span>
-      <span class="food-recipe-tip-label">제작 재료</span>
-      <span class="food-recipe-tip-list">${rows || '<span class="food-recipe-tip-empty">등록된 제작 재료가 없습니다.</span>'}</span>
+    return `<span class="hover-card" data-tooltip-kind="recipe">
+      <span class="food-recipe-tip-shell">
+        <span class="food-recipe-tip-head"><strong>${esc(food.name)}</strong><em>${esc(gradeText(food.grade))}</em></span>
+        <span class="food-recipe-tip-label">제작 재료</span>
+        <span class="food-recipe-tip-list">${rows || '<span class="food-recipe-tip-empty">등록된 제작 재료가 없습니다.</span>'}</span>
+        <span class="food-recipe-tip-foot"><span>NPC 구매비 <b>${fmt(npcCashCostFood(food))}</b></span><span>클릭 · 요리 제작법</span></span>
+      </span>
     </span>`;
   }
 
@@ -613,7 +681,7 @@
 
   function efficiencyRankHtml(rows) {
     if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
-    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}" data-trend-gold="0">
+    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-cooking-food="${x.food.slug}" aria-label="${esc(x.food.name)} 제작법으로 이동">
       <span class="market-rank-no">${i+1}</span>
       <span class="market-rank-food" data-tip="1">
         <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
@@ -809,6 +877,27 @@
       <div class="food-grid ${state.cookingView === 'list' ? 'list-view' : ''}">${foods.length ? foods.map(f => foodCard(f, gold)).join('') : `<div class="card empty"><strong>검색 결과가 없어.</strong>다른 음식명이나 재료명으로 검색해봐.</div>`}</div>
       <p class="source-note">현재 개인DB 레시피·가격 범위와 업로드된 서버 리소스 이미지를 기준으로 표시해.</p>
     </div>`;
+  }
+
+  function goToCookingFood(slug) {
+    const food = foodBySlug(slug);
+    if (!food) return;
+    state.query = '';
+    state.cookingFilter = 'ALL';
+    const search = $('#globalSearch');
+    if (search) search.value = '';
+    switchPage('cooking');
+    renderCooking();
+    hideFloatingTooltip();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const card = document.querySelector(`.food-card[data-food="${slug}"][data-gold="0"]`);
+      if (!card) return;
+      card.scrollIntoView({behavior:'smooth', block:'center'});
+      card.classList.remove('recipe-jump-highlight');
+      void card.offsetWidth;
+      card.classList.add('recipe-jump-highlight');
+      setTimeout(() => card.classList.remove('recipe-jump-highlight'), 1800);
+    }));
   }
 
   function renderFarm() {
@@ -1567,6 +1656,7 @@
     const p = getPrice(food,gold);
     const crops = [...foodCrops(food)].map(cropName);
     const miss = missingCrops(food).map(cropName);
+    const unitNpcCost = !gold ? npcCashCostFood(food) : 0;
     $('#detailDrawer').innerHTML = `<div class="drawer-inner"><button class="drawer-close" aria-label="닫기">×</button><div class="drawer-hero"><div class="pixel-wrap"><img class="pixel" src="${image}" alt=""></div><div><span class="grade ${gold ? 'GOLD' : food.grade}">${esc(gradeText(g))}</span><h2>${esc(name)}</h2><div class="muted" style="font-size:10px">판매 범위 ${fmt(min)} — ${fmt(max)}</div></div></div>
       <div class="drawer-section"><h3>${gold ? '황금 제작법 · 대량' : '레시피'}</h3><div class="recipe-list">${recipe.map(([id,n]) => {
         const ing = resolveIngredient(id);
@@ -1576,9 +1666,16 @@
         const ing = resolveIngredient(id);
         return `<div class="recipe-line">${iconHTML(ing)}<div><div class="rname">${esc(ing.name)}</div><div class="rsource">${esc(ing.source)}</div></div><div class="qty">×${n}</div></div>`;
       }).join('')}</div></div>` : ''}
-      ${!gold ? `<div class="drawer-section"><h3>내 농장 관점</h3><div class="drawer-text">필요 농작물 · ${crops.length ? esc(crops.join(', ')) : '없음'}<br>${miss.length ? `아직 없는 작물 · <b>${esc(miss.join(', '))}</b>` : '<b>농작물 조건은 모두 충족했어.</b>'}</div></div><div class="drawer-section"><h3>실제 NPC 구매비</h3><div class="drawer-text"><b>${fmt(npcCashCostFood(food))}</b><br>직접 수급 재료의 가치는 넣지 않고 실제 NPC 구매가 필요한 재료만 합산.</div></div>` : ''}
+      ${!gold ? `<div class="drawer-section"><h3>내 농장 관점</h3><div class="drawer-text">필요 농작물 · ${crops.length ? esc(crops.join(', ')) : '없음'}<br>${miss.length ? `아직 없는 작물 · <b>${esc(miss.join(', '))}</b>` : '<b>농작물 조건은 모두 충족했어.</b>'}</div></div>
+      <div class="drawer-section"><h3>NPC 구매비</h3><div class="npc-unit-cost"><span>1개 제작 기준</span><strong>${fmt(unitNpcCost)}</strong></div><div class="drawer-text">직접 수급하는 농작물·과일·고기 가치는 제외하고, 밀키에게 실제 골드를 주고 사는 식재료만 합산해.</div></div>
+      <div class="drawer-section craft-planner"><div class="craft-planner-head"><div><h3>제작 수량 계산</h3><p>만들 수량을 입력하면 NPC에서 사야 할 재료와 총 비용을 자동 계산해.</p></div><div class="craft-planner-total"><span>예상 총 비용</span><b id="craftPlannerTotal">${fmt(unitNpcCost)}</b></div></div>
+        <label class="craft-qty-field"><span>만들 음식 수량</span><div><input class="craft-qty-input" data-craft-food="${food.slug}" type="number" inputmode="numeric" min="1" step="1" value="1"><em>개</em></div></label>
+        <div class="craft-preset-row"><button data-craft-preset="1" data-craft-food="${food.slug}">1개</button><button data-craft-preset="10" data-craft-food="${food.slug}">10개</button><button data-craft-preset="64" data-craft-food="${food.slug}">1세트</button><button data-craft-preset="640" data-craft-food="${food.slug}">10세트</button></div>
+        <div id="npcPurchasePlanner">${npcPurchasePlannerHtml(food,1)}</div>
+        <div class="npc-plan-note">세트 환산은 <b>1세트 = 64개</b>. 현재 인벤토리 보유량은 차감하지 않은 ‘처음부터 전부 구매’ 기준이야.</div>
+      </div>` : ''}
       <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p ? `기준 ${fmt(p.marketPrice)} · 나의 판매가 <b>${fmt(p.myPrice ?? p.marketPrice)}</b>` : '가격 파일에서 아직 이 음식 값을 읽지 못했어.'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map((h,i) => `<div class="mini-row"><span>${esc(historyLabel(h,i))}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
-      <p class="source-note">개인DB 정리 데이터와 업로드된 서버 리소스 이미지를 기준으로 표시.</p></div>`;
+      <p class="source-note">완성 요리 레시피·밀키 구매가는 공식 위키와 대조. 버터 조각은 2026-10-03 인게임 확인값(요리용 우유 ×8 + 오일 ×4)을 우선 반영.</p></div>`;
     $('#drawerBackdrop').hidden = false;
     $('#detailDrawer').classList.add('open');
     $('#detailDrawer').setAttribute('aria-hidden','false');
@@ -1838,7 +1935,13 @@
     } else if (state.activeTool === 'timer') {
       $('#toolEyebrow').textContent = 'UTILITY 02';
       $('#toolTitle').textContent = '쿠킹 타이머';
-      body.innerHTML = `<div class="tool-block"><div id="timerDisplay" class="timer-display">15:00</div><div class="timer-presets"><button data-timer-preset="300">5분</button><button data-timer-preset="900">15분</button><button data-timer-preset="1800">30분</button><button data-timer-preset="3600">60분</button></div><div class="timer-actions"><button id="timerStart" class="btn primary">${state.timer.target ? '일시정지' : '시작'}</button><button id="timerReset" class="btn">초기화</button></div></div><div class="note-strip">타이머를 시작한 뒤 패널을 닫아도 계속 흘러가. 같은 브라우저에서는 새로고침 후에도 남은 시간을 복원해.</div>`;
+      const configured = Math.max(1, Math.floor(Number(state.timer.duration) || 900));
+      const timerHours = Math.floor(configured / 3600);
+      const timerMinutes = Math.floor((configured % 3600) / 60);
+      const timerSeconds = configured % 60;
+      body.innerHTML = `<div class="tool-block"><div id="timerDisplay" class="timer-display">15:00</div>
+        <div class="timer-custom"><div class="timer-custom-head"><b>직접 시간 설정</b><span>시 · 분 · 초</span></div><div class="timer-custom-grid"><label><span>시간</span><input id="timerHours" type="number" min="0" max="999" step="1" value="${timerHours}"></label><label><span>분</span><input id="timerMinutes" type="number" min="0" max="59" step="1" value="${timerMinutes}"></label><label><span>초</span><input id="timerSeconds" type="number" min="0" max="59" step="1" value="${timerSeconds}"></label><button id="timerApplyCustom" class="btn">시간 적용</button></div></div>
+        <div class="timer-presets"><button data-timer-preset="300">5분</button><button data-timer-preset="900">15분</button><button data-timer-preset="1800">30분</button><button data-timer-preset="3600">60분</button></div><div class="timer-actions"><button id="timerStart" class="btn primary">${state.timer.target ? '일시정지' : '시작'}</button><button id="timerReset" class="btn">초기화</button></div></div><div class="note-strip">직접 시간을 설정하거나 프리셋을 골라 사용할 수 있어. 시작 후 패널을 닫거나 새로고침해도 같은 브라우저에서 남은 시간을 복원해.</div>`;
       updateTimerDisplay();
     } else if (state.activeTool === 'memo') {
       $('#toolEyebrow').textContent = 'UTILITY 03';
@@ -1896,14 +1999,26 @@
   }
 
   function setTimerDuration(seconds) {
-    state.timer.duration = seconds;
-    state.timer.remaining = seconds;
+    const safe = Math.max(1, Math.floor(Number(seconds) || 1));
+    state.timer.duration = safe;
+    state.timer.remaining = safe;
     state.timer.target = 0;
     clearInterval(state.timer.interval);
     state.timer.interval = null;
     persistTimer();
     updateTimerDisplay();
     const btn=$('#timerStart'); if(btn) btn.textContent='시작';
+  }
+
+  function applyCustomTimer() {
+    const h = Math.max(0, Math.min(999, Math.floor(Number($('#timerHours')?.value) || 0)));
+    const m = Math.max(0, Math.min(59, Math.floor(Number($('#timerMinutes')?.value) || 0)));
+    const s = Math.max(0, Math.min(59, Math.floor(Number($('#timerSeconds')?.value) || 0)));
+    const seconds = h * 3600 + m * 60 + s;
+    if (seconds <= 0) { toast('타이머 시간을 1초 이상 입력해줘.'); return; }
+    setTimerDuration(seconds);
+    renderTool();
+    toast('타이머 시간을 적용했어.');
   }
 
   function startPauseTimer() {
@@ -1941,8 +2056,12 @@
     const el = $('#timerDisplay');
     if (!el) return;
     const total = timerRemaining();
-    const m = Math.floor(total/60), s = total%60;
-    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    el.textContent = h > 0
+      ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     persistTimer();
   }
 
@@ -1991,6 +2110,17 @@
     if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
     const trendMode = e.target.closest('[data-trend-mode]');
     if (trendMode) { state.selectedTrendGold=trendMode.dataset.trendMode==='gold'; localStorage.setItem('ddingTrendGold',state.selectedTrendGold?'1':'0'); renderDashboard(); return; }
+    const cookingFood = e.target.closest('[data-cooking-food]');
+    if (cookingFood) { goToCookingFood(cookingFood.dataset.cookingFood); return; }
+    const craftPreset = e.target.closest('[data-craft-preset]');
+    if (craftPreset) {
+      const input = $('.craft-qty-input');
+      if (input && input.dataset.craftFood === craftPreset.dataset.craftFood) {
+        input.value = String(Math.max(1, Number(craftPreset.dataset.craftPreset) || 1));
+        updateNpcPurchasePlanner(input);
+      }
+      return;
+    }
     const trendFood = e.target.closest('[data-trend-food]');
     if (trendFood && !trendFood.disabled) { state.selectedTrendFood=trendFood.dataset.trendFood; if (trendFood.dataset.trendGold != null) state.selectedTrendGold=trendFood.dataset.trendGold==='1'; localStorage.setItem('ddingTrendFood',state.selectedTrendFood); localStorage.setItem('ddingTrendGold',state.selectedTrendGold?'1':'0'); if(state.page!=='dashboard') switchPage('dashboard'); else renderDashboard(); return; }
     const card = e.target.closest('.food-card');
@@ -2012,7 +2142,8 @@
     const memoDelete = e.target.closest('[data-memo-delete]');
     if (memoDelete) { deleteMemo(memoDelete.dataset.memoDelete); return; }
     const preset = e.target.closest('[data-timer-preset]');
-    if (preset) { setTimerDuration(Number(preset.dataset.timerPreset)); return; }
+    if (preset) { setTimerDuration(Number(preset.dataset.timerPreset)); renderTool(); return; }
+    if (e.target.closest('#timerApplyCustom')) { applyCustomTimer(); return; }
     if (e.target.closest('#timerStart')) { startPauseTimer(); return; }
     if (e.target.closest('#timerReset')) { resetTimer(); return; }
   });
@@ -2054,6 +2185,8 @@
       state.query=e.target.value; const g=$('#globalSearch'); if(g) g.value=state.query;
     }
     if (['calcSale','calcQty','calcCost','calcExtra'].includes(e.target.id)) updateCalc();
+    const craftQty = e.target.closest?.('.craft-qty-input');
+    if (craftQty) { updateNpcPurchasePlanner(craftQty); return; }
     if (e.target.id === 'memoArea') {
       if (!state.memoEditingId) localStorage.setItem('ddingMemoDraft', e.target.value);
       const count=$('#memoCount'); if(count) count.textContent=`${e.target.value.length} chars`;
@@ -2090,6 +2223,7 @@
   function hideFloatingTooltip() {
     floatingTooltip.style.display = 'none';
     floatingTooltip.innerHTML = '';
+    floatingTooltip.classList.remove('recipe-preview-floating');
   }
 
   function positionFloatingTooltip(e) {
@@ -2113,6 +2247,7 @@
     const source = $('.hover-card', chip);
     if (!source) { hideFloatingTooltip(); return; }
     floatingTooltip.innerHTML = source.innerHTML;
+    floatingTooltip.classList.toggle('recipe-preview-floating', source.dataset.tooltipKind === 'recipe');
     floatingTooltip.style.display = 'block';
     positionFloatingTooltip(e);
   });

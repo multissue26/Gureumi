@@ -1541,15 +1541,11 @@ window.DDING_DATA = {
       "icon": "assets/ingredient/butter-slice.png",
       "emoji": "🧈",
       "source": "농작물 가공 시설",
-      "detail": "요리용 우유, 소금, 오일을 농작물 가공 시설에서 가공합니다.",
+      "detail": "요리용 우유와 오일을 농작물 가공 시설에서 가공합니다. (2026-10-03 인게임 확인값)",
       "recipe": [
         [
           "cooking_milk",
           8
-        ],
-        [
-          "salt",
-          4
         ],
         [
           "oil",
