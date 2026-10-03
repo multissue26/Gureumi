@@ -358,6 +358,15 @@
     return `${Math.round(Number(n)).toLocaleString('ko-KR')} G`;
   }
 
+  function plotStackLabel(n) {
+    const count = Math.max(0, Math.floor(Number(n) || 0));
+    const sets = Math.floor(count / 64);
+    const rest = count % 64;
+    if (sets && rest) return `${sets.toLocaleString('ko-KR')}세트 ${rest.toLocaleString('ko-KR')}칸`;
+    if (sets) return `${sets.toLocaleString('ko-KR')}세트`;
+    return `${rest.toLocaleString('ko-KR')}칸`;
+  }
+
   function saveProfitFarm() {
     localStorage.setItem(PROFIT_FARM_KEY, JSON.stringify(state.profitFarm));
   }
@@ -473,7 +482,7 @@
       const avg15 = cropUnitsForAllocation(id,plots,15,'avg');
       return `<div class="target-crop-row">
         <span class="target-crop-name">${c.icon ? `<img src="${esc(c.icon)}" alt="">` : `<i>${esc(c.emoji || '·')}</i>`}<span><b>${esc(c.name)}</b><small>1개 제작에 ${compactNumber(plan.requirements[id],1)}개 필요</small></span></span>
-        <strong>${plots.toLocaleString('ko-KR')}칸</strong>
+        <strong>${plotStackLabel(plots)}</strong>
         <span class="target-crop-yield">15분 평균 ${compactNumber(avg15,1)}개</span>
       </div>`;
     }).join('');
@@ -489,7 +498,7 @@
       : '—';
     return `<section class="card profit-target-card" id="profitTargetPlanner">
       <div class="profit-target-head">
-        <div><span class="profit-target-kicker">TARGET FOOD OPTIMIZER</span><h2>음식 하나에 경작지 몰아주기</h2><p>전체 경작지 ${Number(totalPlots||0).toLocaleString('ko-KR')}칸을 선택한 음식 생산량이 최대가 되도록 토마토·양파·마늘 비율을 역산해.</p></div>
+        <div><span class="profit-target-kicker">TARGET FOOD OPTIMIZER</span><h2>음식 하나에 경작지 몰아주기</h2><p>전체 경작지 ${plotStackLabel(totalPlots)}을 선택한 음식 생산량이 최대가 되도록 토마토·양파·마늘 비율을 역산해.</p></div>
         <label class="profit-target-select"><span>목표 음식</span><select id="profitTargetFood">${targetOptions}</select></label>
       </div>
       <div class="profit-target-hero">
@@ -499,7 +508,7 @@
       ${!totalPlots ? `<div class="profit-target-empty"><b>전체 경작지 수를 먼저 입력해줘.</b><span>위의 ‘현재 전체 경작지’ 값을 기준으로 자동 계산할게.</span></div>`
         : plan.insufficient ? `<div class="profit-target-empty warn"><b>필요 작물 종류보다 경작지가 적어.</b><span>이 음식은 ${reqIds.length}종의 핵심 작물이 필요해서 최소 ${reqIds.length}칸부터 생산량 계산이 가능해.</span></div>`
         : `<div class="profit-target-body">
-          <div class="target-crop-plan"><div class="target-plan-title"><b>최적 배치</b><span>평균 수율 기준 · 총 ${plan.total.toLocaleString('ko-KR')}칸</span></div>${cropRows}</div>
+          <div class="target-crop-plan"><div class="target-plan-title"><b>최적 배치</b><span>평균 수율 기준 · 총 ${plotStackLabel(plan.total)}</span></div>${cropRows}</div>
           <div class="target-output-grid">
             <div class="target-output-card"><span>15분당 평균 제작</span><strong>${compactNumber(quarter.avg,1)}개</strong><small>수율 범위 ${qRange}</small></div>
             <div class="target-output-card"><span>시간당 평균 제작</span><strong>${compactNumber(hour.avg,1)}개</strong><small>수율 범위 ${hRange}</small></div>
