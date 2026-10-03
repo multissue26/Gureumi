@@ -72,7 +72,9 @@
       duration: Number(localStorage.getItem('ddingTimerDuration') || 900),
       target: Number(localStorage.getItem('ddingTimerTarget') || 0),
       remaining: Number(localStorage.getItem('ddingTimerRemaining') || 900),
+      runId: localStorage.getItem('ddingTimerRunId') || '',
       interval: null,
+      audioContext: null,
     },
   };
 
@@ -218,6 +220,14 @@
 
   function npcCashCostFood(food) {
     return npcPurchasePlan(food, 1).totalCost;
+  }
+
+  function npcCashCostGoldFood(food) {
+    const bulk = food?.gold?.bulk;
+    const output = Math.max(1, Number(bulk?.output) || 1);
+    if (!bulk?.recipe?.length) return npcCashCostFood(food);
+    const total = bulk.recipe.reduce((sum,[id,qty]) => sum + npcCashCostIngredient(id, Number(qty) || 0, new Set()), 0);
+    return total / output;
   }
 
   function stackBreakdown(qty) {
@@ -2008,7 +2018,9 @@
   }
 
   function calculatorFoodOptions() {
-    return `<option value="">직접 입력</option>${D.foods.map(f => `<option value="${f.slug}">${esc(f.name)}</option>`).join('')}`;
+    const normal = D.foods.map(f => `<option value="${f.slug}">${esc(f.name)}</option>`).join('');
+    const gold = D.foods.map(f => `<option value="gold:${f.slug}">${esc(f.gold?.name || ('황금 ' + f.name))}</option>`).join('');
+    return `<option value="">직접 입력</option><optgroup label="일반 요리">${normal}</optgroup><optgroup label="황금 요리">${gold}</optgroup>`;
   }
 
   function loadMemoEntries() {
@@ -2078,7 +2090,7 @@
       $('#toolTitle').textContent = '요리 수익 계산기';
       body.innerHTML = `<div class="tool-block"><label class="tool-label">음식 선택</label><select id="calcFood" class="field">${calculatorFoodOptions()}</select></div>
         <div class="tool-block"><div class="field-row"><div><label class="tool-label">판매 단가</label><input id="calcSale" class="field" inputmode="numeric" placeholder="0"></div><div><label class="tool-label">수량</label><input id="calcQty" class="field" inputmode="numeric" value="1"></div></div><div class="field-row" style="margin-top:8px"><div><label class="tool-label">개당 직접 비용</label><input id="calcCost" class="field" inputmode="numeric" placeholder="0"></div><div><label class="tool-label">추가 고정 비용</label><input id="calcExtra" class="field" inputmode="numeric" placeholder="0"></div></div><div class="tool-result"><small>Estimated net</small><strong id="calcNet">0 G</strong><p id="calcMeta">판매가와 비용을 입력하면 바로 계산돼.</p></div></div>
-        <div class="note-strip">음식을 선택하면 연결된 현재 판매가와 이 개인DB의 <b>NPC 실제 구매비</b>를 자동으로 넣어줘. 직접 수급 재료의 기회비용은 자동 환산하지 않아.</div>`;
+        <div class="note-strip">일반·황금 요리 모두 선택할 수 있어. 연결된 현재 판매가와 <b>NPC 실제 구매비</b>를 자동 입력하고, 황금 요리는 효율적인 <b>대량 제작식의 1개당 비용</b>으로 환산해. 황금 가루·직접 수급 재료의 기회비용은 자동 환산하지 않아.</div>`;
       updateCalc();
     } else if (state.activeTool === 'timer') {
       $('#toolEyebrow').textContent = 'UTILITY 02';
@@ -2089,7 +2101,7 @@
       const timerSeconds = configured % 60;
       body.innerHTML = `<div class="tool-block"><div id="timerDisplay" class="timer-display">15:00</div>
         <div class="timer-custom"><div class="timer-custom-head"><b>직접 시간 설정</b><span>시 · 분 · 초</span></div><div class="timer-custom-grid"><label><span>시간</span><input id="timerHours" type="number" min="0" max="999" step="1" value="${timerHours}"></label><label><span>분</span><input id="timerMinutes" type="number" min="0" max="59" step="1" value="${timerMinutes}"></label><label><span>초</span><input id="timerSeconds" type="number" min="0" max="59" step="1" value="${timerSeconds}"></label><button id="timerApplyCustom" class="btn">시간 적용</button></div></div>
-        <div class="timer-presets"><button data-timer-preset="300">5분</button><button data-timer-preset="900">15분</button><button data-timer-preset="1800">30분</button><button data-timer-preset="3600">60분</button></div><div class="timer-actions"><button id="timerStart" class="btn primary">${state.timer.target ? '일시정지' : '시작'}</button><button id="timerReset" class="btn">초기화</button></div></div><div class="note-strip">직접 시간을 설정하거나 프리셋을 골라 사용할 수 있어. 시작 후 패널을 닫거나 새로고침해도 같은 브라우저에서 남은 시간을 복원해.</div>`;
+        <div class="timer-presets"><button data-timer-preset="300">5분</button><button data-timer-preset="900">15분</button><button data-timer-preset="1800">30분</button><button data-timer-preset="3600">60분</button></div><div class="timer-actions"><button id="timerStart" class="btn primary">${state.timer.target ? '일시정지' : '시작'}</button><button id="timerReset" class="btn">초기화</button></div></div><div class="note-strip">직접 시간을 설정하거나 프리셋을 골라 사용할 수 있어. 메뉴를 이동하거나 새로고침해도 <b>종료 시각 기준</b>으로 남은 시간을 복원하고, 완료되면 <b>띵~</b> 알림음과 함께 알려줘.</div>`;
       updateTimerDisplay();
     } else if (state.activeTool === 'memo') {
       $('#toolEyebrow').textContent = 'UTILITY 03';
@@ -2126,17 +2138,21 @@
     metaEl.textContent = `매출 ${fmt(revenue)} · 비용 ${fmt(totalCost)} · 마진 ${margin.toFixed(1)}%`;
   }
 
-  function selectCalcFood(slug) {
+  function selectCalcFood(value) {
+    if (!value) return;
+    const gold = String(value).startsWith('gold:');
+    const slug = gold ? String(value).slice(5) : String(value);
     const f = foodBySlug(slug);
     if (!f) return;
-    const sale = currentPrice(f) ?? f.minPrice;
+    const sale = currentPrice(f, gold) ?? (gold ? f.gold?.minPrice : f.minPrice) ?? 0;
+    const cost = gold ? npcCashCostGoldFood(f) : npcCashCostFood(f);
     $('#calcSale').value = sale;
-    $('#calcCost').value = npcCashCostFood(f);
+    $('#calcCost').value = Number.isInteger(cost) ? cost : Number(cost.toFixed(2));
     updateCalc();
   }
 
   function timerRemaining() {
-    if (state.timer.target) return Math.max(0, Math.ceil((state.timer.target - Date.now())/1000));
+    if (state.timer.target) return Math.max(0, Math.ceil((state.timer.target - Date.now()) / 1000));
     return Math.max(0, Number(state.timer.remaining ?? state.timer.duration));
   }
 
@@ -2144,18 +2160,127 @@
     localStorage.setItem('ddingTimerDuration', String(state.timer.duration));
     localStorage.setItem('ddingTimerTarget', String(state.timer.target || 0));
     localStorage.setItem('ddingTimerRemaining', String(timerRemaining()));
+    if (state.timer.runId) localStorage.setItem('ddingTimerRunId', state.timer.runId);
+    else localStorage.removeItem('ddingTimerRunId');
+  }
+
+  function stopTimerInterval() {
+    if (state.timer.interval) clearInterval(state.timer.interval);
+    state.timer.interval = null;
+  }
+
+  function ensureTimerInterval() {
+    stopTimerInterval();
+    if (state.timer.target > Date.now()) state.timer.interval = setInterval(tickTimer, 500);
+  }
+
+  function newTimerRunId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  }
+
+  function timerAudioContext() {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!state.timer.audioContext || state.timer.audioContext.state === 'closed') {
+      try { state.timer.audioContext = new AudioCtx(); } catch (_) { return null; }
+    }
+    return state.timer.audioContext;
+  }
+
+  function playTimerChime() {
+    const ctx = timerAudioContext();
+    if (!ctx || ctx.state !== 'running') return false;
+    try {
+      const now = ctx.currentTime + 0.015;
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(0.34, now + 0.015);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.18);
+      master.connect(ctx.destination);
+
+      const bell = (frequency, start, duration, level) => {
+        const osc = ctx.createOscillator();
+        const overtone = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        overtone.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, start);
+        overtone.frequency.setValueAtTime(frequency * 2.01, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(level, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.connect(gain);
+        overtone.connect(gain);
+        gain.connect(master);
+        osc.start(start); overtone.start(start);
+        osc.stop(start + duration + 0.03); overtone.stop(start + duration + 0.03);
+      };
+
+      bell(880, now, 0.72, 0.72);
+      bell(1318.51, now + 0.17, 0.9, 0.5);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function flushPendingTimerSound() {
+    const pending = localStorage.getItem('ddingTimerSoundPending');
+    if (!pending) return false;
+    if (playTimerChime()) {
+      localStorage.removeItem('ddingTimerSoundPending');
+      return true;
+    }
+    return false;
+  }
+
+  function unlockTimerAudio() {
+    const ctx = timerAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      try {
+        const resumed = ctx.resume();
+        if (resumed?.then) resumed.then(() => flushPendingTimerSound()).catch(() => {});
+      } catch (_) {}
+    } else if (ctx.state === 'running') {
+      flushPendingTimerSound();
+    }
+  }
+
+  function finishTimer() {
+    const oldTarget = Number(state.timer.target || localStorage.getItem('ddingTimerTarget') || 0);
+    const runId = state.timer.runId || localStorage.getItem('ddingTimerRunId') || (oldTarget ? `legacy-${oldTarget}` : '');
+    if (!runId) return;
+
+    stopTimerInterval();
+    state.timer.target = 0;
+    state.timer.remaining = 0;
+    state.timer.runId = '';
+    localStorage.setItem('ddingTimerCompletedRunId', runId);
+    persistTimer();
+
+    const sounded = playTimerChime();
+    if (!sounded) localStorage.setItem('ddingTimerSoundPending', runId);
+    else localStorage.removeItem('ddingTimerSoundPending');
+
+    updateTimerDisplay();
+    const btn = $('#timerStart');
+    if (btn) btn.textContent = '시작';
+    toast('쿠킹 타이머가 끝났어. 띵~ 🔔');
   }
 
   function setTimerDuration(seconds) {
     const safe = Math.max(1, Math.floor(Number(seconds) || 1));
+    stopTimerInterval();
     state.timer.duration = safe;
     state.timer.remaining = safe;
     state.timer.target = 0;
-    clearInterval(state.timer.interval);
-    state.timer.interval = null;
+    state.timer.runId = '';
+    localStorage.removeItem('ddingTimerSoundPending');
     persistTimer();
     updateTimerDisplay();
-    const btn=$('#timerStart'); if(btn) btn.textContent='시작';
+    const btn = $('#timerStart');
+    if (btn) btn.textContent = '시작';
   }
 
   function applyCustomTimer() {
@@ -2170,32 +2295,48 @@
   }
 
   function startPauseTimer() {
+    unlockTimerAudio();
     if (state.timer.target) {
       state.timer.remaining = timerRemaining();
       state.timer.target = 0;
-      clearInterval(state.timer.interval);
-      state.timer.interval = null;
+      stopTimerInterval();
     } else {
-      const remain = timerRemaining();
-      if (remain <= 0) state.timer.remaining = state.timer.duration;
-      state.timer.target = Date.now() + (state.timer.remaining || state.timer.duration)*1000;
-      state.timer.interval = setInterval(tickTimer, 500);
+      let remain = timerRemaining();
+      if (remain <= 0) {
+        remain = state.timer.duration || 900;
+        state.timer.remaining = remain;
+        state.timer.runId = '';
+      }
+      if (!state.timer.runId) state.timer.runId = newTimerRunId();
+      localStorage.removeItem('ddingTimerSoundPending');
+      state.timer.target = Date.now() + remain * 1000;
+      state.timer.remaining = remain;
+      ensureTimerInterval();
     }
     persistTimer();
     renderTool();
   }
 
-  function resetTimer() { setTimerDuration(state.timer.duration || 900); }
+  function resetTimer() {
+    setTimerDuration(state.timer.duration || 900);
+    if (state.activeTool === 'timer') renderTool();
+  }
 
   function tickTimer() {
-    const r = timerRemaining();
-    if (r <= 0 && state.timer.target) {
-      state.timer.target = 0;
-      state.timer.remaining = 0;
-      clearInterval(state.timer.interval);
-      state.timer.interval = null;
-      persistTimer();
-      toast('쿠킹 타이머가 끝났어.');
+    if (!state.timer.target) { updateTimerDisplay(); return; }
+    if (state.timer.target <= Date.now()) {
+      const runId = state.timer.runId || localStorage.getItem('ddingTimerRunId') || `legacy-${state.timer.target}`;
+      if (localStorage.getItem('ddingTimerCompletedRunId') === runId) {
+        stopTimerInterval();
+        state.timer.target = 0;
+        state.timer.remaining = 0;
+        state.timer.runId = '';
+        persistTimer();
+        updateTimerDisplay();
+        return;
+      }
+      finishTimer();
+      return;
     }
     updateTimerDisplay();
   }
@@ -2210,13 +2351,44 @@
     el.textContent = h > 0
       ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
       : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    persistTimer();
   }
 
   function restoreTimer() {
-    if (state.timer.target && state.timer.target > Date.now()) state.timer.interval = setInterval(tickTimer,500);
-    else if (state.timer.target) { state.timer.target=0; state.timer.remaining=0; persistTimer(); }
+    stopTimerInterval();
+    if (state.timer.target > Date.now()) {
+      if (!state.timer.runId) {
+        state.timer.runId = `legacy-${state.timer.target}`;
+        persistTimer();
+      }
+      ensureTimerInterval();
+      updateTimerDisplay();
+      return;
+    }
+    if (state.timer.target) {
+      const runId = state.timer.runId || `legacy-${state.timer.target}`;
+      if (localStorage.getItem('ddingTimerCompletedRunId') !== runId) {
+        state.timer.runId = runId;
+        finishTimer();
+      } else {
+        state.timer.target = 0;
+        state.timer.remaining = 0;
+        state.timer.runId = '';
+        persistTimer();
+        updateTimerDisplay();
+      }
+    }
   }
+
+  document.addEventListener('pointerdown', () => {
+    if (state.timer.target || state.activeTool === 'timer' || localStorage.getItem('ddingTimerSoundPending')) unlockTimerAudio();
+  }, {passive:true});
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && state.timer.target) tickTimer();
+  });
+  window.addEventListener('focus', () => { if (state.timer.target) tickTimer(); });
+  window.addEventListener('pagehide', persistTimer);
+
 
   document.addEventListener('click', async e => {
     const nav = e.target.closest('[data-page]');
