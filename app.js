@@ -61,6 +61,7 @@
     profitSort: localStorage.getItem('ddingProfitSort') || 'avgRevenue',
     profitFilter: localStorage.getItem('ddingProfitFilter') || 'all',
     profitPriceMode: localStorage.getItem('ddingProfitPriceMode') || 'mine',
+    profitTargetFood: localStorage.getItem('ddingProfitTargetFood') || 'onion-soup',
     guideFilter: localStorage.getItem('ddingGuideFilter') || 'all',
     guideTarget: Math.min(15, Math.max(1, Number(localStorage.getItem('ddingGuideTarget') || 15))),
     guidePage: 1,
@@ -112,12 +113,12 @@
   function hasGuideIcon(item) { return item?.iconSprite !== undefined || !!item?.icon; }
 
   function iconHTML(item, cls = '') {
-    const sprite = window.DDING_RESOURCE_ATLAS?.html(item, cls);
-    if (sprite) return sprite;
     if (item?.icon) {
       const fallbackClass = cls.includes('big') ? 'big-fallback' : 'fallback-icon';
       return `<img class="${cls}" src="${esc(item.icon)}" alt="${esc(item.name)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="${fallbackClass}" hidden>${esc(item.emoji || '□')}</span>`;
     }
+    const sprite = window.DDING_RESOURCE_ATLAS?.html(item, cls);
+    if (sprite) return sprite;
     return `<span class="${cls.includes('big') ? 'big-fallback' : 'fallback-icon'}">${esc(item?.emoji || '□')}</span>`;
   }
 
@@ -354,6 +355,150 @@
   function cropAverageHourlyRate(cropId) {
     const meta = profitCropMeta(cropId);
     return meta.yieldAvg * (60 / meta.growthMinutes);
+  }
+
+  function cropUnitsForAllocation(cropId, plots, minutes, scenario = 'avg') {
+    const meta = profitCropMeta(cropId);
+    const yieldValue = scenario === 'min' ? meta.yieldMin : scenario === 'max' ? meta.yieldMax : meta.yieldAvg;
+    return Math.max(0, Number(plots) || 0) * yieldValue * (minutes / meta.growthMinutes);
+  }
+
+  function foodUnitsForAllocation(requirements, allocation, minutes, scenario = 'avg') {
+    const entries = Object.entries(requirements).filter(([,qty]) => qty > 0);
+    if (!entries.length) return 0;
+    return Math.min(...entries.map(([id,qty]) => cropUnitsForAllocation(id, allocation[id] || 0, minutes, scenario) / qty));
+  }
+
+  function targetFoodAllocation(food, totalPlots) {
+    const total = Math.max(0, Math.floor(Number(totalPlots) || 0));
+    const requirements = profitCropRequirements(food);
+    const ids = Object.keys(requirements).filter(id => PROFIT_CROP_IDS.includes(id));
+    const allocation = Object.fromEntries(PROFIT_CROP_IDS.map(id => [id,0]));
+    if (!total || !ids.length) return {food,total,requirements,ids,allocation,insufficient:false};
+
+    if (total < ids.length) {
+      const ranked = [...ids].sort((a,b) => {
+        const wa = requirements[a] / Math.max(.0001,cropAverageHourlyRate(a));
+        const wb = requirements[b] / Math.max(.0001,cropAverageHourlyRate(b));
+        return wb-wa;
+      });
+      ranked.slice(0,total).forEach(id => allocation[id] = 1);
+      return {food,total,requirements,ids,allocation,insufficient:true};
+    }
+
+    // Every required crop receives at least one plot. Remaining plots are split
+    // in proportion to recipe demand / hourly crop yield, which maximizes the
+    // recipe's bottleneck throughput rather than balancing raw crop counts.
+    ids.forEach(id => allocation[id] = 1);
+    let remaining = total - ids.length;
+    const weights = Object.fromEntries(ids.map(id => [id, requirements[id] / Math.max(.0001,cropAverageHourlyRate(id))]));
+    const weightSum = ids.reduce((sum,id) => sum + weights[id], 0);
+    const rawExtra = Object.fromEntries(ids.map(id => [id, remaining * weights[id] / Math.max(.0001,weightSum)]));
+    let assigned = 0;
+    ids.forEach(id => {
+      const n = Math.floor(rawExtra[id]);
+      allocation[id] += n;
+      assigned += n;
+    });
+    remaining -= assigned;
+    [...ids].sort((a,b) => (rawExtra[b] % 1) - (rawExtra[a] % 1)).slice(0,remaining).forEach(id => allocation[id] += 1);
+
+    // Integer local refinement: move one plot at a time only when it increases
+    // average hourly craft throughput.
+    for (let pass=0; pass<12; pass++) {
+      const current = foodUnitsForAllocation(requirements, allocation, 60, 'avg');
+      let best = current, move = null;
+      for (const from of ids) {
+        if (allocation[from] <= 1) continue;
+        for (const to of ids) {
+          if (from === to) continue;
+          const test = {...allocation, [from]:allocation[from]-1, [to]:allocation[to]+1};
+          const score = foodUnitsForAllocation(requirements, test, 60, 'avg');
+          if (score > best + 1e-9) { best = score; move = [from,to]; }
+        }
+      }
+      if (!move) break;
+      allocation[move[0]] -= 1;
+      allocation[move[1]] += 1;
+    }
+    return {food,total,requirements,ids,allocation,insufficient:false};
+  }
+
+  function targetFoodPlan(food, totalPlots) {
+    const base = targetFoodAllocation(food,totalPlots);
+    const periods = {quarter:15,hour:60};
+    const units = {};
+    for (const [key,minutes] of Object.entries(periods)) {
+      units[key] = {
+        min: foodUnitsForAllocation(base.requirements,base.allocation,minutes,'min'),
+        avg: foodUnitsForAllocation(base.requirements,base.allocation,minutes,'avg'),
+        max: foodUnitsForAllocation(base.requirements,base.allocation,minutes,'max'),
+      };
+    }
+    const price = profitSalePrice(food);
+    const npcCost = npcCashCostFood(food);
+    const money = {};
+    for (const key of Object.keys(periods)) {
+      money[key] = price == null ? null : {
+        gross: units[key].avg * price,
+        net: units[key].avg * (price - npcCost),
+        minNet: units[key].min * (price - npcCost),
+        maxNet: units[key].max * (price - npcCost),
+      };
+    }
+    return {...base,units,price,npcCost,money};
+  }
+
+  function targetFoodPlannerCard(totalPlots) {
+    const selected = foodBySlug(state.profitTargetFood) || D.foods.find(f => Object.keys(profitCropRequirements(f)).length) || D.foods[0];
+    state.profitTargetFood = selected.slug;
+    const plan = targetFoodPlan(selected,totalPlots);
+    const reqIds = plan.ids;
+    const quarter = plan.units.quarter;
+    const hour = plan.units.hour;
+    const priceLabel = state.profitPriceMode === 'market' ? '시장 기준가' : '나의 판매가';
+    const cropRows = reqIds.map(id => {
+      const c = profitCropMeta(id);
+      const plots = plan.allocation[id] || 0;
+      const avg15 = cropUnitsForAllocation(id,plots,15,'avg');
+      return `<div class="target-crop-row">
+        <span class="target-crop-name">${c.icon ? `<img src="${esc(c.icon)}" alt="">` : `<i>${esc(c.emoji || '·')}</i>`}<span><b>${esc(c.name)}</b><small>1개 제작에 ${compactNumber(plan.requirements[id],1)}개 필요</small></span></span>
+        <strong>${plots.toLocaleString('ko-KR')}칸</strong>
+        <span class="target-crop-yield">15분 평균 ${compactNumber(avg15,1)}개</span>
+      </div>`;
+    }).join('');
+    const targetOptions = D.foods
+      .filter(f => Object.keys(profitCropRequirements(f)).length)
+      .map(f => `<option value="${f.slug}" ${f.slug===selected.slug?'selected':''}>${esc(f.name)}</option>`)
+      .join('');
+    const qRange = totalPlots > 0 && !plan.insufficient
+      ? `${compactNumber(quarter.min,1)} ~ ${compactNumber(quarter.max,1)}개`
+      : '—';
+    const hRange = totalPlots > 0 && !plan.insufficient
+      ? `${compactNumber(hour.min,1)} ~ ${compactNumber(hour.max,1)}개`
+      : '—';
+    return `<section class="card profit-target-card" id="profitTargetPlanner">
+      <div class="profit-target-head">
+        <div><span class="profit-target-kicker">TARGET FOOD OPTIMIZER</span><h2>음식 하나에 경작지 몰아주기</h2><p>전체 경작지 ${Number(totalPlots||0).toLocaleString('ko-KR')}칸을 선택한 음식 생산량이 최대가 되도록 토마토·양파·마늘 비율을 역산해.</p></div>
+        <label class="profit-target-select"><span>목표 음식</span><select id="profitTargetFood">${targetOptions}</select></label>
+      </div>
+      <div class="profit-target-hero">
+        <div class="profit-target-food"><img src="${esc(selected.image)}" alt="${esc(selected.name)}"><div><span class="grade ${esc(selected.grade)}">${esc(gradeText(selected.grade))}</span><h3>${esc(selected.name)}</h3><p>${priceLabel} · <b>${plan.price == null ? '가격 대기' : compactGold(plan.price)}</b> · NPC 구매비/개 ${compactGold(plan.npcCost)}</p></div></div>
+        <button class="btn profit-target-apply" data-profit-apply-target="${selected.slug}" ${!totalPlots || plan.insufficient ? 'disabled' : ''}>추천 배치 적용</button>
+      </div>
+      ${!totalPlots ? `<div class="profit-target-empty"><b>전체 경작지 수를 먼저 입력해줘.</b><span>위의 ‘현재 전체 경작지’ 값을 기준으로 자동 계산할게.</span></div>`
+        : plan.insufficient ? `<div class="profit-target-empty warn"><b>필요 작물 종류보다 경작지가 적어.</b><span>이 음식은 ${reqIds.length}종의 핵심 작물이 필요해서 최소 ${reqIds.length}칸부터 생산량 계산이 가능해.</span></div>`
+        : `<div class="profit-target-body">
+          <div class="target-crop-plan"><div class="target-plan-title"><b>최적 배치</b><span>평균 수율 기준 · 총 ${plan.total.toLocaleString('ko-KR')}칸</span></div>${cropRows}</div>
+          <div class="target-output-grid">
+            <div class="target-output-card"><span>15분당 평균 제작</span><strong>${compactNumber(quarter.avg,1)}개</strong><small>수율 범위 ${qRange}</small></div>
+            <div class="target-output-card"><span>시간당 평균 제작</span><strong>${compactNumber(hour.avg,1)}개</strong><small>수율 범위 ${hRange}</small></div>
+            <div class="target-output-card money"><span>시간당 예상 매출</span><strong>${plan.money.hour ? compactGold(plan.money.hour.gross) : '—'}</strong><small>${priceLabel} 기준</small></div>
+            <div class="target-output-card net"><span>시간당 예상 순수익</span><strong>${plan.money.hour ? compactGold(plan.money.hour.net) : '—'}</strong><small>${plan.money.hour ? `NPC 비용 차감 · ${compactGold(plan.money.hour.minNet)} ~ ${compactGold(plan.money.hour.maxNet)}` : '가격 데이터 필요'}</small></div>
+          </div>
+        </div>`}
+      <div class="profit-target-note">경작지 최적화는 <b>토마토·양파·마늘만 생산 병목</b>이라고 가정해. 감자·호박·과일·고기 등 다른 재료는 충분히 확보되어 있어야 실제 제작량이 이 계산에 가까워져.</div>
+    </section>`;
   }
 
   function recommendedProfitAllocation(totalPlots, current = {}) {
@@ -993,6 +1138,7 @@
         <span>15분 평균 기준 즉시 제작 가능 <b>${Math.floor(stats.units.quarter.avg).toLocaleString('ko-KR')}개</b></span>
         <span>확인 가능한 NPC 구매비/개 <b>${compactGold(npcCost)}</b>${knownNetHour == null ? '' : ` · 평균 시간당 순수익 참고 <b>${compactGold(knownNetHour)}</b>`}</span>
       </div>
+      <button class="profit-target-food-btn" data-profit-target-food="${food.slug}">이 음식 기준 최적 배치 보기</button>
     </article>`;
   }
 
@@ -1044,6 +1190,8 @@
 
         ${profitRecommendationCard(total, used)}
       </section>
+
+      ${targetFoodPlannerCard(total)}
 
       ${best ? `<div class="profit-best-strip"><span>현재 배정 최고 평균 수익</span><b>${esc(best.food.name)}</b><strong>${compactGold(best.revenue.hour.avg)} / 시간</strong><small>${priceLabel} · 최소 ${compactGold(best.revenue.hour.min)} ~ 최대 ${compactGold(best.revenue.hour.max)}</small></div>` : ''}
 
@@ -2105,6 +2253,26 @@
     if (finderFilter) { state.finderFilter=finderFilter.dataset.finderFilter; localStorage.setItem('ddingFinderFilter',state.finderFilter); renderFinder(); return; }
     const profitFilter = e.target.closest('[data-profit-filter]');
     if (profitFilter) { state.profitFilter=profitFilter.dataset.profitFilter; localStorage.setItem('ddingProfitFilter',state.profitFilter); renderProfit(); return; }
+    const profitTarget = e.target.closest('[data-profit-target-food]');
+    if (profitTarget) {
+      state.profitTargetFood = profitTarget.dataset.profitTargetFood;
+      localStorage.setItem('ddingProfitTargetFood',state.profitTargetFood);
+      renderProfit();
+      requestAnimationFrame(() => document.querySelector('#profitTargetPlanner')?.scrollIntoView({behavior:'smooth',block:'center'}));
+      return;
+    }
+    const applyTarget = e.target.closest('[data-profit-apply-target]');
+    if (applyTarget && !applyTarget.disabled) {
+      const food = foodBySlug(applyTarget.dataset.profitApplyTarget);
+      const plan = food ? targetFoodPlan(food,state.profitFarm.total) : null;
+      if (plan && !plan.insufficient) {
+        PROFIT_CROP_IDS.forEach(id => state.profitFarm[id] = plan.allocation[id] || 0);
+        saveProfitFarm();
+        renderProfit();
+        toast('선택 음식 기준 최적 경작지 배치를 적용했어.');
+      }
+      return;
+    }
     const fontChoice = e.target.closest('[data-font-choice]');
     if (fontChoice) { state.fontChoice=fontChoice.dataset.fontChoice; localStorage.setItem('ddingFontChoice',state.fontChoice); applyDisplayPrefs(); renderTool(); return; }
     if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
@@ -2162,6 +2330,12 @@
     if (e.target.id === 'profitPriceMode') {
       state.profitPriceMode = e.target.value === 'market' ? 'market' : 'mine';
       localStorage.setItem('ddingProfitPriceMode', state.profitPriceMode);
+      renderProfit();
+      return;
+    }
+    if (e.target.id === 'profitTargetFood') {
+      state.profitTargetFood = e.target.value;
+      localStorage.setItem('ddingProfitTargetFood',state.profitTargetFood);
       renderProfit();
       return;
     }

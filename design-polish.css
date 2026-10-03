@@ -142,3 +142,41 @@ body{letter-spacing:-.02em}
 .guide-drawer-icon .resource-sprite,.guide-answer-item-icon .resource-sprite{--icon-size:62px}
 .ingredient-chip .resource-sprite{--icon-size:28px}.recipe-line .resource-sprite{--icon-size:36px}
 @media(max-width:720px){.guide-answer-item-icon .resource-sprite{--icon-size:48px}}
+
+
+/* ===== v0.10.5 target-food optimizer + recipe icon fixes ===== */
+.recipe-preview-floating .food-recipe-tip-row>.resource-sprite{--icon-size:19px!important;width:19px;height:19px;min-width:19px;overflow:visible}
+.recipe-preview-floating .food-recipe-tip-row>img.food-recipe-tip-icon{width:19px!important;height:19px!important;min-width:19px;object-fit:contain}
+.recipe-preview-floating .food-recipe-tip-row>span:not(.resource-sprite){min-width:0;padding-left:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recipe-preview-floating .food-recipe-tip-row{overflow:hidden}
+.ingredient-chip>img,.ingredient-chip>.resource-sprite,.ingredient-chip>.fallback-icon{display:block;margin:0 auto 3px}
+.ingredient-chip>.resource-sprite{--icon-size:28px!important}
+.ingredient-chip>img[hidden]+.fallback-icon{display:block!important}
+.profit-target-card{margin-top:16px;padding:22px;overflow:hidden}
+.profit-target-head{display:flex;justify-content:space-between;align-items:flex-end;gap:22px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.profit-target-head h2{font-family:var(--font-display);font-size:22px;line-height:1.25;margin:4px 0 5px}
+.profit-target-head p{margin:0;color:#617168;font-size:12px;line-height:1.6;max-width:690px}
+.profit-target-kicker{font-size:9px;letter-spacing:.14em;font-weight:850;color:#2e7654}
+.profit-target-select{display:flex;flex-direction:column;gap:5px;min-width:230px}
+.profit-target-select>span{font-size:10px;color:#66766d;font-weight:800}
+.profit-target-select select{height:40px;border:1px solid #d6dfd8;border-radius:9px;background:#fbfcfa;padding:0 11px;color:#26342d;font-weight:750;outline:0}
+.profit-target-select select:focus{border-color:#7ca089;box-shadow:0 0 0 3px rgba(39,113,77,.08)}
+.profit-target-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 0}
+.profit-target-food{display:flex;align-items:center;gap:13px;min-width:0}
+.profit-target-food>img{width:54px;height:54px;object-fit:contain;image-rendering:pixelated;border:1px solid #dde4de;border-radius:11px;background:#f6f8f5;padding:5px}
+.profit-target-food h3{margin:5px 0 3px;font-size:17px}.profit-target-food p{margin:0;color:#68776e;font-size:11px}
+.profit-target-apply{flex:0 0 auto}.profit-target-apply:disabled{opacity:.45;cursor:not-allowed}
+.profit-target-body{display:grid;grid-template-columns:minmax(360px,.95fr) minmax(0,1.05fr);gap:14px}
+.target-crop-plan{border:1px solid #dde4de;border-radius:12px;background:#fbfcfa;overflow:hidden}
+.target-plan-title{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:#f0f5f1;border-bottom:1px solid #dde4de}.target-plan-title b{font-size:11px}.target-plan-title span{font-size:9px;color:#718078}
+.target-crop-row{display:grid;grid-template-columns:minmax(0,1fr) 80px 120px;gap:10px;align-items:center;padding:11px 13px;border-bottom:1px solid #e8ece8}.target-crop-row:last-child{border-bottom:0}
+.target-crop-name{display:flex;align-items:center;gap:9px;min-width:0}.target-crop-name img{width:31px;height:31px;object-fit:contain;image-rendering:pixelated}.target-crop-name i{font-style:normal;font-size:24px}.target-crop-name b{display:block;font-size:12px}.target-crop-name small{display:block;color:#7e8a83;font-size:9px;margin-top:2px}
+.target-crop-row>strong{text-align:right;font-family:var(--font-display);font-size:16px;color:#1f5f40}.target-crop-yield{text-align:right;font-size:9px;color:#66756c}
+.target-output-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.target-output-card{min-height:104px;border:1px solid #dde3de;border-radius:12px;padding:13px;background:#fff;display:flex;flex-direction:column;justify-content:center}
+.target-output-card>span{font-size:9px;color:#718078;font-weight:800}.target-output-card>strong{font-family:var(--font-display);font-size:22px;margin:6px 0 4px}.target-output-card>small{font-size:9px;color:#839087;line-height:1.4}.target-output-card.money{background:#f7f6ef}.target-output-card.net{background:#edf6f0;border-color:#d4e5da}.target-output-card.net>strong{color:#236743}
+.profit-target-note{margin-top:13px;padding:10px 12px;border-radius:9px;background:#f3f6f3;color:#68776e;font-size:10px;line-height:1.6}.profit-target-note b{color:#2d5e45}
+.profit-target-empty{padding:22px;border:1px dashed #d3ddd5;border-radius:11px;background:#fafbf9;text-align:center}.profit-target-empty b{display:block;font-size:13px}.profit-target-empty span{display:block;margin-top:5px;color:#7a877f;font-size:10px}.profit-target-empty.warn{background:#fbf7ee;border-color:#e8dcbf}
+.profit-target-food-btn{margin-top:10px;width:100%;height:34px;border:1px solid #d7dfd9;border-radius:8px;background:#f7faf7;color:#346348;font-size:10px;font-weight:800;cursor:pointer}.profit-target-food-btn:hover{background:#edf5ef;border-color:#b9cfbf}
+@media(max-width:1020px){.profit-target-body{grid-template-columns:1fr}.profit-target-head{align-items:flex-start}.profit-target-select{min-width:210px}}
+@media(max-width:760px){.profit-target-card{padding:16px}.profit-target-head{display:block}.profit-target-select{min-width:0;margin-top:14px}.profit-target-hero{align-items:flex-start;flex-direction:column}.profit-target-apply{width:100%}.target-crop-row{grid-template-columns:minmax(0,1fr) 66px}.target-crop-yield{grid-column:2;text-align:right}.target-output-grid{grid-template-columns:1fr}}
