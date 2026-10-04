@@ -600,62 +600,1146 @@
   update('세이지 곡괭이',{aliases:['세이지곡괭이','sage 곡괭이'],tags:['강화','채광','로니','라이프스톤']});
 
   // ─────────────────────────────────────────────────────────────
+  // v0.11.1 · 공식 위키 기준 획득 → 가공/제작 → 사용 흐름 보정
+  const OFFICIAL_FLOW_PATCHES = {
+    "원두": {
+      "acquire": "아일랜드에서 작물을 채집할 때 도구의 두더지 등장 확률에 따라 나타나는 두더지를 처치해 얻습니다.",
+      "use": "커피 그라인더 모듈에 넣어 커피 가루로 가공합니다. 원두와 이후 가공품에는 유통기한이 적용됩니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "커피 가루": {
+      "acquire": "커피 그라인더 모듈에서 원두를 갈아 얻습니다.",
+      "use": "커피 머신 모듈에서 컵·큐브·분말 등과 조합해 커피를 제작합니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "머그컵": {
+      "acquire": "세레니티 마을의 도구 제작 시설에서 제작합니다.",
+      "use": "커피 머신 모듈에서 완성 커피를 만들 때 사용하는 컵입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "유리컵": {
+      "acquire": "세레니티 마을의 도구 제작 시설에서 제작합니다.",
+      "use": "커피 머신 모듈에서 완성 커피를 만들 때 사용하는 컵입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "뜨거운 큐브": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "차가운 큐브": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "검정 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "초코 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "순백 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "눈꽃 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "숯 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "버섯 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "돌 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "녹색 분말": {
+      "acquire": "믹서기 모듈에서 공식 레시피에 맞는 재료를 가공해 얻습니다.",
+      "use": "커피 머신 모듈에서 등급별 커피를 만들 때 사용하는 가공 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "스팀 우유": {
+      "acquire": "우유 스티머 모듈에 우유 양동이를 넣고 1분이 지나면 얻습니다.",
+      "use": "에픽 이상 커피 제작에 사용하는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "레어 등급 커피 레시피북": {
+      "acquire": "마을에서 세레니티 농작물을 수확할 때 0.5% 확률로 등장하는 두더지를 처치하면 랜덤으로 얻습니다.",
+      "use": "사용하면 해당 커피 레시피가 5일 동안 해금됩니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "에픽 등급 커피 레시피북": {
+      "acquire": "마을에서 세레니티 농작물을 수확할 때 0.5% 확률로 등장하는 두더지를 처치하면 랜덤으로 얻습니다.",
+      "use": "사용하면 해당 커피 레시피가 5일 동안 해금됩니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "전설 등급 커피 레시피북": {
+      "acquire": "마을에서 세레니티 농작물을 수확할 때 0.5% 확률로 등장하는 두더지를 처치하면 랜덤으로 얻습니다.",
+      "use": "사용하면 해당 커피 레시피가 5일 동안 해금됩니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "신화 등급 커피 레시피북": {
+      "acquire": "마을에서 세레니티 농작물을 수확할 때 0.5% 확률로 등장하는 두더지를 처치하면 랜덤으로 얻습니다.",
+      "use": "사용하면 해당 커피 레시피가 5일 동안 해금됩니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "블랙 커피": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "카페 모카": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "화이트 모카": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "드립 커피": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "콜드 브루": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "아메리카노": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "플랫 마끼아또": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "머쉬룸 마끼아또": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "코코아 마끼아또": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "돌체 라떼": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "그린티 라떼": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "우드 라떼": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "플라워 카푸치노": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "썬더 카푸치노": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "가든 카푸치노": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "스톤 블렌디드": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "쿠키 블렌디드": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "다크 블렌디드": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "그린 트리 프라페": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "체리 블라썸 프라페": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "프로즌 스노우 프라페": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "실버문 아인슈페너": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "오로라 아인슈페너": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "골든 아인슈페너": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "인스턴트 커피": {
+      "acquire": "커피 머신 모듈에서 해금한 레시피에 맞춰 재료를 넣고 미니게임을 완료해 제작합니다.",
+      "use": "세레니티 마을 분수대 광장의 바리스타 손님 주문에 맞춰 판매해 골드를 얻습니다.",
+      "trade": "거래 불가",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%B0%94%EB%A6%AC%EC%8A%A4%ED%83%80-381fcd3d"
+    },
+    "향기로운 이슬": {
+      "acquire": "세레니티 작물을 채집할 때 확률적으로 얻습니다.",
+      "use": "손에 들고 우클릭하면 촉촉한·신비로운·따스한·매혹적인·투명한 이슬 중 하나를 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "촉촉한 이슬": {
+      "acquire": "향기로운 이슬을 사용하면 각 20% 확률로 얻습니다.",
+      "use": "세레니티 전역의 알맞은 꽃에 주입해 해당 꽃 씨앗을 얻는 데 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "신비로운 이슬": {
+      "acquire": "향기로운 이슬을 사용하면 각 20% 확률로 얻습니다.",
+      "use": "세레니티 전역의 알맞은 꽃에 주입해 해당 꽃 씨앗을 얻는 데 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "따스한 이슬": {
+      "acquire": "향기로운 이슬을 사용하면 각 20% 확률로 얻습니다.",
+      "use": "세레니티 전역의 알맞은 꽃에 주입해 해당 꽃 씨앗을 얻는 데 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "매혹적인 이슬": {
+      "acquire": "향기로운 이슬을 사용하면 각 20% 확률로 얻습니다.",
+      "use": "세레니티 전역의 알맞은 꽃에 주입해 해당 꽃 씨앗을 얻는 데 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "투명한 이슬": {
+      "acquire": "향기로운 이슬을 사용하면 각 20% 확률로 얻습니다.",
+      "use": "세레니티 전역의 알맞은 꽃에 주입해 해당 꽃 씨앗을 얻는 데 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "촉촉한 씨앗": {
+      "acquire": "세레니티 전역의 꽃에 꽃에 맞는 이슬을 주입해 얻습니다.",
+      "use": "자신의 마을 경작지에 심어 플로리스트 꽃을 재배합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "신비로운 씨앗": {
+      "acquire": "세레니티 전역의 꽃에 꽃에 맞는 이슬을 주입해 얻습니다.",
+      "use": "자신의 마을 경작지에 심어 플로리스트 꽃을 재배합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "따스한 씨앗": {
+      "acquire": "세레니티 전역의 꽃에 꽃에 맞는 이슬을 주입해 얻습니다.",
+      "use": "자신의 마을 경작지에 심어 플로리스트 꽃을 재배합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "매혹적인 씨앗": {
+      "acquire": "세레니티 전역의 꽃에 꽃에 맞는 이슬을 주입해 얻습니다.",
+      "use": "자신의 마을 경작지에 심어 플로리스트 꽃을 재배합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "투명한 씨앗": {
+      "acquire": "세레니티 전역의 꽃에 꽃에 맞는 이슬을 주입해 얻습니다.",
+      "use": "자신의 마을 경작지에 심어 플로리스트 꽃을 재배합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "아쿠아네타": {
+      "acquire": "마을 경작지에 해당 꽃 씨앗을 심어 재배해 얻습니다.",
+      "use": "테라리움 모듈에서 향장품을 제작하는 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "루밀리아": {
+      "acquire": "마을 경작지에 해당 꽃 씨앗을 심어 재배해 얻습니다.",
+      "use": "테라리움 모듈에서 향장품을 제작하는 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "솔라리스티": {
+      "acquire": "마을 경작지에 해당 꽃 씨앗을 심어 재배해 얻습니다.",
+      "use": "테라리움 모듈에서 향장품을 제작하는 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "벨라로제": {
+      "acquire": "마을 경작지에 해당 꽃 씨앗을 심어 재배해 얻습니다.",
+      "use": "테라리움 모듈에서 향장품을 제작하는 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크리스텔라": {
+      "acquire": "마을 경작지에 해당 꽃 씨앗을 심어 재배해 얻습니다.",
+      "use": "테라리움 모듈에서 향장품을 제작하는 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "아쿠아네타 앰플": {
+      "acquire": "테라리움 모듈에서 해당 꽃과 야생 재료를 조합해 제작합니다.",
+      "use": "플로리스트 완성 향장품입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "루밀리아 디퓨저": {
+      "acquire": "테라리움 모듈에서 해당 꽃과 야생 재료를 조합해 제작합니다.",
+      "use": "플로리스트 완성 향장품입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "솔라리스티 캔들": {
+      "acquire": "테라리움 모듈에서 해당 꽃과 야생 재료를 조합해 제작합니다.",
+      "use": "플로리스트 완성 향장품입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "벨라로제 퍼퓸": {
+      "acquire": "테라리움 모듈에서 해당 꽃과 야생 재료를 조합해 제작합니다.",
+      "use": "플로리스트 완성 향장품입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크리스텔라 오일": {
+      "acquire": "테라리움 모듈에서 해당 꽃과 야생 재료를 조합해 제작합니다.",
+      "use": "플로리스트 완성 향장품입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "아쿠아네타 ★": {
+      "subcategory": "꽃 · 1성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "아쿠아네타 ★★": {
+      "subcategory": "꽃 · 2성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "아쿠아네타 ★★★": {
+      "subcategory": "꽃 · 3성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "루밀리아 ★": {
+      "subcategory": "꽃 · 1성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "루밀리아 ★★": {
+      "subcategory": "꽃 · 2성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "루밀리아 ★★★": {
+      "subcategory": "꽃 · 3성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "솔라리스티 ★": {
+      "subcategory": "꽃 · 1성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "솔라리스티 ★★": {
+      "subcategory": "꽃 · 2성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "솔라리스티 ★★★": {
+      "subcategory": "꽃 · 3성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "벨라로제 ★": {
+      "subcategory": "꽃 · 1성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "벨라로제 ★★": {
+      "subcategory": "꽃 · 2성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "벨라로제 ★★★": {
+      "subcategory": "꽃 · 3성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크리스텔라 ★": {
+      "subcategory": "꽃 · 1성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크리스텔라 ★★": {
+      "subcategory": "꽃 · 2성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크리스텔라 ★★★": {
+      "subcategory": "꽃 · 3성",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "굴": {
+      "acquire": "세레니티 바다 속에서 세이지 낚싯대를 사용해 수중 채집합니다.",
+      "use": "성급에 따라 연금 제작 시설의 정수·에센스·엘릭서 계열 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "소라": {
+      "acquire": "세레니티 바다 속에서 세이지 낚싯대를 사용해 수중 채집합니다.",
+      "use": "성급에 따라 연금 제작 시설의 정수·에센스·엘릭서 계열 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "문어": {
+      "acquire": "세레니티 바다 속에서 세이지 낚싯대를 사용해 수중 채집합니다.",
+      "use": "성급에 따라 연금 제작 시설의 정수·에센스·엘릭서 계열 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "미역": {
+      "acquire": "세레니티 바다 속에서 세이지 낚싯대를 사용해 수중 채집합니다.",
+      "use": "성급에 따라 연금 제작 시설의 정수·에센스·엘릭서 계열 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "성게": {
+      "acquire": "세레니티 바다 속에서 세이지 낚싯대를 사용해 수중 채집합니다.",
+      "use": "성급에 따라 연금 제작 시설의 정수·에센스·엘릭서 계열 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "알쏭달쏭 조개": {
+      "acquire": "수중 어획물 채집 시 확률적으로 등장하는 조개를 처치해 얻습니다.",
+      "use": "사용하면 깨진 조개껍데기나 여러 색의 진주를 확률적으로 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "고대 주화": {
+      "acquire": "세레니티 바다 속 수중 어획물을 채집할 때 확률적으로 얻습니다.",
+      "use": "해양 콘텐츠의 교환·성장 흐름에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "깨진 조개껍데기": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "노란빛 진주": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "푸른빛 진주": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "청록빛 진주": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "분홍빛 진주": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "보라빛 진주": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "흑진주": {
+      "acquire": "알쏭달쏭 조개에서 확률적으로 얻습니다.",
+      "use": "해양 제작 시설에서 공예품을 만드는 재료로 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "금속 재활용품": {
+      "acquire": "세레니티 마을의 해양 제작 시설에서 낚시로 얻은 쓰레기를 가공해 제작합니다.",
+      "use": "해양 제작 시설의 공예품 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "합금 재활용품": {
+      "acquire": "세레니티 마을의 해양 제작 시설에서 낚시로 얻은 쓰레기를 가공해 제작합니다.",
+      "use": "해양 제작 시설의 공예품 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "합성수지 재활용품": {
+      "acquire": "세레니티 마을의 해양 제작 시설에서 낚시로 얻은 쓰레기를 가공해 제작합니다.",
+      "use": "해양 제작 시설의 공예품 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "플라스틱 재활용품": {
+      "acquire": "세레니티 마을의 해양 제작 시설에서 낚시로 얻은 쓰레기를 가공해 제작합니다.",
+      "use": "해양 제작 시설의 공예품 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "섬유 재활용품": {
+      "acquire": "세레니티 마을의 해양 제작 시설에서 낚시로 얻은 쓰레기를 가공해 제작합니다.",
+      "use": "해양 제작 시설의 공예품 제작에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "조개껍데기 브로치": {
+      "acquire": "해양 제작 시설에서 깨진 조개껍데기·진주·재활용품을 조합해 제작합니다.",
+      "use": "해양 공예 완성품으로 상점 판매 등 경제 활동에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "푸른 향수병": {
+      "acquire": "해양 제작 시설에서 깨진 조개껍데기·진주·재활용품을 조합해 제작합니다.",
+      "use": "해양 공예 완성품으로 상점 판매 등 경제 활동에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "자개 손거울": {
+      "acquire": "해양 제작 시설에서 깨진 조개껍데기·진주·재활용품을 조합해 제작합니다.",
+      "use": "해양 공예 완성품으로 상점 판매 등 경제 활동에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "분홍 헤어핀": {
+      "acquire": "해양 제작 시설에서 깨진 조개껍데기·진주·재활용품을 조합해 제작합니다.",
+      "use": "해양 공예 완성품으로 상점 판매 등 경제 활동에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "자개 부채": {
+      "acquire": "해양 제작 시설에서 깨진 조개껍데기·진주·재활용품을 조합해 제작합니다.",
+      "use": "해양 공예 완성품으로 상점 판매 등 경제 활동에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "흑진주 시계": {
+      "acquire": "해양 제작 시설에서 깨진 조개껍데기·진주·재활용품을 조합해 제작합니다.",
+      "use": "해양 공예 완성품으로 상점 판매 등 경제 활동에 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "심해의 고철": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 어선 수리 키트를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "해저 열수구 코어": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 어선 수리 키트를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "심연의 오로라 파편": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 어선 수리 키트를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "해구의 화석 연료": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 어선 수리 키트를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "영롱한 티타늄 광석": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 어선 수리 키트를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "어선 수리 키트": {
+      "acquire": "세레니티 마을의 도구 제작 시설에서 심해 자원을 모아 제작합니다.",
+      "use": "어선 수리에 사용하는 해양 아이템입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "캔": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 재활용품으로 가공하는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "통조림": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 재활용품으로 가공하는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "비닐봉지": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 재활용품으로 가공하는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "페트병": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 재활용품으로 가공하는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "신발": {
+      "acquire": "세레니티 해역 전역에서 세이지 낚싯대로 낚을 수 있습니다.",
+      "use": "해양 제작 시설에서 재활용품으로 가공하는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 화석이 섞인 모래": {
+      "acquire": "세레니티 전역의 초식 동물을 세이지 대검으로 사냥할 때 확률적으로 얻습니다.",
+      "use": "마을에 설치한 뒤 삽으로 발굴해 해당 공룡의 화석 부위를 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 화석이 섞인 모래": {
+      "acquire": "세레니티 전역의 초식 동물을 세이지 대검으로 사냥할 때 확률적으로 얻습니다.",
+      "use": "마을에 설치한 뒤 삽으로 발굴해 해당 공룡의 화석 부위를 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 화석이 섞인 모래": {
+      "acquire": "세레니티 전역의 초식 동물을 세이지 대검으로 사냥할 때 확률적으로 얻습니다.",
+      "use": "마을에 설치한 뒤 삽으로 발굴해 해당 공룡의 화석 부위를 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 화석이 섞인 모래": {
+      "acquire": "세레니티 전역의 초식 동물을 세이지 대검으로 사냥할 때 확률적으로 얻습니다.",
+      "use": "마을에 설치한 뒤 삽으로 발굴해 해당 공룡의 화석 부위를 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 화석이 섞인 모래": {
+      "acquire": "세레니티 전역의 초식 동물을 세이지 대검으로 사냥할 때 확률적으로 얻습니다.",
+      "use": "마을에 설치한 뒤 삽으로 발굴해 해당 공룡의 화석 부위를 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 머리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 이빨": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 몸통": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 발톱": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 꼬리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 머리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 목": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 몸통": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 다리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 꼬리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 머리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 몸통": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 등가시": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 다리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 꼬리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 부리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 목": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 몸통": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 날개": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 다리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 머리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 턱": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 몸통": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 다리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 꼬리": {
+      "acquire": "해당 공룡의 화석이 섞인 모래를 마을에 설치한 뒤 삽으로 발굴해 얻습니다.",
+      "use": "화석 제작대 모듈에서 복원된 화석을 만들거나, 같은 부위 2개를 픽스에게 화석 토큰으로 교환할 때 사용합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티 토큰": {
+      "acquire": "세레니티 마을의 픽스에게 같은 화석 부위 2개를 모아 교환해 얻습니다.",
+      "use": "화석 복원 관련 교환 콘텐츠에서 사용하는 토큰입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프 토큰": {
+      "acquire": "세레니티 마을의 픽스에게 같은 화석 부위 2개를 모아 교환해 얻습니다.",
+      "use": "화석 복원 관련 교환 콘텐츠에서 사용하는 토큰입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록 토큰": {
+      "acquire": "세레니티 마을의 픽스에게 같은 화석 부위 2개를 모아 교환해 얻습니다.",
+      "use": "화석 복원 관련 교환 콘텐츠에서 사용하는 토큰입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄 토큰": {
+      "acquire": "세레니티 마을의 픽스에게 같은 화석 부위 2개를 모아 교환해 얻습니다.",
+      "use": "화석 복원 관련 교환 콘텐츠에서 사용하는 토큰입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크 토큰": {
+      "acquire": "세레니티 마을의 픽스에게 같은 화석 부위 2개를 모아 교환해 얻습니다.",
+      "use": "화석 복원 관련 교환 콘텐츠에서 사용하는 토큰입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 화석": {
+      "acquire": "화석 제작대 모듈에서 해당 공룡의 화석 부위를 모아 제작합니다.",
+      "use": "화석 제단에서 공룡을 소환하는 후속 복원 콘텐츠로 이어지는 완성 화석입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 화석": {
+      "acquire": "화석 제작대 모듈에서 해당 공룡의 화석 부위를 모아 제작합니다.",
+      "use": "화석 제단에서 공룡을 소환하는 후속 복원 콘텐츠로 이어지는 완성 화석입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 화석": {
+      "acquire": "화석 제작대 모듈에서 해당 공룡의 화석 부위를 모아 제작합니다.",
+      "use": "화석 제단에서 공룡을 소환하는 후속 복원 콘텐츠로 이어지는 완성 화석입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 화석": {
+      "acquire": "화석 제작대 모듈에서 해당 공룡의 화석 부위를 모아 제작합니다.",
+      "use": "화석 제단에서 공룡을 소환하는 후속 복원 콘텐츠로 이어지는 완성 화석입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 화석": {
+      "acquire": "화석 제작대 모듈에서 해당 공룡의 화석 부위를 모아 제작합니다.",
+      "use": "화석 제단에서 공룡을 소환하는 후속 복원 콘텐츠로 이어지는 완성 화석입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "우티의 원혼": {
+      "acquire": "세레니티 전역의 화석 제단에서 공룡을 소환한 뒤 처치해 얻습니다.",
+      "use": "공룡·영혼 계열 후속 제작 및 교환 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "라프의 원혼": {
+      "acquire": "세레니티 전역의 화석 제단에서 공룡을 소환한 뒤 처치해 얻습니다.",
+      "use": "공룡·영혼 계열 후속 제작 및 교환 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "크록의 원혼": {
+      "acquire": "세레니티 전역의 화석 제단에서 공룡을 소환한 뒤 처치해 얻습니다.",
+      "use": "공룡·영혼 계열 후속 제작 및 교환 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "헤탄의 원혼": {
+      "acquire": "세레니티 전역의 화석 제단에서 공룡을 소환한 뒤 처치해 얻습니다.",
+      "use": "공룡·영혼 계열 후속 제작 및 교환 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "듀크의 원혼": {
+      "acquire": "세레니티 전역의 화석 제단에서 공룡을 소환한 뒤 처치해 얻습니다.",
+      "use": "공룡·영혼 계열 후속 제작 및 교환 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "오르딘": {
+      "acquire": "형광 광산 모듈에 일꾼 골렘을 투입해 채광을 완료하면 형광 광물로 얻습니다.",
+      "use": "가공·제련을 거쳐 형광 큐브와 고가 제련품을 만드는 원재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "루미트": {
+      "acquire": "형광 광산 모듈에 일꾼 골렘을 투입해 채광을 완료하면 형광 광물로 얻습니다.",
+      "use": "가공·제련을 거쳐 형광 큐브와 고가 제련품을 만드는 원재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "크레온": {
+      "acquire": "형광 광산 모듈에 일꾼 골렘을 투입해 채광을 완료하면 형광 광물로 얻습니다.",
+      "use": "가공·제련을 거쳐 형광 큐브와 고가 제련품을 만드는 원재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "벨릭": {
+      "acquire": "형광 광산 모듈에 일꾼 골렘을 투입해 채광을 완료하면 형광 광물로 얻습니다.",
+      "use": "가공·제련을 거쳐 형광 큐브와 고가 제련품을 만드는 원재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "세르칸": {
+      "acquire": "형광 광산 모듈에 일꾼 골렘을 투입해 채광을 완료하면 형광 광물로 얻습니다.",
+      "use": "가공·제련을 거쳐 형광 큐브와 고가 제련품을 만드는 원재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "오르딘 큐브": {
+      "acquire": "형광 광물을 형광 광산 제작 흐름에서 가공해 얻습니다.",
+      "use": "각 형광 제련품 제작의 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "루미트 큐브": {
+      "acquire": "형광 광물을 형광 광산 제작 흐름에서 가공해 얻습니다.",
+      "use": "각 형광 제련품 제작의 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "크레온 큐브": {
+      "acquire": "형광 광물을 형광 광산 제작 흐름에서 가공해 얻습니다.",
+      "use": "각 형광 제련품 제작의 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "벨릭 큐브": {
+      "acquire": "형광 광물을 형광 광산 제작 흐름에서 가공해 얻습니다.",
+      "use": "각 형광 제련품 제작의 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "세르칸 큐브": {
+      "acquire": "형광 광물을 형광 광산 제작 흐름에서 가공해 얻습니다.",
+      "use": "각 형광 제련품 제작의 핵심 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "오르딘 미니 망치": {
+      "acquire": "형광 광산의 큐브와 공식 레시피 재료를 조합해 제작합니다.",
+      "use": "완성된 형광 제련품으로 세레니티 마을 NPC 로니에게 판매해 수익을 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "루미트 강철 방패": {
+      "acquire": "형광 광산의 큐브와 공식 레시피 재료를 조합해 제작합니다.",
+      "use": "완성된 형광 제련품으로 세레니티 마을 NPC 로니에게 판매해 수익을 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "크레온 장인 석궁": {
+      "acquire": "형광 광산의 큐브와 공식 레시피 재료를 조합해 제작합니다.",
+      "use": "완성된 형광 제련품으로 세레니티 마을 NPC 로니에게 판매해 수익을 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "벨릭 사냥 스피어": {
+      "acquire": "형광 광산의 큐브와 공식 레시피 재료를 조합해 제작합니다.",
+      "use": "완성된 형광 제련품으로 세레니티 마을 NPC 로니에게 판매해 수익을 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "세르칸 초승달 단검": {
+      "acquire": "형광 광산의 큐브와 공식 레시피 재료를 조합해 제작합니다.",
+      "use": "완성된 형광 제련품으로 세레니티 마을 NPC 로니에게 판매해 수익을 얻습니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%ED%98%95%EA%B4%91-%EA%B4%91%EC%82%B0-3af3a76a"
+    },
+    "사슴의 뿔": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "미어캣의 꼬리": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "기린의 가죽": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "코끼리의 상아": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "하마의 송곳니": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "플라밍고의 부리": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "칠면조의 깃털": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "곰의 발바닥": {
+      "acquire": "세레니티 전역의 해당 초식 동물을 세이지 대검으로 사냥해 얻습니다.",
+      "use": "영혼 가공 시설에서 해당 동물의 영혼으로 가공합니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "사슴의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "미어캣의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "기린의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "코끼리의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "하마의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "플라밍고의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "칠면조의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "곰의 영혼": {
+      "acquire": "영혼 가공 시설에서 해당 초식 동물 전리품을 가공해 얻습니다.",
+      "use": "강화 제작 시설에서 세이지 도구별 영혼 계약서를 만드는 재료입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EC%84%B8%EB%A0%88%EB%8B%88%ED%8B%B0-%EC%95%84%EC%9D%B4%ED%85%9C-85e4c935"
+    },
+    "번영의 영혼 계약서": {
+      "use": "세이지 괭이 각인 시 추가로 소모되는 계약서입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%8F%84%EA%B5%AC-%EA%B0%81%EC%9D%B8-3c09f177"
+    },
+    "파쇄의 영혼 계약서": {
+      "use": "세이지 곡괭이 각인 시 추가로 소모되는 계약서입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%8F%84%EA%B5%AC-%EA%B0%81%EC%9D%B8-3c09f177"
+    },
+    "만조의 영혼 계약서": {
+      "use": "세이지 낚싯대 각인 시 추가로 소모되는 계약서입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%8F%84%EA%B5%AC-%EA%B0%81%EC%9D%B8-3c09f177"
+    },
+    "정복의 영혼 계약서": {
+      "use": "세이지 대검 각인 시 추가로 소모되는 계약서입니다.",
+      "sourceUrl": "https://wiki.ddingtycoon.kr/ko/articles/%EB%8F%84%EA%B5%AC-%EA%B0%81%EC%9D%B8-3c09f177"
+    }
+  };
+  Object.entries(OFFICIAL_FLOW_PATCHES).forEach(([name, patch]) => update(name, patch));
+
+  // ─────────────────────────────────────────────────────────────
   // v0.11.0 · 공식 표시명 기준 아이콘 연결
   // 사용자에게 보여주는 이름/획득처/사용처는 공식 문서의 한국어 표기를 기준으로 유지합니다.
   // 내부 파일명에서 임의로 아이템을 만들어 추가하지 않습니다.
   const VERIFIED_ICON_MAP = {
+    "가든 카푸치노": "assets/resource_items/garden_cappuccino.png",
     "갈릭 케이크": "assets/food/garlic-cake.png",
     "감자": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/potato.png",
     "감자 묶음": "assets/ingredient/potato-bundle.png",
+    "검정 분말": "assets/resource_items/black_powder.png",
     "경작지 강화권": "assets/resource_items/town_pot_upgrade.png",
+    "고대 주화": "assets/resource_items/ancient_coin.png",
+    "고독한 가죽 키링": "assets/resource_items/leather_keyring.png",
+    "고독한 영혼의 가죽": "assets/resource_items/soul_leather_1.png",
     "골드하프": "assets/resource_items/gold_harp.png",
+    "골든 아인슈페너": "assets/resource_items/golden_einspanner.png",
+    "곰의 발바닥": "assets/resource_items/item_bear.png",
+    "곰의 영혼": "assets/resource_items/soul_bear.png",
+    "광물 캔디": "assets/resource_items/mining_candy.png",
+    "굴": "assets/resource_items/oyster.png",
+    "그랜드 크러시": "assets/resource_items/skill_hammer_3.png",
+    "그로브 클랩": "assets/resource_items/skill_staff_5.png",
+    "그린 트리 프라페": "assets/resource_items/greentree_frappe.png",
+    "그린티 라떼": "assets/resource_items/greentea_latte.png",
+    "글라이": "assets/resource_items/aquarium_fish_2.png",
     "금 가루": "assets/ingredient/gold-dust.png",
     "금붕어": "assets/resource_items/fish_goldfish.png",
     "금붕어 회": "assets/resource_items/fish_piece_goldfish.png",
+    "금속 재활용품": "assets/resource_items/metal_recyclable.png",
+    "기린의 가죽": "assets/resource_items/item_giraffe.png",
+    "기린의 영혼": "assets/resource_items/soul_giraffe.png",
     "기반암 제거권": "assets/resource_items/bedrock_remove.png",
+    "길드": "assets/resource_items/aquarium_fish_8.png",
     "깐 새우": "assets/resource_items/fish_piece_shrimp.png",
+    "깨진 조개껍데기": "assets/resource_items/broken_mystery_shell.png",
+    "나무 어선 획득권": "assets/resource_items/wood_fish_boat.png",
+    "노란빛 진주": "assets/resource_items/yellow_pearl.png",
     "노멀 등급 일반 인챈트북": "assets/resource_items/normal_general_enchant_book.png",
     "노멀 등급 특수 인챈트북": "assets/resource_items/normal_special_enchant_book.png",
     "노멀 열쇠": "assets/resource_items/normal_key.png",
     "노멀 열쇠 조각": "assets/resource_items/normal_key_piece.png",
+    "녹색 분말": "assets/resource_items/green_powder.png",
     "농어": "assets/resource_items/fish_sea_bass.png",
+    "농어 회": "assets/resource_items/fish_sea_piece_bass.png",
+    "눈꽃 분말": "assets/resource_items/snow_powder.png",
+    "늑대 소환 알": "assets/resource_items/wolf_egg.png",
+    "다크 블렌디드": "assets/resource_items/dark_blended.png",
     "달콤 시리얼": "assets/food/sweet-cereal.png",
     "달콤한 열매": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sweet_berries.png",
     "달콤한 열매 묶음": "assets/ingredient/sweet-berries-bundle.png",
     "당근": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/carrot.png",
     "당근 묶음": "assets/resource_items/carrot_bundle.png",
+    "데스 사이클론": "assets/resource_items/skill_scythe_1.png",
+    "도미 회": "assets/resource_items/fish_sea_piece_bream.png",
+    "돌 분말": "assets/resource_items/stone_powder.png",
     "돌체 라떼": "assets/resource_items/dolce_latte.png",
+    "듀크 토큰": "assets/resource_items/fossil_coin_5.png",
+    "듀크의 꼬리": "assets/resource_items/fossil_5_5.png",
+    "듀크의 다리": "assets/resource_items/fossil_5_4.png",
+    "듀크의 머리": "assets/resource_items/fossil_5_1.png",
+    "듀크의 몸통": "assets/resource_items/fossil_5_3.png",
+    "듀크의 턱": "assets/resource_items/fossil_5_2.png",
+    "듀크의 화석이 섞인 모래": "assets/resource_items/fossil_sand_5.png",
+    "드래곤 이그니션": "assets/resource_items/skill_sword_4.png",
     "드립 커피": "assets/resource_items/drip_coffee.png",
     "딥 크림 빠네": "assets/food/deep-cream-pane.png",
+    "따스한 씨앗": "assets/resource_items/solaristi_seed.png",
+    "따스한 이슬": "assets/resource_items/solarist_dew.png",
+    "뜨거운 큐브": "assets/resource_items/hot_cube.png",
+    "라프 토큰": "assets/resource_items/fossil_coin_2.png",
+    "라프의 꼬리": "assets/resource_items/fossil_2_5.png",
+    "라프의 다리": "assets/resource_items/fossil_2_4.png",
+    "라프의 머리": "assets/resource_items/fossil_2_1.png",
+    "라프의 목": "assets/resource_items/fossil_2_2.png",
+    "라프의 몸통": "assets/resource_items/fossil_2_3.png",
+    "라프의 화석이 섞인 모래": "assets/resource_items/fossil_sand_2.png",
+    "락온 트리거": "assets/resource_items/skill_gun_3.png",
     "레어 등급 일반 인챈트북": "assets/resource_items/rare_general_enchant_book.png",
+    "레어 등급 커피 레시피북": "assets/resource_items/rare_coffee_recipe.png",
     "레어 등급 특수 인챈트북": "assets/resource_items/rare_special_enchant_book.png",
     "로스트 치킨 파이": "assets/food/roast-chicken-pie.png",
+    "루모스": "assets/resource_items/aquarium_fish_4.png",
+    "루미트": "assets/resource_items/lumit.png",
+    "루미트 강철 방패": "assets/resource_items/lumit_result.png",
+    "루미트 큐브": "assets/resource_items/lumit_cube.png",
     "루밀리아": "assets/resource_items/lumilia.png",
+    "루밀리아 ★": "assets/resource_items/lumilia_1star.png",
+    "루밀리아 ★★": "assets/resource_items/lumilia_2star.png",
+    "루밀리아 ★★★": "assets/resource_items/lumilia_3star.png",
+    "루밀리아 디퓨저": "assets/resource_items/lumilia_diffuser.png",
     "루키 등급 일반 인챈트북": "assets/resource_items/rookie_general_enchant_book.png",
     "루키 등급 특수 인챈트북": "assets/resource_items/rookie_special_enchant_book.png",
     "루키 열쇠": "assets/resource_items/rookie_key.png",
     "루키 열쇠 조각": "assets/resource_items/rookie_key_piece.png",
+    "리니어 레인": "assets/resource_items/skill_bow_4.png",
+    "리버스 커터": "assets/resource_items/skill_sword_2.png",
+    "리프 시커": "assets/resource_items/skill_staff_1.png",
     "리프톤": "assets/resource_items/leaftone.png",
     "리프톤 주괴": "assets/resource_items/leaftone_ingot.png",
     "마늘": "assets/resource_items/crop_garlic.png",
     "마늘 베이스": "assets/ingredient/garlic-base.png",
     "마늘 씨앗": "assets/resource_items/crop_garlic_seed.png",
     "마늘 양갈비 핫도그": "assets/food/garlic-lamb-hotdog.png",
+    "매혹적인 씨앗": "assets/resource_items/bellarose_seed.png",
+    "매혹적인 이슬": "assets/resource_items/bellarose_dew.png",
+    "머그컵": "assets/resource_items/mug_cup.png",
+    "머쉬룸 마끼아또": "assets/resource_items/mushroom_macchiato.png",
+    "먹": "assets/resource_items/aquarium_fish_1.png",
     "멤버 강화권": "assets/resource_items/town_member_upgrade.png",
+    "문어": "assets/resource_items/octopus.png",
     "미식 등급 일반 인챈트북": "assets/resource_items/mythic_general_enchant_book.png",
     "미식 등급 특수 인챈트북": "assets/resource_items/mythic_special_enchant_book.png",
+    "미어캣의 꼬리": "assets/resource_items/item_meerkat.png",
+    "미어캣의 영혼": "assets/resource_items/soul_meerkat.png",
+    "미역": "assets/resource_items/seaweed.png",
     "밀": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/wheat.png",
+    "바인 크리프": "assets/resource_items/skill_staff_2.png",
+    "반짝 광택제": "assets/resource_items/shile_polish.png",
+    "버던트 메테오": "assets/resource_items/skill_staff_4.png",
+    "버섯 분말": "assets/resource_items/mushroom_powder.png",
     "버터 조각": "assets/resource_items/butter.png",
     "벨 코인": "assets/resource_items/bell_coin.png",
     "벨라로제": "assets/resource_items/bellarose.png",
+    "벨라로제 ★": "assets/resource_items/bellarose_1star.png",
+    "벨라로제 ★★": "assets/resource_items/bellarose_2star.png",
+    "벨라로제 ★★★": "assets/resource_items/bellarose_3star.png",
+    "벨라로제 퍼퓸": "assets/resource_items/bellarose_perfume.png",
+    "벨릭": "assets/resource_items/velic.png",
+    "벨릭 사냥 스피어": "assets/resource_items/velic_result.png",
+    "벨릭 큐브": "assets/resource_items/velic_cube.png",
+    "보라빛 진주": "assets/resource_items/purple_pearl.png",
     "분해된 뱃지": "assets/resource_items/badge_powder.png",
+    "분홍 헤어핀": "assets/resource_items/pink_hairpin.png",
+    "분홍빛 진주": "assets/resource_items/pink_pearl.png",
     "브렉사 링": "assets/resource_items/brexa_ring.png",
     "브렉사 벨트": "assets/resource_items/brexa_belt.png",
     "브렉사 이어링": "assets/resource_items/brexa_earring.png",
     "브렉사 펜던트": "assets/resource_items/brexa_pendant.png",
+    "브로드 샷": "assets/resource_items/skill_gun_2.png",
     "블랙 커피": "assets/resource_items/black_coffee.png",
+    "비닐봉지": "assets/resource_items/plastic_bag.png",
+    "비비드": "assets/resource_items/aquarium_fish_7.png",
     "비트": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/beetroot.png",
     "비트 묶음": "assets/resource_items/beetroot_bundle.png",
+    "사슴의 뿔": "assets/resource_items/item_deer.png",
+    "사슴의 영혼": "assets/resource_items/soul_deer.png",
+    "사자 소환 알": "assets/resource_items/lion_egg.png",
     "사탕수수": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar_cane.png",
     "사파이어": "assets/resource_items/raw_sapphire.png",
     "사파이어 주괴": "assets/resource_items/sapphire_ingot.png",
@@ -669,15 +1753,31 @@
     "석유": "assets/resource_items/petroleum.png",
     "설탕": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar.png",
     "설탕 큐브": "assets/ingredient/sugar-cube.png",
+    "섬유 재활용품": "assets/resource_items/fiber_recyclable.png",
+    "성게": "assets/resource_items/sea_urchin.png",
+    "세라핌 디센트": "assets/resource_items/skill_bow_5.png",
     "세렌트": "assets/resource_items/serent.png",
     "세렌트 주괴": "assets/resource_items/serent_ingot.png",
+    "세르칸": "assets/resource_items/serkan.png",
+    "세르칸 초승달 단검": "assets/resource_items/serkan_result.png",
+    "세르칸 큐브": "assets/resource_items/serkan_cube.png",
     "세리온 링": "assets/resource_items/serion_ring.png",
     "세리온 벨트": "assets/resource_items/serion_belt.png",
     "세리온 이어링": "assets/resource_items/serion_earring.png",
     "세리온 펜던트": "assets/resource_items/serion_pendant.png",
+    "소라": "assets/resource_items/conch.png",
+    "소울 디스크": "assets/resource_items/skill_scythe_3.png",
     "솔라리스티": "assets/resource_items/solaristi.png",
+    "솔라리스티 ★": "assets/resource_items/solaristi_1star.png",
+    "솔라리스티 ★★": "assets/resource_items/solaristi_2star.png",
+    "솔라리스티 ★★★": "assets/resource_items/solaristi_3star.png",
+    "솔라리스티 캔들": "assets/resource_items/solarist_candle.png",
     "수박": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/melon_slice.png",
     "수박 묶음": "assets/ingredient/melon-bundle.png",
+    "순백 분말": "assets/resource_items/purewhite_powder.png",
+    "숯 분말": "assets/resource_items/charcoal_powder.png",
+    "스러스트 러시": "assets/resource_items/skill_spear_2.png",
+    "스위프트 샷": "assets/resource_items/skill_bow_2.png",
     "스윗 치킨 햄버거": "assets/food/sweet-chicken-burger.png",
     "스태미나 드링크 I": "assets/resource_items/stamina_drink_1.png",
     "스태미나 드링크 II": "assets/resource_items/stamina_drink_2.png",
@@ -685,12 +1785,41 @@
     "스태미나 드링크 IV": "assets/resource_items/stamina_drink_4.png",
     "스태미나 드링크 V": "assets/resource_items/stamina_drink_5.png",
     "스테이크": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_beef.png",
+    "스톤 블렌디드": "assets/resource_items/stone_blended.png",
+    "스틸 임팩트": "assets/resource_items/skill_hammer_1.png",
+    "스팀 우유": "assets/resource_items/steamed_milk.png",
     "식용 금 가루": "assets/ingredient/gold-dust.png",
+    "신발": "assets/resource_items/shoe.png",
+    "신비로운 씨앗": "assets/resource_items/lumilia_seed.png",
+    "신비로운 이슬": "assets/resource_items/lumilia_dew.png",
+    "신비한 가죽 팔찌": "assets/resource_items/leather_bracelet.png",
+    "신비한 영혼의 가죽": "assets/resource_items/soul_leather_2.png",
+    "신화 등급 커피 레시피북": "assets/resource_items/mythic_coffee_recipe.png",
     "신화 열쇠": "assets/resource_items/mythic_key.png",
     "신화 열쇠 조각": "assets/resource_items/mythic_key_piece.png",
+    "실버문 아인슈페너": "assets/resource_items/silvermoon_einspanner.png",
+    "심연의 오로라 파편": "assets/resource_items/repair_aurora.png",
     "심층암 조약돌 뭉치": "assets/resource_items/cobbled_deepslate_bundle.png",
+    "심해의 고철": "assets/resource_items/repair_scrap.png",
+    "썬더 카푸치노": "assets/resource_items/thunder_cappuccino.png",
+    "아기 글라이": "assets/resource_items/aquarium_babyfish_2.png",
+    "아기 길드": "assets/resource_items/aquarium_babyfish_8.png",
+    "아기 루모스": "assets/resource_items/aquarium_babyfish_4.png",
+    "아기 먹": "assets/resource_items/aquarium_babyfish_1.png",
+    "아기 비비드": "assets/resource_items/aquarium_babyfish_7.png",
+    "아기 에테리아": "assets/resource_items/aquarium_babyfish_9.png",
+    "아기 체다": "assets/resource_items/aquarium_babyfish_3.png",
+    "아기 토라": "assets/resource_items/aquarium_babyfish_5.png",
+    "아기 팽": "assets/resource_items/aquarium_babyfish_6.png",
     "아메리카노": "assets/resource_items/americano.png",
     "아쿠아네타": "assets/resource_items/aquanetta.png",
+    "아쿠아네타 ★": "assets/resource_items/aquanetta_1star.png",
+    "아쿠아네타 ★★": "assets/resource_items/aquanetta_2star.png",
+    "아쿠아네타 ★★★": "assets/resource_items/aquanetta_3star.png",
+    "아쿠아네타 앰플": "assets/resource_items/aquanetta_ampoule.png",
+    "악어 소환 알": "assets/resource_items/crocodile_egg.png",
+    "알쏭달쏭 조개": "assets/resource_items/mystery_shell.png",
+    "앱솔루트 도미니온": "assets/resource_items/skill_spear_5.png",
     "양파": "assets/resource_items/crop_onion.png",
     "양파 베이스": "assets/ingredient/onion-base.png",
     "양파 수프": "assets/food/onion-soup.png",
@@ -698,20 +1827,47 @@
     "어니언 링": "assets/food/onion-rings.png",
     "어빌리티 스톤": "assets/resource_items/ability_stone.png",
     "어선 수리 키트": "assets/resource_items/boat_repair_kit.png",
+    "업리프트 임팩트": "assets/resource_items/skill_sword_3.png",
+    "에너지 버스트": "assets/resource_items/skill_gun_1.png",
+    "에테리아": "assets/resource_items/aquarium_fish_9.png",
     "에픽 등급 일반 인챈트북": "assets/resource_items/epic_general_enchant_book.png",
+    "에픽 등급 커피 레시피북": "assets/resource_items/epic_coffee_recipe.png",
     "에픽 등급 특수 인챈트북": "assets/resource_items/epic_special_enchant_book.png",
+    "영롱한 티타늄 광석": "assets/resource_items/repair_titanium.png",
+    "오로라 아인슈페너": "assets/resource_items/aurora_einspanner.png",
     "오로라 조각": "assets/resource_items/aurora_piece.png",
+    "오르딘": "assets/resource_items/ordin.png",
+    "오르딘 미니 망치": "assets/resource_items/ordin_result.png",
+    "오르딘 큐브": "assets/resource_items/ordin_cube.png",
+    "오리진 이지스": "assets/resource_items/skill_hammer_4.png",
+    "오버클락 프로토콜": "assets/resource_items/skill_gun_5.png",
     "오브레 링": "assets/resource_items/ovre_ring.png",
     "오브레 벨트": "assets/resource_items/ovre_belt.png",
     "오브레 이어링": "assets/resource_items/ovre_earring.png",
     "오브레 펜던트": "assets/resource_items/ovre_pendant.png",
+    "와이번 어웨이크": "assets/resource_items/skill_sword_5.png",
     "요리용 소금": "assets/ingredient/cooking-salt.png",
     "요리용 우유": "assets/ingredient/cooking-milk.png",
+    "우드 라떼": "assets/resource_items/wood_latte.png",
+    "우드 서지": "assets/resource_items/skill_staff_3.png",
+    "우티 토큰": "assets/resource_items/fossil_coin_1.png",
+    "우티의 꼬리": "assets/resource_items/fossil_1_5.png",
+    "우티의 머리": "assets/resource_items/fossil_1_1.png",
+    "우티의 몸통": "assets/resource_items/fossil_1_3.png",
+    "우티의 발톱": "assets/resource_items/fossil_1_4.png",
+    "우티의 이빨": "assets/resource_items/fossil_1_2.png",
+    "우티의 화석이 섞인 모래": "assets/resource_items/fossil_sand_1.png",
     "워프 강화권": "assets/resource_items/town_warp_upgrade.png",
+    "원두": "assets/resource_items/coffee_beans.png",
+    "위습 버스트": "assets/resource_items/skill_scythe_2.png",
+    "유리컵": "assets/resource_items/glass_cup.png",
+    "육식 동물 덫": "assets/resource_items/trap.png",
+    "이터널 나이트메어": "assets/resource_items/skill_scythe_5.png",
     "익히지 않은 닭 가슴살": "assets/resource_items/chicken_chest.png",
     "익히지 않은 닭 다리살": "assets/resource_items/chicken_leg.png",
     "익히지 않은 돼지 삼겹살": "assets/resource_items/pork_belly.png",
     "익히지 않은 돼지 앞다리살": "assets/resource_items/pork_picnic.png",
+    "익히지 않은 새우": "assets/resource_items/fish_shrimp.png",
     "익히지 않은 소 갈비살": "assets/resource_items/cow_rib.png",
     "익히지 않은 소 등심": "assets/resource_items/cow_loin.png",
     "익히지 않은 양 갈비살": "assets/resource_items/french_rack.png",
@@ -730,29 +1886,66 @@
     "익힌 양 다리살": "assets/resource_items/cooked_sheep_cube_meat.png",
     "익힌 양고기": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_mutton.png",
     "익힌 청어": "assets/resource_items/cooked_herring.png",
+    "인스턴트 커피": "assets/resource_items/mix_coffee.png",
     "인챈트북 조각": "assets/resource_items/enchant_book_piece.png",
+    "자개 부채": "assets/resource_items/mother_of_pearl_fan.png",
+    "자개 손거울": "assets/resource_items/mother_of_pearl_hand_mirror.png",
+    "장인 인증 도장": "assets/resource_items/master_stamp.png",
     "전설 등급 일반 인챈트북": "assets/resource_items/legendary_general_enchant_book.png",
+    "전설 등급 커피 레시피북": "assets/resource_items/legendary_coffee_recipe.png",
     "전설 등급 특수 인챈트북": "assets/resource_items/legendary_special_enchant_book.png",
     "전설 열쇠": "assets/resource_items/legendary_key.png",
     "전설 열쇠 조각": "assets/resource_items/legendary_key_piece.png",
+    "조개껍데기 브로치": "assets/resource_items/shell_brooch.png",
     "조약돌 뭉치": "assets/resource_items/cobblestone_bundle.png",
     "중급 라이프스톤": "assets/resource_items/greendell_tool_enhancestone2.png",
+    "차가운 큐브": "assets/resource_items/cold_cube.png",
+    "차지 블로우": "assets/resource_items/skill_bow_1.png",
+    "청록빛 진주": "assets/resource_items/turquoise_pearl.png",
     "청어 회": "assets/resource_items/fish_piece_herring.png",
+    "체다": "assets/resource_items/aquarium_fish_3.png",
+    "체리 블라썸 프라페": "assets/resource_items/cherryblossom_frappe.png",
+    "초코 분말": "assets/resource_items/choco_powder.png",
+    "촉촉한 씨앗": "assets/resource_items/aquanetta_seed.png",
+    "촉촉한 이슬": "assets/resource_items/aquanetta_dew.png",
     "치즈 조각": "assets/resource_items/cheese_slice.png",
     "카르벤 링": "assets/resource_items/carven_ring.png",
     "카르벤 벨트": "assets/resource_items/carven_belt.png",
     "카르벤 이어링": "assets/resource_items/carven_earring.png",
     "카르벤 펜던트": "assets/resource_items/carven_pendant.png",
     "카페 모카": "assets/resource_items/cafe_mocha.png",
+    "캔": "assets/resource_items/can.png",
     "커먼 등급 일반 인챈트북": "assets/resource_items/common_general_enchant_book.png",
     "커먼 등급 특수 인챈트북": "assets/resource_items/common_special_enchant_book.png",
+    "커스 소서러": "assets/resource_items/skill_scythe_4.png",
+    "커피 가루": "assets/resource_items/coffee_powder.png",
+    "컨비전스 스플릿": "assets/resource_items/skill_bow_3.png",
+    "코끼리의 상아": "assets/resource_items/item_elephant.png",
+    "코끼리의 영혼": "assets/resource_items/soul_elephant.png",
     "코룸": "assets/resource_items/corum.png",
     "코룸 주괴": "assets/resource_items/corum_ingot.png",
     "코코넛": "assets/resource_items/coconut.png",
+    "코코아 마끼아또": "assets/resource_items/cocoa_macchiato.png",
+    "콜드 브루": "assets/resource_items/cold_brew.png",
+    "쿠키 블렌디드": "assets/resource_items/cookie_blended.png",
     "크기 강화권": "assets/resource_items/town_size_upgrade.png",
+    "크레온": "assets/resource_items/creon.png",
+    "크레온 장인 석궁": "assets/resource_items/creon_result.png",
+    "크레온 큐브": "assets/resource_items/creon_cube.png",
     "크로마 코인": "assets/resource_items/chroma_coin.png",
+    "크록 토큰": "assets/resource_items/fossil_coin_3.png",
+    "크록의 꼬리": "assets/resource_items/fossil_3_5.png",
+    "크록의 다리": "assets/resource_items/fossil_3_4.png",
+    "크록의 등가시": "assets/resource_items/fossil_3_3.png",
+    "크록의 머리": "assets/resource_items/fossil_3_1.png",
+    "크록의 몸통": "assets/resource_items/fossil_3_2.png",
+    "크록의 화석이 섞인 모래": "assets/resource_items/fossil_sand_3.png",
     "크리스텔라": "assets/resource_items/crystella.png",
+    "크리스텔라 ★": "assets/resource_items/crystella_1star.png",
+    "크리스텔라 ★★": "assets/resource_items/crystella_2star.png",
+    "크리스텔라 ★★★": "assets/resource_items/crystella_3star.png",
     "크리스텔라 오일": "assets/resource_items/crystella_oil.png",
+    "토라": "assets/resource_items/aquarium_fish_5.png",
     "토마토": "assets/resource_items/crop_tomato.png",
     "토마토 라자냐": "assets/food/tomato-lasagna.png",
     "토마토 베이스": "assets/ingredient/tomato-base.png",
@@ -761,16 +1954,57 @@
     "토마토 파인애플 피자": "assets/food/tomato-pineapple-pizza.png",
     "토파즈": "assets/resource_items/raw_topaz.png",
     "토파즈 주괴": "assets/resource_items/topaz_ingot.png",
+    "투명한 씨앗": "assets/resource_items/crystella_seed.png",
+    "투명한 이슬": "assets/resource_items/crystella_dew.png",
     "트로피 강화권": "assets/resource_items/town_trophy_upgrade.png",
     "트리플 소갈비 꼬치": "assets/food/triple-beef-rib-skewer.png",
+    "특이한 가죽 파우치": "assets/resource_items/leather_pouch.png",
+    "특이한 영혼의 가죽": "assets/resource_items/soul_leather_4.png",
     "파인애플": "assets/ingredient/pineapple.png",
+    "팔라딘 저지먼트": "assets/resource_items/skill_hammer_5.png",
+    "팽": "assets/resource_items/aquarium_fish_6.png",
+    "펄스 레이닝": "assets/resource_items/skill_gun_4.png",
+    "표범 소환 알": "assets/resource_items/leopard_egg.png",
+    "푸른 향수병": "assets/resource_items/blue_perfume_bottle.png",
+    "푸른빛 진주": "assets/resource_items/blue_pearl.png",
+    "프로스트 드롭": "assets/resource_items/skill_spear_4.png",
+    "프로즌 스노우 프라페": "assets/resource_items/frozensnow_frappe.png",
+    "플라밍고의 부리": "assets/resource_items/item_flamingo.png",
+    "플라밍고의 영혼": "assets/resource_items/soul_flamingo.png",
+    "플라스틱 재활용품": "assets/resource_items/plastic_recyclable.png",
+    "플라워 카푸치노": "assets/resource_items/flower_cappuccino.png",
+    "플래임 슬래시": "assets/resource_items/skill_sword_1.png",
     "플래티넘": "assets/resource_items/raw_platinum.png",
     "플래티넘 주괴": "assets/resource_items/platinum_ingot.png",
+    "플랫 마끼아또": "assets/resource_items/flat_macchiato.png",
+    "플리커 랜서": "assets/resource_items/skill_spear_3.png",
+    "피어스 폴": "assets/resource_items/skill_spear_1.png",
     "하급 라이프스톤": "assets/resource_items/greendell_tool_enhancestone1.png",
+    "하마의 송곳니": "assets/resource_items/item_hippo.png",
+    "하마의 영혼": "assets/resource_items/soul_hippo.png",
+    "합금 재활용품": "assets/resource_items/alloy_recyclable.png",
+    "합성수지 재활용품": "assets/resource_items/synthetic_resin_recyclable.png",
+    "해구의 화석 연료": "assets/resource_items/repair_fuel.png",
+    "해저 열수구 코어": "assets/resource_items/repair_core.png",
+    "향기로운 이슬": "assets/resource_items/flower_dew.png",
     "허브 삼겹살 찜": "assets/food/herb-pork-steam.png",
+    "헤비 사이클론": "assets/resource_items/skill_hammer_2.png",
+    "헤탄 토큰": "assets/resource_items/fossil_coin_4.png",
+    "헤탄의 날개": "assets/resource_items/fossil_4_4.png",
+    "헤탄의 다리": "assets/resource_items/fossil_4_5.png",
+    "헤탄의 목": "assets/resource_items/fossil_4_2.png",
+    "헤탄의 몸통": "assets/resource_items/fossil_4_3.png",
+    "헤탄의 부리": "assets/resource_items/fossil_4_1.png",
+    "헤탄의 화석이 섞인 모래": "assets/resource_items/fossil_sand_4.png",
+    "호랑이 소환 알": "assets/resource_items/tiger_egg.png",
     "호박": "assets/ingredient/pumpkin-bundle.png",
     "호박 묶음": "assets/ingredient/pumpkin-bundle.png",
     "호퍼 강화권": "assets/resource_items/town_hopper_upgrade.png",
+    "혼이 깃든 가죽": "assets/resource_items/spirit_leather.png",
+    "화끈한 영혼의 가죽": "assets/resource_items/soul_leather_5.png",
+    "화이트 모카": "assets/resource_items/white_mocha.png",
+    "활기찬 영혼 장갑": "assets/resource_items/leather_glove.png",
+    "활기찬 영혼의 가죽": "assets/resource_items/soul_leather_3.png",
     "황금 갈릭 케이크": "assets/food_gold/garlic-cake.png",
     "황금 달콤 시리얼": "assets/food_gold/sweet-cereal.png",
     "황금 딥 크림 빠네": "assets/food_gold/deep-cream-pane.png",
@@ -785,7 +2019,9 @@
     "황금 토마토 스파게티": "assets/food_gold/tomato-spaghetti.png",
     "황금 토마토 파인애플 피자": "assets/food_gold/tomato-pineapple-pizza.png",
     "황금 트리플 소갈비 꼬치": "assets/food_gold/triple-beef-rib-skewer.png",
-    "황금 허브 삼겹살 찜": "assets/food_gold/herb-pork-steam.png"
+    "황금 허브 삼겹살 찜": "assets/food_gold/herb-pork-steam.png",
+    "흑진주": "assets/resource_items/black_pearl.png",
+    "흑진주 시계": "assets/resource_items/black_pearl_watch.png"
   };
   let iconLinked = 0;
   items.forEach(item => {
@@ -801,7 +2037,7 @@
 
   window.DDING_GUIDE = {
     meta:{
-      version:'0.11.0',
+      version:'0.11.1',
       verified:'2026-10-05',
       scope:'띵타이쿤 공식 위키의 아이템·제작·강화·상점·지역 문서를 기준으로 정리한 초뉴비용 아이템 백과',
       disclaimer:'표시명·획득처·사용처는 공식 공개자료에서 확인된 내용만 사용하며, 확인되지 않은 내부 식별명을 별도 아이템처럼 노출하지 않습니다.',
