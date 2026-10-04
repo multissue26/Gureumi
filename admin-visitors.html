@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>띵팜 방문자 통계</title>
+  <style>
+    :root{--bg:#f5f7f2;--panel:#fff;--line:#e0e7dd;--text:#233228;--muted:#718077;--green:#246b4a;--green2:#dfeee3;--danger:#b34848}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,"Pretendard","Noto Sans KR",sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:40px 18px 70px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+    h1{margin:0;font-size:28px;letter-spacing:-.04em}.sub{color:var(--muted);font-size:13px;margin-top:7px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 30px rgba(52,78,60,.06)}
+    .login{max-width:430px;margin:12vh auto 0;padding:26px}.login h2{margin:0 0 8px;font-size:22px}.login p{margin:0 0 20px;color:var(--muted);line-height:1.55;font-size:14px}
+    .field{display:flex;gap:8px}.field input{flex:1;min-width:0;border:1px solid #cfd8cf;border-radius:12px;padding:13px 14px;font-size:15px;outline:none}.field input:focus{border-color:#6fa383;box-shadow:0 0 0 3px #e4f0e7}
+    button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer}.primary{background:var(--green);color:#fff}.ghost{background:#eef3ed;color:#355943}.msg{min-height:20px;margin-top:12px;font-size:13px;color:var(--danger)}
+    .hidden{display:none!important}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}.card{padding:18px}.label{font-size:12px;color:var(--muted);margin-bottom:7px}.value{font-size:28px;font-weight:900;letter-spacing:-.04em}.suffix{font-size:13px;color:var(--muted);margin-left:3px}
+    .chart{padding:20px}.chart-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:18px}.chart h2{font-size:17px;margin:0}.legend{font-size:12px;color:var(--muted)}
+    .bars{height:250px;display:flex;align-items:end;gap:5px;border-bottom:1px solid var(--line);padding-top:14px}.day{flex:1;min-width:0;display:flex;align-items:end;gap:2px;height:100%;position:relative}.bar{flex:1;border-radius:5px 5px 0 0;min-height:2px}.u{background:#76a987}.v{background:#d5e3d8}.tip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#25342a;color:white;padding:7px 8px;border-radius:8px;font-size:11px;white-space:nowrap;z-index:2}.day:hover .tip{display:block}
+    .footer-note{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6}.actions{display:flex;gap:8px}.status{font-size:12px;color:var(--muted);margin-top:7px}
+    @media(max-width:820px){.cards{grid-template-columns:repeat(2,1fr)}.cards .card:last-child{grid-column:1/-1}.top{align-items:flex-start}.bars{gap:3px}.wrap{padding-top:24px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section id="loginView" class="panel login">
+      <h2>관리자 확인</h2>
+      <p>띵팜 방문자 통계는 관리자만 볼 수 있어요. 비밀번호를 입력해 주세요!</p>
+      <form id="loginForm" class="field">
+        <input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required>
+        <button class="primary" type="submit">로그인</button>
+      </form>
+      <div id="loginMsg" class="msg"></div>
+    </section>
+
+    <section id="dashView" class="hidden">
+      <div class="top">
+        <div><h1>띵팜 방문자 통계</h1><div class="sub">IP 원문은 저장하지 않고 해시 식별자로만 중복 방문을 구분해요.</div></div>
+        <div class="actions"><button id="refreshBtn" class="ghost">새로고침</button><button id="logoutBtn" class="ghost">로그아웃</button></div>
+      </div>
+      <div class="cards">
+        <div class="panel card"><div class="label">오늘 고유 방문자</div><div><span id="todayU" class="value">0</span><span class="suffix">명</span></div></div>
+        <div class="panel card"><div class="label">오늘 방문 횟수</div><div><span id="todayV" class="value">0</span><span class="suffix">회</span></div></div>
+        <div class="panel card"><div class="label">전체 고유 방문자</div><div><span id="totalU" class="value">0</span><span class="suffix">명</span></div></div>
+        <div class="panel card"><div class="label">전체 방문 횟수</div><div><span id="totalV" class="value">0</span><span class="suffix">회</span></div></div>
+        <div class="panel card"><div class="label">재방문율</div><div><span id="repeat" class="value">0</span><span class="suffix">%</span></div></div>
+      </div>
+      <section class="panel chart">
+        <div class="chart-head"><div><h2>최근 30일</h2><div class="status" id="statusText">불러오는 중이에요.</div></div><div class="legend">진한색: 고유 방문자 · 연한색: 방문 횟수</div></div>
+        <div id="bars" class="bars"></div>
+        <div class="footer-note">같은 공인 IP는 한 명으로 계산돼요. 같은 집·학교·PC방처럼 하나의 네트워크를 함께 쓰는 경우 실제 사람 수와 차이가 날 수 있어요.</div>
+      </section>
+    </section>
+  </main>
+  <script>
+  (()=>{"use strict";
+    const API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-analytics";
+    const $=s=>document.querySelector(s);
+    const tokenKey="ddingfarmAdminStatsToken";
+    const fmt=n=>Number(n||0).toLocaleString("ko-KR");
+
+    async function call(path,body,token){
+      const r=await fetch(API+"/"+path,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})},body:JSON.stringify(body||{})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok){const e=new Error(j.error||("HTTP "+r.status));e.data=j;e.status=r.status;throw e}
+      return j;
+    }
+
+    function showLogin(message=""){
+      $("#dashView").classList.add("hidden");$("#loginView").classList.remove("hidden");$("#loginMsg").textContent=message;$("#pw").value="";$("#pw").focus();
+    }
+    function showDash(){ $("#loginView").classList.add("hidden");$("#dashView").classList.remove("hidden"); }
+
+    function render(stats){
+      $("#todayU").textContent=fmt(stats.today_uniques);$("#todayV").textContent=fmt(stats.today_views);
+      $("#totalU").textContent=fmt(stats.total_uniques);$("#totalV").textContent=fmt(stats.total_views);$("#repeat").textContent=Number(stats.repeat_rate||0).toLocaleString("ko-KR",{maximumFractionDigits:1});
+      const days=Array.isArray(stats.daily)?stats.daily:[];
+      const max=Math.max(1,...days.flatMap(d=>[Number(d.uniques||0),Number(d.views||0)]));
+      $("#bars").innerHTML=days.map(d=>{
+        const uh=Math.max(2,Math.round(Number(d.uniques||0)/max*100));
+        const vh=Math.max(2,Math.round(Number(d.views||0)/max*100));
+        return '<div class="day"><div class="bar u" style="height:'+uh+'%"></div><div class="bar v" style="height:'+vh+'%"></div><div class="tip">'+d.date+' · 고유 '+fmt(d.uniques)+'명 · 방문 '+fmt(d.views)+'회</div></div>';
+      }).join("");
+      $("#statusText").textContent="방금 업데이트했어요.";
+    }
+
+    async function load(){
+      const token=sessionStorage.getItem(tokenKey); if(!token){showLogin();return}
+      showDash();$("#statusText").textContent="불러오는 중이에요.";
+      try{const r=await call("stats",{},token);render(r.stats||{})}
+      catch(e){if(e.status===401){sessionStorage.removeItem(tokenKey);showLogin("로그인 시간이 끝났어요. 다시 로그인해 주세요!")}else{$("#statusText").textContent="통계를 불러오지 못했어요."}}
+    }
+
+    $("#loginForm").addEventListener("submit",async e=>{
+      e.preventDefault();const pw=$("#pw").value;$("#loginMsg").textContent="확인 중이에요...";
+      try{const r=await call("login",{password:pw});sessionStorage.setItem(tokenKey,r.token);showDash();await load()}
+      catch(e){
+        if(e.data?.error==="blocked"){const until=e.data.blocked_until?new Date(e.data.blocked_until).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}):"";$("#loginMsg").textContent="비밀번호를 여러 번 틀렸어요. "+(until?until+" 이후에 다시 시도해 주세요.":"잠시 뒤 다시 시도해 주세요.")}
+        else{$("#loginMsg").textContent="비밀번호가 맞지 않아요."+(e.data?.remaining!=null?" 남은 시도 "+e.data.remaining+"회":"")}
+      }
+    });
+    $("#refreshBtn").addEventListener("click",load);
+    $("#logoutBtn").addEventListener("click",()=>{sessionStorage.removeItem(tokenKey);showLogin("로그아웃했어요.")});
+    load();
+  })();
+  </script>
+</body>
+</html>
