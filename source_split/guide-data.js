@@ -600,81 +600,217 @@
   update('세이지 곡괭이',{aliases:['세이지곡괭이','sage 곡괭이'],tags:['강화','채광','로니','라이프스톤']});
 
   // ─────────────────────────────────────────────────────────────
-  // v0.8.0 · 2026-09-30 서버 리소스팩 전수 인덱스
-  // 리소스팩의 assets/minecraft/models/*.json 루트 모델을 전부 읽어 생성한 목록입니다.
-  // 공식 위키 이름과 매칭되는 항목은 기존 상세 정보에 아이콘/리소스 ID를 결합하고,
-  // 표시명을 확인하지 못한 항목도 리소스팩 식별명을 숨기지 않고 별도 항목으로 보존합니다.
-  const resourceItems = window.DDING_RESOURCE_ITEMS || [];
-  const officialByLower = new Map();
-  const itemKey = v => String(v||'').toLowerCase().replace(/[\s_-]+/g,'');
-  items.forEach(x=>{
-    [x.name,...(x.aliases||[])].forEach(k=>{ const key=itemKey(k); if(key && !officialByLower.has(key)) officialByLower.set(key,x); });
-  });
-  let resourceLinked = 0;
-  let resourceAdded = 0;
-  resourceItems.forEach(r=>{
-    const candidates=[r.id,r.name,...(r.aliases||[])].map(itemKey).filter(Boolean);
-    const exact = candidates.map(k=>officialByLower.get(k)).find(Boolean) || null;
-    if (exact) {
-      exact.icon = r.icon || exact.icon || '';
-      exact.resourceId = r.id;
-      exact.resourceTexture = r.texture;
-      exact.resourceVerified = true;
-      exact.tags = [...new Set([...(exact.tags||[]),'리소스팩',r.id])];
-      exact.aliases = [...new Set([...(exact.aliases||[]),r.id,...(r.aliases||[])])];
-      resourceLinked += 1;
-      return;
-    }
-    const label = r.nameVerified ? r.name : r.name;
-    const added = addItem(label,{
-      region:r.region||'리소스팩', category:r.category||'리소스팩 항목', subcategory:'2026-09-30 리소스팩 모델',
-      acquire:r.nameVerified ? '서버 리소스팩에서 아이템 모델 존재를 확인했습니다. 구체적인 획득처는 공식 위키/상점 데이터와 함께 확인하세요.' : '2026-09-30 서버 리소스팩에서 모델 존재를 확인했습니다. 서버 표시명·획득처는 리소스팩 자체에 포함되지 않아 별도 공식 자료 확인이 필요합니다.',
-      use:r.nameVerified ? '리소스팩과 공식/사이트 데이터가 연결된 서버 아이템입니다.' : '리소스팩 모델로 존재하는 항목입니다. 구체적인 서버 사용처는 공개 문서에서 확인되지 않은 경우 추측하지 않습니다.',
-      aliases:[r.id,...(r.aliases||[])], tags:['리소스팩',r.id,r.texture||''], official:false,
-      sourceUrl:'', sourceLabel:'리소스팩 260930', note:r.nameVerified?'리소스팩 아이콘과 서버 아이템 이름을 연결했습니다.':'표시명 미확인: 현재 카드는 리소스팩 식별명을 사람이 읽기 좋게 표시한 것입니다.',
-    });
-    if (added) {
-      added.icon=r.icon||''; added.resourceId=r.id; added.resourceTexture=r.texture; added.resourceVerified=!!r.nameVerified;
-      resourceAdded += 1;
-    }
-  });
-
-  // v0.10 · 공식 한글 아이템명 ↔ 리소스팩 모델 수동 연결 보정
-  // 영문 리소스 ID와 한글 공식명이 달라 자동 매칭이 안 되는 항목만 명시적으로 연결합니다.
-  const resourceNameOverrides = {
-    '크기 강화권':'town_size_upgrade',
-    '멤버 강화권':'town_member_upgrade',
-    '워프 강화권':'town_warp_upgrade',
-    '호퍼 강화권':'town_hopper_upgrade',
-    '경작지 강화권':'town_pot_upgrade',
-    '트로피 강화권':'town_trophy_upgrade'
+  // v0.11.0 · 공식 표시명 기준 아이콘 연결
+  // 사용자에게 보여주는 이름/획득처/사용처는 공식 문서의 한국어 표기를 기준으로 유지합니다.
+  // 내부 파일명에서 임의로 아이템을 만들어 추가하지 않습니다.
+  const VERIFIED_ICON_MAP = {
+    "갈릭 케이크": "assets/food/garlic-cake.png",
+    "감자": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/potato.png",
+    "감자 묶음": "assets/ingredient/potato-bundle.png",
+    "경작지 강화권": "assets/resource_items/town_pot_upgrade.png",
+    "골드하프": "assets/resource_items/gold_harp.png",
+    "금 가루": "assets/ingredient/gold-dust.png",
+    "금붕어": "assets/resource_items/fish_goldfish.png",
+    "금붕어 회": "assets/resource_items/fish_piece_goldfish.png",
+    "기반암 제거권": "assets/resource_items/bedrock_remove.png",
+    "깐 새우": "assets/resource_items/fish_piece_shrimp.png",
+    "노멀 등급 일반 인챈트북": "assets/resource_items/normal_general_enchant_book.png",
+    "노멀 등급 특수 인챈트북": "assets/resource_items/normal_special_enchant_book.png",
+    "노멀 열쇠": "assets/resource_items/normal_key.png",
+    "노멀 열쇠 조각": "assets/resource_items/normal_key_piece.png",
+    "농어": "assets/resource_items/fish_sea_bass.png",
+    "달콤 시리얼": "assets/food/sweet-cereal.png",
+    "달콤한 열매": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sweet_berries.png",
+    "달콤한 열매 묶음": "assets/ingredient/sweet-berries-bundle.png",
+    "당근": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/carrot.png",
+    "당근 묶음": "assets/resource_items/carrot_bundle.png",
+    "돌체 라떼": "assets/resource_items/dolce_latte.png",
+    "드립 커피": "assets/resource_items/drip_coffee.png",
+    "딥 크림 빠네": "assets/food/deep-cream-pane.png",
+    "레어 등급 일반 인챈트북": "assets/resource_items/rare_general_enchant_book.png",
+    "레어 등급 특수 인챈트북": "assets/resource_items/rare_special_enchant_book.png",
+    "로스트 치킨 파이": "assets/food/roast-chicken-pie.png",
+    "루밀리아": "assets/resource_items/lumilia.png",
+    "루키 등급 일반 인챈트북": "assets/resource_items/rookie_general_enchant_book.png",
+    "루키 등급 특수 인챈트북": "assets/resource_items/rookie_special_enchant_book.png",
+    "루키 열쇠": "assets/resource_items/rookie_key.png",
+    "루키 열쇠 조각": "assets/resource_items/rookie_key_piece.png",
+    "리프톤": "assets/resource_items/leaftone.png",
+    "리프톤 주괴": "assets/resource_items/leaftone_ingot.png",
+    "마늘": "assets/resource_items/crop_garlic.png",
+    "마늘 베이스": "assets/ingredient/garlic-base.png",
+    "마늘 씨앗": "assets/resource_items/crop_garlic_seed.png",
+    "마늘 양갈비 핫도그": "assets/food/garlic-lamb-hotdog.png",
+    "멤버 강화권": "assets/resource_items/town_member_upgrade.png",
+    "미식 등급 일반 인챈트북": "assets/resource_items/mythic_general_enchant_book.png",
+    "미식 등급 특수 인챈트북": "assets/resource_items/mythic_special_enchant_book.png",
+    "밀": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/wheat.png",
+    "버터 조각": "assets/resource_items/butter.png",
+    "벨 코인": "assets/resource_items/bell_coin.png",
+    "벨라로제": "assets/resource_items/bellarose.png",
+    "분해된 뱃지": "assets/resource_items/badge_powder.png",
+    "브렉사 링": "assets/resource_items/brexa_ring.png",
+    "브렉사 벨트": "assets/resource_items/brexa_belt.png",
+    "브렉사 이어링": "assets/resource_items/brexa_earring.png",
+    "브렉사 펜던트": "assets/resource_items/brexa_pendant.png",
+    "블랙 커피": "assets/resource_items/black_coffee.png",
+    "비트": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/beetroot.png",
+    "비트 묶음": "assets/resource_items/beetroot_bundle.png",
+    "사탕수수": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar_cane.png",
+    "사파이어": "assets/resource_items/raw_sapphire.png",
+    "사파이어 주괴": "assets/resource_items/sapphire_ingot.png",
+    "산타 코인": "assets/resource_items/santa_coin.png",
+    "삼겹살 토마토 찌개": "assets/food/pork-tomato-stew.png",
+    "삼색 아이스크림": "assets/food/tricolor-icecream.png",
+    "상급 라이프스톤": "assets/resource_items/greendell_tool_enhancestone3.png",
+    "상자 잠금 자물쇠": "assets/resource_items/chest_lock.png",
+    "상자 잠금 해제 열쇠": "assets/resource_items/chest_unlock.png",
+    "상자 정리 도구": "assets/resource_items/chest_arrange.png",
+    "석유": "assets/resource_items/petroleum.png",
+    "설탕": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sugar.png",
+    "설탕 큐브": "assets/ingredient/sugar-cube.png",
+    "세렌트": "assets/resource_items/serent.png",
+    "세렌트 주괴": "assets/resource_items/serent_ingot.png",
+    "세리온 링": "assets/resource_items/serion_ring.png",
+    "세리온 벨트": "assets/resource_items/serion_belt.png",
+    "세리온 이어링": "assets/resource_items/serion_earring.png",
+    "세리온 펜던트": "assets/resource_items/serion_pendant.png",
+    "솔라리스티": "assets/resource_items/solaristi.png",
+    "수박": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/melon_slice.png",
+    "수박 묶음": "assets/ingredient/melon-bundle.png",
+    "스윗 치킨 햄버거": "assets/food/sweet-chicken-burger.png",
+    "스태미나 드링크 I": "assets/resource_items/stamina_drink_1.png",
+    "스태미나 드링크 II": "assets/resource_items/stamina_drink_2.png",
+    "스태미나 드링크 III": "assets/resource_items/stamina_drink_3.png",
+    "스태미나 드링크 IV": "assets/resource_items/stamina_drink_4.png",
+    "스태미나 드링크 V": "assets/resource_items/stamina_drink_5.png",
+    "스테이크": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_beef.png",
+    "식용 금 가루": "assets/ingredient/gold-dust.png",
+    "신화 열쇠": "assets/resource_items/mythic_key.png",
+    "신화 열쇠 조각": "assets/resource_items/mythic_key_piece.png",
+    "심층암 조약돌 뭉치": "assets/resource_items/cobbled_deepslate_bundle.png",
+    "아메리카노": "assets/resource_items/americano.png",
+    "아쿠아네타": "assets/resource_items/aquanetta.png",
+    "양파": "assets/resource_items/crop_onion.png",
+    "양파 베이스": "assets/ingredient/onion-base.png",
+    "양파 수프": "assets/food/onion-soup.png",
+    "양파 씨앗": "assets/resource_items/crop_onion_seed.png",
+    "어니언 링": "assets/food/onion-rings.png",
+    "어빌리티 스톤": "assets/resource_items/ability_stone.png",
+    "어선 수리 키트": "assets/resource_items/boat_repair_kit.png",
+    "에픽 등급 일반 인챈트북": "assets/resource_items/epic_general_enchant_book.png",
+    "에픽 등급 특수 인챈트북": "assets/resource_items/epic_special_enchant_book.png",
+    "오로라 조각": "assets/resource_items/aurora_piece.png",
+    "오브레 링": "assets/resource_items/ovre_ring.png",
+    "오브레 벨트": "assets/resource_items/ovre_belt.png",
+    "오브레 이어링": "assets/resource_items/ovre_earring.png",
+    "오브레 펜던트": "assets/resource_items/ovre_pendant.png",
+    "요리용 소금": "assets/ingredient/cooking-salt.png",
+    "요리용 우유": "assets/ingredient/cooking-milk.png",
+    "워프 강화권": "assets/resource_items/town_warp_upgrade.png",
+    "익히지 않은 닭 가슴살": "assets/resource_items/chicken_chest.png",
+    "익히지 않은 닭 다리살": "assets/resource_items/chicken_leg.png",
+    "익히지 않은 돼지 삼겹살": "assets/resource_items/pork_belly.png",
+    "익히지 않은 돼지 앞다리살": "assets/resource_items/pork_picnic.png",
+    "익히지 않은 소 갈비살": "assets/resource_items/cow_rib.png",
+    "익히지 않은 소 등심": "assets/resource_items/cow_loin.png",
+    "익히지 않은 양 갈비살": "assets/resource_items/french_rack.png",
+    "익히지 않은 양 다리살": "assets/resource_items/sheep_cube_meat.png",
+    "익힌 닭 가슴살": "assets/resource_items/cooked_chicken_chest.png",
+    "익힌 닭 다리살": "assets/resource_items/cooked_chicken_leg.png",
+    "익힌 닭고기": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_chicken.png",
+    "익힌 도미": "assets/resource_items/cooked_sea_bream.png",
+    "익힌 돼지 삼겹살": "assets/resource_items/cooked_pork_belly.png",
+    "익힌 돼지 앞다리살": "assets/resource_items/cooked_pork_picnic.png",
+    "익힌 돼지고기": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_porkchop.png",
+    "익힌 새우": "assets/resource_items/cooked_shrimp.png",
+    "익힌 소 갈비살": "assets/resource_items/cooked_cow_rib.png",
+    "익힌 소 등심": "assets/resource_items/cooked_cow_loin.png",
+    "익힌 양 갈비살": "assets/resource_items/cooked_french_rack.png",
+    "익힌 양 다리살": "assets/resource_items/cooked_sheep_cube_meat.png",
+    "익힌 양고기": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/cooked_mutton.png",
+    "익힌 청어": "assets/resource_items/cooked_herring.png",
+    "인챈트북 조각": "assets/resource_items/enchant_book_piece.png",
+    "전설 등급 일반 인챈트북": "assets/resource_items/legendary_general_enchant_book.png",
+    "전설 등급 특수 인챈트북": "assets/resource_items/legendary_special_enchant_book.png",
+    "전설 열쇠": "assets/resource_items/legendary_key.png",
+    "전설 열쇠 조각": "assets/resource_items/legendary_key_piece.png",
+    "조약돌 뭉치": "assets/resource_items/cobblestone_bundle.png",
+    "중급 라이프스톤": "assets/resource_items/greendell_tool_enhancestone2.png",
+    "청어 회": "assets/resource_items/fish_piece_herring.png",
+    "치즈 조각": "assets/resource_items/cheese_slice.png",
+    "카르벤 링": "assets/resource_items/carven_ring.png",
+    "카르벤 벨트": "assets/resource_items/carven_belt.png",
+    "카르벤 이어링": "assets/resource_items/carven_earring.png",
+    "카르벤 펜던트": "assets/resource_items/carven_pendant.png",
+    "카페 모카": "assets/resource_items/cafe_mocha.png",
+    "커먼 등급 일반 인챈트북": "assets/resource_items/common_general_enchant_book.png",
+    "커먼 등급 특수 인챈트북": "assets/resource_items/common_special_enchant_book.png",
+    "코룸": "assets/resource_items/corum.png",
+    "코룸 주괴": "assets/resource_items/corum_ingot.png",
+    "코코넛": "assets/resource_items/coconut.png",
+    "크기 강화권": "assets/resource_items/town_size_upgrade.png",
+    "크로마 코인": "assets/resource_items/chroma_coin.png",
+    "크리스텔라": "assets/resource_items/crystella.png",
+    "크리스텔라 오일": "assets/resource_items/crystella_oil.png",
+    "토마토": "assets/resource_items/crop_tomato.png",
+    "토마토 라자냐": "assets/food/tomato-lasagna.png",
+    "토마토 베이스": "assets/ingredient/tomato-base.png",
+    "토마토 스파게티": "assets/food/tomato-spaghetti.png",
+    "토마토 씨앗": "assets/resource_items/crop_tomato_seed.png",
+    "토마토 파인애플 피자": "assets/food/tomato-pineapple-pizza.png",
+    "토파즈": "assets/resource_items/raw_topaz.png",
+    "토파즈 주괴": "assets/resource_items/topaz_ingot.png",
+    "트로피 강화권": "assets/resource_items/town_trophy_upgrade.png",
+    "트리플 소갈비 꼬치": "assets/food/triple-beef-rib-skewer.png",
+    "파인애플": "assets/ingredient/pineapple.png",
+    "플래티넘": "assets/resource_items/raw_platinum.png",
+    "플래티넘 주괴": "assets/resource_items/platinum_ingot.png",
+    "하급 라이프스톤": "assets/resource_items/greendell_tool_enhancestone1.png",
+    "허브 삼겹살 찜": "assets/food/herb-pork-steam.png",
+    "호박": "assets/ingredient/pumpkin-bundle.png",
+    "호박 묶음": "assets/ingredient/pumpkin-bundle.png",
+    "호퍼 강화권": "assets/resource_items/town_hopper_upgrade.png",
+    "황금 갈릭 케이크": "assets/food_gold/garlic-cake.png",
+    "황금 달콤 시리얼": "assets/food_gold/sweet-cereal.png",
+    "황금 딥 크림 빠네": "assets/food_gold/deep-cream-pane.png",
+    "황금 로스트 치킨 파이": "assets/food_gold/roast-chicken-pie.png",
+    "황금 마늘 양갈비 핫도그": "assets/food_gold/garlic-lamb-hotdog.png",
+    "황금 삼겹살 토마토 찌개": "assets/food_gold/pork-tomato-stew.png",
+    "황금 삼색 아이스크림": "assets/food_gold/tricolor-icecream.png",
+    "황금 스윗 치킨 햄버거": "assets/food_gold/sweet-chicken-burger.png",
+    "황금 양파 수프": "assets/food_gold/onion-soup.png",
+    "황금 어니언 링": "assets/food_gold/onion-rings.png",
+    "황금 토마토 라자냐": "assets/food_gold/tomato-lasagna.png",
+    "황금 토마토 스파게티": "assets/food_gold/tomato-spaghetti.png",
+    "황금 토마토 파인애플 피자": "assets/food_gold/tomato-pineapple-pizza.png",
+    "황금 트리플 소갈비 꼬치": "assets/food_gold/triple-beef-rib-skewer.png",
+    "황금 허브 삼겹살 찜": "assets/food_gold/herb-pork-steam.png"
   };
-  Object.entries(resourceNameOverrides).forEach(([name,rid])=>{
-    const item=byName.get(name);
-    const r=resourceItems.find(x=>x.id===rid);
-    if(!item || !r) return;
-    item.icon=r.icon||item.icon||'';
-    item.resourceId=r.id;
-    item.resourceTexture=r.texture;
-    item.resourceVerified=true;
-    item.aliases=[...new Set([...(item.aliases||[]),rid,...(r.aliases||[])])];
-    item.tags=[...new Set([...(item.tags||[]),'리소스팩',rid])];
+  let iconLinked = 0;
+  items.forEach(item => {
+    const icon = VERIFIED_ICON_MAP[item.name];
+    if (!icon) return;
+    item.icon = icon;
+    iconLinked += 1;
   });
 
+  // 공개 백과에는 한국어 표시명이 확인된 항목만 유지합니다.
+  // 기본 게임 재료처럼 서버 제작식에 실제로 연결되는 참고 항목은 한국어 이름 그대로 남깁니다.
+  const publicItems = items.filter(item => /[가-힣]/.test(item.name || ''));
 
   window.DDING_GUIDE = {
     meta:{
-      version:'0.10.0',
-      verified:'2026-10-02',
-      scope:'공식 위키/상점/제작/강화 데이터 + 2026-09-30 서버 리소스팩 + 아이템 흐름 UI + 농장/채집 체크 확장 + 아이콘 매핑 보정',
-      disclaimer:'리소스팩 루트 아이템 모델은 전수 편입했습니다. 단, 리소스팩에는 서버 표시명·획득처·사용처가 없는 항목이 있어 공식 문서로 확인되지 않는 정보는 식별명/미확인으로 명확히 표시합니다.',
-      resourcePackVersion:'260930', resourceModelCount:resourceItems.length, resourceLinked, resourceAdded
+      version:'0.11.0',
+      verified:'2026-10-05',
+      scope:'띵타이쿤 공식 위키의 아이템·제작·강화·상점·지역 문서를 기준으로 정리한 초뉴비용 아이템 백과',
+      disclaimer:'표시명·획득처·사용처는 공식 공개자료에서 확인된 내용만 사용하며, 확인되지 않은 내부 식별명을 별도 아이템처럼 노출하지 않습니다.',
+      iconLinked
     },
     sources:OFFICIAL,
-    items,
+    items:publicItems,
     enhancement,
     sagePickaxeStats,
     noctilaWeaponEnhancement,
     noctilaAccessoryEnhancement
-  };
-})();
+  };})();
