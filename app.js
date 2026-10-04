@@ -1707,11 +1707,11 @@
 
   function guideCard(item) {
     const recipe = (item.recipe || []).slice(0,3);
-    const sourceBadge = item.resourceId ? (item.resourceVerified ? '공식명+RP' : 'RESOURCE PACK') : (item.official===false ? '참고' : '공식');
+    const sourceBadge = item.official===false ? '참고' : '공식';
     const icon = guideIconHTML(item, 'guide-card-icon-img');
-    const rid = item.resourceId ? `<span class="guide-resource-id">${esc(item.resourceId)}</span>` : '';
+    const rid = '';
     const endpoint=guideFinalLabel(item);
-    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${hasGuideIcon(item)?'':'missing'}">${icon}<span class="guide-icon-placeholder">이미지<br>미확인</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge ${item.resourceId?'rp':''}">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
+    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${hasGuideIcon(item)?'':'missing'}">${icon}<span class="guide-icon-placeholder">이미지<br>미확인</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
   }
 
   function guidePagination(totalPages,current){
@@ -1768,7 +1768,7 @@
   function openGuideItemDrawer(item) {
     if (!item) return;
     const recipe = item.recipe || [];
-    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero with-icon">${hasGuideIcon(item)?`<div class="guide-drawer-icon">${guideIconHTML(item)}</div>`:''}<div><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>
+    $('#detailDrawer').innerHTML = `<div class="drawer-inner guide-drawer"><button class="drawer-close" aria-label="닫기">×</button><div class="guide-drawer-hero with-icon">${hasGuideIcon(item)?`<div class="guide-drawer-icon">${guideIconHTML(item)}</div>`:''}<div><span>${esc(item.region)} · ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.subcategory || '서버 아이템')}</p></div></div>
       ${guideLifecyclePanel(item,false)}
       ${item.probability?`<div class="drawer-section"><h3>확률 / 조건</h3><div class="drawer-text"><b>${esc(item.probability)}</b></div></div>`:''}
       ${item.trade?`<div class="drawer-section"><h3>거래 / 가격</h3><div class="drawer-text"><b>${esc(item.trade)}</b></div></div>`:''}
