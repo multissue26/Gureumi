@@ -325,3 +325,192 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:#72a
   .page-heading{min-width:0}
   .top-actions{margin-top:13px}
 }
+
+
+/* ===== v0.12.0 · public-friendly banner / guide / price UI ===== */
+.market-hero.market-banner{
+  position:relative;
+  display:block;
+  width:100%;
+  padding:0!important;
+  overflow:hidden;
+  border:1px solid #d8e4cf;
+  border-radius:22px;
+  background:#f6f8ec;
+  box-shadow:0 10px 28px rgba(70,96,59,.08);
+  aspect-ratio:4/1;
+}
+.market-banner-art{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+}
+.market-banner-actions{
+  position:absolute;
+  left:5.2%;
+  bottom:10.5%;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.market-banner-actions .btn{
+  min-height:48px;
+  padding:0 22px;
+  border-radius:15px;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:-.03em;
+  box-shadow:0 7px 16px rgba(56,95,51,.13);
+}
+.market-banner-actions .btn.primary{
+  background:#176f4c;
+  border-color:#176f4c;
+  color:#fff;
+}
+.market-banner-actions .btn.primary:hover{
+  background:#105f40;
+  border-color:#105f40;
+}
+.market-banner-actions .banner-help-btn{
+  background:rgba(255,253,241,.94);
+  border-color:#7e9b78;
+  color:#2f6f50;
+  backdrop-filter:blur(8px);
+}
+.market-banner-actions .banner-help-btn:hover{
+  background:#fffdf4;
+  border-color:#5d875f;
+  color:#245f43;
+}
+
+.guide-hero.guide-search-only{
+  padding:0!important;
+  margin:0 0 18px!important;
+  min-height:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.guide-search-only .guide-searchbox{
+  margin:0!important;
+}
+.guide-search-only .guide-searchbox input{
+  min-height:58px;
+}
+.guide-search-only .guide-searchbox .btn{
+  min-width:72px;
+}
+
+.public-price-intro{
+  margin-top:0;
+}
+.public-price-intro .section-head{
+  align-items:center;
+}
+.public-price-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.public-price-status{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:54px;
+  padding:12px 14px;
+  margin-top:12px;
+  border:1px solid #e3e8df;
+  border-radius:14px;
+  background:#fbfcf8;
+}
+.public-price-status b{
+  color:#315b3d;
+}
+.public-price-status small{
+  margin-left:auto;
+  color:#7b887e;
+}
+.price-guide-panel{
+  display:grid;
+  gap:10px;
+}
+.price-guide-step{
+  display:grid;
+  grid-template-columns:34px 1fr;
+  gap:11px;
+  align-items:start;
+  padding:14px;
+  border:1px solid #e2e8dd;
+  border-radius:14px;
+  background:#fbfcf8;
+}
+.price-guide-step>span{
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border-radius:11px;
+  background:#e8f3df;
+  color:#35733e;
+  font-weight:900;
+}
+.price-guide-step b{
+  display:block;
+  color:#2f4935;
+  margin:2px 0 5px;
+}
+.price-guide-step p{
+  margin:0;
+  color:#69766d;
+  line-height:1.6;
+  font-size:13px;
+}
+
+@media(max-width:760px){
+  .market-hero.market-banner{
+    aspect-ratio:auto;
+    border-radius:17px;
+  }
+  .market-banner-art{
+    width:100%;
+    height:auto;
+    aspect-ratio:4/1;
+    object-fit:cover;
+  }
+  .market-banner-actions{
+    position:static;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    padding:10px;
+    background:#f7f9ee;
+  }
+  .market-banner-actions .btn{
+    min-height:43px;
+    padding:0 10px;
+    border-radius:12px;
+    font-size:12px;
+    box-shadow:none;
+  }
+  .guide-search-only .guide-searchbox{
+    display:grid;
+    grid-template-columns:34px 1fr auto;
+  }
+  .public-price-intro .section-head{
+    display:block;
+  }
+  .public-price-actions{
+    margin-top:12px;
+  }
+  .public-price-status{
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+  .public-price-status small{
+    width:100%;
+    margin-left:26px;
+  }
+}
