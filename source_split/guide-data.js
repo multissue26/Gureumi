@@ -220,7 +220,7 @@
 
   addItem('드릴',{region:'세레니티/야생',category:'보조 도구',acquire:'도구 제작 시설에서 제작합니다.',use:'야생의 석유·광물 원석 채광에 사용합니다.',recipe:[['철 곡괭이',1],['다이아몬드',5],['에메랄드',2],['응회암',8],['발광 이끼',4],['뾰족한 점적석',4]],sourceUrl:OFFICIAL.crafting});
   addItem('고급 드릴',{region:'세레니티/야생',category:'보조 도구',acquire:'도구 제작 시설에서 제작합니다.',use:'상위 야생 채광에 사용하는 보조 도구입니다.',recipe:[['드릴',1],['석영',32],['금 주괴',10],['흑암',8],['현무암',8],['용암 양동이',1]],sourceUrl:OFFICIAL.crafting});
-  addItem('육식 동물 덫',{region:'세레니티',category:'사냥',acquire:'도구 제작 시설에서 2개 단위로 제작합니다.',use:'육식 동물 포획에 사용합니다.',recipe:[['에메랄드',10],['철',8],['거미줄',2],['사과',4],['부싯돌',4]],sourceUrl:OFFICIAL.crafting});
+  addItem('육식 동물 덫',{region:'세레니티',category:'사냥',acquire:'도구 제작 시설에서 2개 단위로 제작합니다.',use:'육식 동물 포획에 사용합니다.',recipe:[['에메랄드',10],['철 주괴',8],['거미줄',2],['사과',4],['부싯돌',4]],sourceUrl:OFFICIAL.crafting});
   addItem('나무 어선 획득권',{region:'세레니티',category:'해양',acquire:'도구 제작 시설에서 제작합니다.',use:'나무 어선 획득에 사용합니다.',recipe:[['참나무 보트',1],['어빌리티 스톤',20],['해초',32],['참나무 판자',16],['익힌 대구',16],['익힌 연어',16],['철사 덫 갈고리',1]],sourceUrl:OFFICIAL.crafting});
   addItem('어선 수리 키트',{region:'세레니티',category:'해양',acquire:'도구 제작 시설에서 심해 자원을 조합해 제작합니다. 공식 위키에는 여러 조합식이 기재되어 있습니다.',use:'어선 수리에 사용합니다.',recipe:[['심해의 고철',1],['심연의 오로라 파편',1],['영롱한 티타늄 광석',1]],sourceUrl:OFFICIAL.crafting});
   addMany('커피 그라인더 모듈|믹서기 모듈|우유 스티머 모듈|커피 머신 모듈|하급 광채 생성기|중급 광채 생성기|상급 광채 생성기|화석 제작대 모듈|보석 세공대 모듈|테라리움 모듈|어항 모듈|형광 광산 모듈|형광 모루 모듈',{region:'세레니티',category:'모듈',acquire:'세레니티 마을 도구 제작 시설에서 제작합니다.',use:'각 전문 콘텐츠의 제작/가공 기능을 여는 모듈입니다.',sourceUrl:OFFICIAL.crafting});
@@ -501,7 +501,7 @@
   // ─────────────────────────────────────────────────────────────
   // 레시피에 등장하는 마인크래프트 기본 재료: 뉴비가 막히지 않도록 최소 안내
   // ─────────────────────────────────────────────────────────────
-  const vanilla = '사탕수수|금 괭이|버섯불|밀|비트|당근|감자|발광 열매|금 곡괭이|자수정 블록|구리 주괴|다이아몬드|네더라이트 주괴|낚싯대|열대어|금 검|가죽|깃털|썩은 살점|뼈다귀|블레이즈 막대기|엔더 진주|조약돌|심층암 조약돌|구리 블록|레드스톤 블록|청금석 블록|철 블록|다이아몬드 블록|금 블록|에메랄드|철|거미줄|사과|부싯돌|철 곡괭이|응회암|발광 이끼|뾰족한 점적석|석영|금 주괴|흑암|현무암|용암 양동이|참나무 보트|해초|참나무 판자|익힌 대구|익힌 연어|철사 덫 갈고리|케이크|코코아 콩|숫돌|석재 절단기|훈연기|제작대|에메랄드 블록|석탄 블록|네더라이트 블록|신호기|브리즈 막대기|엔더의 눈|대장장이 작업대|마법 부여대|위더 장미|장식된 도자기|앵무조개 껍데기|통|영혼 랜턴|우는 흑요석|네더라이트 곡괭이|모루|경험치병|네더 석영|모닥불|모래|양동이|유리판|대나무|분홍 꽃잎|막대기|자수정 조각|흑요석|시계|점토|흙|자갈|화강암|참나무 잎|가문비나무 잎|자작나무 잎|벚나무 잎|짙은 참나무 잎|철 주괴|불우렁쉥이|유리병|네더랙|마그마 블록|영혼 흙|진홍빛 자루|뒤틀린 자루|죽은 관 산호 블록|죽은 사방산호 블록|죽은 거품 산호 블록'.split('|');
+  const vanilla = '사탕수수|금 괭이|버섯불|밀|비트|당근|감자|발광 열매|금 곡괭이|자수정 블록|구리 주괴|다이아몬드|네더라이트 주괴|낚싯대|열대어|금 검|가죽|깃털|썩은 살점|뼈다귀|블레이즈 막대기|엔더 진주|조약돌|심층암 조약돌|구리 블록|레드스톤 블록|청금석 블록|철 블록|다이아몬드 블록|금 블록|에메랄드|거미줄|사과|부싯돌|철 곡괭이|응회암|발광 이끼|뾰족한 점적석|석영|금 주괴|흑암|현무암|용암 양동이|참나무 보트|해초|참나무 판자|익힌 대구|익힌 연어|철사 덫 갈고리|케이크|코코아 콩|숫돌|석재 절단기|훈연기|제작대|에메랄드 블록|석탄 블록|네더라이트 블록|신호기|브리즈 막대기|엔더의 눈|대장장이 작업대|마법 부여대|위더 장미|장식된 도자기|앵무조개 껍데기|통|영혼 랜턴|우는 흑요석|네더라이트 곡괭이|모루|경험치병|네더 석영|모닥불|모래|양동이|유리판|대나무|분홍 꽃잎|막대기|자수정 조각|흑요석|시계|점토|흙|자갈|화강암|참나무 잎|가문비나무 잎|자작나무 잎|벚나무 잎|짙은 참나무 잎|철 주괴|불우렁쉥이|유리병|네더랙|마그마 블록|영혼 흙|진홍빛 자루|뒤틀린 자루|죽은 관 산호 블록|죽은 사방산호 블록|죽은 거품 산호 블록'.split('|');
   vanilla.forEach(n=>addItem(n,{region:'마인크래프트 기본',category:'기본 재료',acquire:'마인크래프트 기본 월드 채집·제작·제련·사냥 등으로 얻는 재료입니다. 서버 전용 획득 규칙이 별도로 있으면 공식 공지를 우선 확인하세요.',use:'서버 제작 레시피의 기초 재료입니다.',official:false,sourceLabel:'기본 게임 재료',sourceUrl:'https://minecraft.wiki/'}));
 
 
@@ -1768,6 +1768,7 @@
     "분홍 꽃잎": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/pink_petals.png",
     "분홍 헤어핀": "assets/resource_items/pink_hairpin.png",
     "분홍빛 진주": "assets/resource_items/pink_pearl.png",
+    "불우렁쉥이": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/sea_pickle.png",
     "브렉사 링": "assets/resource_items/brexa_ring.png",
     "브렉사 벨트": "assets/resource_items/brexa_belt.png",
     "브렉사 이어링": "assets/resource_items/brexa_earring.png",
@@ -1974,6 +1975,7 @@
     "자수정 블록": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/amethyst_block.png",
     "자수정 조각": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/amethyst_shard.png",
     "자작나무 잎": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/birch_leaves.png",
+    "장식된 도자기": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/entity/decorated_pot/decorated_pot_side.png",
     "장인 인증 도장": "assets/resource_items/master_stamp.png",
     "전설 등급 일반 인챈트북": "assets/resource_items/legendary_general_enchant_book.png",
     "전설 등급 커피 레시피북": "assets/resource_items/legendary_coffee_recipe.png",
@@ -1985,6 +1987,9 @@
     "조개껍데기 브로치": "assets/resource_items/shell_brooch.png",
     "조약돌": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/cobblestone.png",
     "조약돌 뭉치": "assets/resource_items/cobblestone_bundle.png",
+    "죽은 거품 산호 블록": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/dead_bubble_coral_block.png",
+    "죽은 관 산호 블록": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/dead_tube_coral_block.png",
+    "죽은 사방산호 블록": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/dead_horn_coral_block.png",
     "중급 라이프스톤": "assets/resource_items/greendell_tool_enhancestone2.png",
     "진홍빛 자루": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/crimson_stem.png",
     "짙은 참나무 잎": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/dark_oak_leaves.png",
@@ -1996,6 +2001,7 @@
     "철 곡괭이": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/iron_pickaxe.png",
     "철 블록": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/iron_block.png",
     "철 주괴": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/iron_ingot.png",
+    "철사 덫 갈고리": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/tripwire_hook.png",
     "청금석 블록": "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/block/lapis_block.png",
     "청록빛 진주": "assets/resource_items/turquoise_pearl.png",
     "청어 회": "assets/resource_items/fish_piece_herring.png",
@@ -2144,7 +2150,7 @@
 
   window.DDING_GUIDE = {
     meta:{
-      version:'0.11.2',
+      version:'0.11.3',
       verified:'2026-10-05',
       scope:'띵타이쿤 공식 위키의 아이템·제작·강화·상점·지역 문서를 기준으로 정리한 초뉴비용 아이템 백과',
       disclaimer:'표시명·획득처·사용처는 공식 공개자료에서 확인된 내용만 사용하며, 확인되지 않은 내부 식별명을 별도 아이템처럼 노출하지 않습니다.',
