@@ -86,7 +86,7 @@
     ingredients: ['INGREDIENT INDEX', '재료 도감'],
     finder: ['TRADE FINDER', '아이템 찾기'],
     reference: ['NEWBIE GUIDE', '초뉴비 가이드'],
-    prices: ['LOCAL PRICE FEED', '가격 연동'],
+    prices: ['PRICE INFO', '가격 정보'],
   };
 
 
@@ -953,48 +953,42 @@
     const statusLabel = !linked ? 'WAITING' : updateReady ? 'UPDATE' : freshness.publishedFresh ? 'CURRENT' : 'UPDATE';
     const statusClass = linked && freshness.publishedFresh && !updateReady ? 'on' : '';
     const updateCopy = !linked
-      ? 'Cloudflare에 아직 확정 가격이 없어.'
+      ? '아직 공개된 가격 정보가 없어요.'
       : updateReady
-        ? `새 가격 후보가 확인됐어 · ${fmtKst(freshness.candidate.capturedAt)}`
+        ? `새 가격 업데이트가 준비됐어요! · ${fmtKst(freshness.candidate.capturedAt)}`
         : freshness.publishedFresh
           ? `현재 가격 주기 확인 완료 · ${fmtKst(freshness.published?.capturedAt || state.priceMeta?.capturedAt || state.priceMeta?.updatedAt)}`
-          : `가격 변동 시각이 지났어. 밀키 상점 확인이 필요해.`;
+          : `가격이 바뀔 시간이 지났어요. 최신 가격을 확인해 주세요!`;
 
     $('#page-dashboard').innerHTML = `<div class="content-shell market-home">
-      <section class="hero market-hero">
-        <div class="hero-copy">
-          <div class="hero-kicker">DDING TYCOON · COOKING MARKET</div>
-          <h2>가격은 확인할 때만,<br><b>공개는 네가 원할 때.</b></h2>
-          <p>모드가 확인한 가격은 Cloudflare의 후보값으로만 올라가고, 이 사이트의 가격은 [최신 가격 업데이트]를 눌렀을 때만 확정돼.</p>
-          <div class="hero-actions"><button id="publishLatestBtn" class="btn primary">최신 가격 업데이트</button><span class="update-help" tabindex="0">업데이트 방법 ?<span class="update-help-pop">모드가 설치된 Minecraft에서 밀키 → 요리 판매 상점을 한 번 연 뒤, 이 버튼을 눌러줘.</span></span></div>
-        </div>
-        <div class="hero-side market-status-hero">
-          <div class="hero-side-label">PRICE STATUS</div>
-          <div class="feed-big-status"><span class="feed-live-dot ${statusClass}"></span><strong>${statusLabel}</strong></div>
-          <p>${esc(updateCopy)}</p>
+      <section class="hero market-hero market-banner" aria-label="띵팜 시세 안내">
+        <img class="market-banner-art" src="assets/brand/ddingfarm-price-banner.webp?v=0.12.0" alt="띵팜 시세 안내">
+        <div class="market-banner-actions">
+          <button id="publishLatestBtn" class="btn primary">최신 가격 업데이트</button>
+          <button class="btn banner-help-btn" data-tool="price-guide">업데이트 방법</button>
         </div>
       </section>
 
-      ${(!freshness.publishedFresh || freshness.hasNewCandidate) && (linked || freshness.candidateFresh) ? `<section class="price-alert ${updateReady?'ready':'warning'}"><div><b>${updateReady?'새 가격 후보가 준비됐습니다.':'가격 업데이트가 필요합니다.'}</b><span>${updateReady ? '밀키 상점에서 현재 주기 가격이 다시 확인됐어. 업데이트 버튼을 누르면 사이트에 반영돼.' : '현재 가격 주기의 실제 가격이 아직 확인되지 않았어.'}</span></div><div class="alert-actions"><span class="update-help" tabindex="0">업데이트 방법 ?<span class="update-help-pop">1. 모드가 설치된 PC에서 Minecraft 서버 접속<br>2. 밀키 → 요리 판매 상점 열기<br>3. 사이트로 돌아와 [최신 가격 업데이트] 클릭</span></span><button id="publishLatestBtn2" class="btn primary">최신 가격 업데이트</button></div></section>` : ''}
+      ${(!freshness.publishedFresh || freshness.hasNewCandidate) && (linked || freshness.candidateFresh) ? `<section class="price-alert ${updateReady?'ready':'warning'}"><div><b>${updateReady?'새 가격 후보가 준비됐습니다.':'가격 업데이트가 필요합니다.'}</b><span>${updateReady ? '새 가격 정보가 준비됐어요! 업데이트 버튼을 누르면 바로 반영돼요.' : '아직 새 가격 정보가 준비되지 않았어요. 잠시 뒤 다시 확인해 주세요!'}</span></div><div class="alert-actions"><button class="btn ghost" data-tool="price-guide">업데이트 방법</button><button id="publishLatestBtn2" class="btn primary">최신 가격 업데이트</button></div></section>` : ''}
 
       <section class="metrics">
-        <div class="metric"><div class="metric-label">가격 상태</div><div class="metric-value">${updateReady ? '새 후보' : freshness.publishedFresh ? '최신' : linked ? '확인 필요' : '대기'}</div><div class="metric-foot">${freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : '확정 가격 없음'}</div></div>
+        <div class="metric"><div class="metric-label">가격 상태</div><div class="metric-value">${updateReady ? '새 후보' : freshness.publishedFresh ? '최신' : linked ? '확인 필요' : '대기'}</div><div class="metric-foot">${freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : '가격 정보 없음'}</div></div>
         <div class="metric"><div class="metric-label">상승 음식</div><div class="metric-value">${changes.filter(x => x.diff > 0).length}</div><div class="metric-foot">직전 확정 주기 대비</div></div>
         <div class="metric"><div class="metric-label">하락 음식</div><div class="metric-value">${changes.filter(x => x.diff < 0).length}</div><div class="metric-foot">직전 확정 주기 대비</div></div>
         <div class="metric"><div class="metric-label">다음 가격 변경</div><div class="metric-value" id="nextChange">—</div><div class="metric-foot">1·3·6·9·12·15·18·21·24·27·30일 03:00</div></div>
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>지금 뭘 파는 게 좋은가</h2><p>왼쪽은 확인 가능한 NPC 구매비를 차감한 판매 차익, 오른쪽은 현재 확정 판매가 자체가 높은 순서야.</p></div></div>
+        <div class="section-head"><div><h2>지금 어떤 요리가 괜찮을까요?</h2><p>왼쪽은 확인 가능한 NPC 구매비를 뺀 판매 차익, 오른쪽은 현재 판매가가 높은 순서예요!</p></div></div>
         <div class="market-rank-grid">
           <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">SELL EFFICIENCY</span><h3>추천 판매 효율</h3></div><small>NPC 구매비 차감 기준</small></div>${efficiencyRankHtml(efficiency)}</article>
-          <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">HIGHEST PRICE</span><h3>확정 판매가 최고</h3></div><small>현재 공개 가격 순</small></div>${highPriceRankHtml(expensive)}</article>
+          <article class="card market-rank-card"><div class="market-card-head"><div><span class="market-kicker">HIGHEST PRICE</span><h3>확정 판매가 최고</h3></div><small>현재 가격 순</small></div>${highPriceRankHtml(expensive)}</article>
         </div>
-        <div class="market-method-note">재배·사냥·채집 재료는 임의의 골드 원가로 환산하지 않고, DB에 확인된 NPC 구매비만 비용으로 차감해. ‘추천 판매 효율’은 <b>현재 공개 가격을 빠르게 비교하는 실전 지표</b>야.</div>
+        <div class="market-method-note">재배·사냥·채집 재료는 임의의 골드 원가로 환산하지 않고, DB에 확인된 NPC 구매비만 비용으로 차감해. ‘추천 판매 효율’은 <b>현재 가격을 빠르게 비교하는 실전 지표</b>예요.</div>
       </section>
 
       <section class="section">
-        <div class="section-head"><div><h2>현재가 흐름</h2><p>첫 연결은 밀키 툴팁의 과거 가격을 시드로 쓰고, 이후에는 사이트에서 확정한 가격 주기가 차례로 쌓여.</p></div><button class="btn ghost" data-go="prices">가격 상태 보기</button></div>
+        <div class="section-head"><div><h2>현재가 흐름</h2><p>가격이 업데이트될 때마다 이전 기록과 함께 차곡차곡 쌓여요!</p></div><button class="btn ghost" data-go="prices">가격 상태 보기</button></div>
         <div class="chart-mode-tabs" role="tablist" aria-label="가격 흐름 모드"><button class="chart-mode-tab ${trendGold ? '' : 'active'}" data-trend-mode="normal" role="tab" aria-selected="${trendGold ? 'false' : 'true'}">일반 요리</button><button class="chart-mode-tab ${trendGold ? 'active' : ''}" data-trend-mode="gold" role="tab" aria-selected="${trendGold ? 'true' : 'false'}">황금 요리</button></div>
         <div class="card market-chart-card">
           <div class="market-chart-main">
@@ -1013,7 +1007,7 @@
 
       <section class="section">
         <div class="section-head"><div><h2>전체 음식 변동</h2><p>직전 확정 가격과 현재 확정 가격을 비교해 얼마나 비싸졌고 싸졌는지 바로 확인해.</p></div></div>
-        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}" data-trend-gold="0"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>가격을 두 주기 이상 확정하면 실제 Cloudflare 기록을 기준으로 비교해.</div>`}</div>
+        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}" data-trend-gold="0"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>가격 기록이 두 번 이상 쌓이면 이전 가격과 비교해 보여드려요!</div>`}</div>
       </section>
 
       <section class="section farm-after-market">
@@ -1695,12 +1689,12 @@
   function renderGuideItemAnswer(item) {
     const recipe = item.recipe || [];
     return `<section class="guide-answer">
-      <div class="guide-answer-head item"><div class="guide-answer-item-title">${hasGuideIcon(item)?`<div class="guide-answer-item-icon">${guideIconHTML(item)}</div>`:''}<div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p>${item.resourceId?`<code class="guide-rid">${esc(item.resourceId)}</code>`:''}</div></div>${guideSourceLink(item)}</div>
+      <div class="guide-answer-head item"><div class="guide-answer-item-title">${hasGuideIcon(item)?`<div class="guide-answer-item-icon">${guideIconHTML(item)}</div>`:''}<div><span class="guide-answer-type">검색 답변 · ${esc(item.region)} / ${esc(item.category)}</span><h2>${esc(item.name)}</h2><p>${esc(item.use || '세부 사용처 확인 필요')}</p></div></div>${guideSourceLink(item)}</div>
       ${guideLifecyclePanel(item,true)}
       ${item.probability ? `<div class="guide-inline-fact"><span>확률/조건</span><b>${esc(item.probability)}</b></div>`:''}
       ${item.trade ? `<div class="guide-inline-fact"><span>거래/가격</span><b>${esc(item.trade)}</b></div>`:''}
       <div class="guide-info-grid">
-        <article><span>이게 뭐고, 어디서 구해?</span><p>${esc(item.acquire || '공식 문서에서 세부 획득처를 확인하지 못했어.')}</p></article>
+        <article><span>이게 뭐고, 어디서 구해요?</span><p>${esc(item.acquire || '공식 문서에서 세부 획득처를 확인하지 못했어.')}</p></article>
         <article><span>어디에 써?</span><p>${esc(item.use || '공식 문서에서 세부 사용처를 확인하지 못했어.')}</p></article>
       </div>
       ${guideShopTable(item)}
@@ -1739,7 +1733,7 @@
     const exactish = q ? matches.filter(x=>x.score>=100).slice(0,4) : [];
     const itemAnswer = exactish.length ? renderGuideItemAnswer(exactish[0].item) : '';
     const rpCount = GUIDE.meta?.resourceModelCount || 0;
-    return `${itemAnswer}<section class="guide-catalog-section"><div class="section-head guide-catalog-head"><div><h2>${q ? '관련 아이템·시스템' : '서버 아이템 백과'}</h2><p>${q ? `검색어 “${esc(q)}”와 관련도가 높은 순서야.` : `검색하지 않아도 전체 목록을 페이지로 넘겨 볼 수 있어. 리소스팩 260930 루트 아이템 모델 ${Number(rpCount).toLocaleString('ko-KR')}개를 전수 인덱싱했어.`}</p></div><div class="guide-count-stack"><b>${matches.length.toLocaleString('ko-KR')}개</b><span>${state.guidePage} / ${totalPages} 페이지</span></div></div><div class="guide-catalog">${visible || '<div class="card empty"><strong>검색 결과가 없어.</strong>띄어쓰기를 바꾸거나 아이템 이름 일부만 입력해봐.</div>'}</div>${guidePagination(totalPages,state.guidePage)}</section>`;
+    return `${itemAnswer}<section class="guide-catalog-section"><div class="section-head guide-catalog-head"><div><h2>${q ? '관련 아이템·시스템' : '서버 아이템 백과'}</h2><p>${q ? `검색어 “${esc(q)}”와 관련도가 높은 순서로 보여드려요!` : `검색하지 않아도 전체 목록을 페이지로 넘겨 볼 수 있어요!`}</p></div><div class="guide-count-stack"><b>${matches.length.toLocaleString('ko-KR')}개</b><span>${state.guidePage} / ${totalPages} 페이지</span></div></div><div class="guide-catalog">${visible || '<div class="card empty"><strong>검색 결과가 없어요.</strong>띄어쓰기를 바꾸거나 아이템 이름 일부만 입력해 보세요!</div>'}</div>${guidePagination(totalPages,state.guidePage)}</section>`;
   }
 
   function shouldShowEnhancement(q) {
@@ -1751,7 +1745,7 @@
     const root = $('#page-reference');
     if (!root) return;
     const q = state.query.trim();
-    const filters = [['all','전체'],['images','이미지 있음'],['missing-images','이미지 미확인'],['official','공식 설명'],['resource','리소스팩 전체'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
+    const filters = [['all','전체'],['images','이미지 있음'],['missing-images','이미지 미확인'],['official','공식 설명'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
     const matches = guideMatches(q,state.guideFilter);
     const compactQ = q.replace(/\s+/g,'');
     const isNoctilaWeaponEnhance = /강화/.test(compactQ) && (/노크틸라무기/.test(compactQ) || noctilaWeaponNames().some(n=>compactQ.includes(n.replace(/\s+/g,''))));
@@ -1761,17 +1755,12 @@
     else if (isNoctilaWeaponEnhance) answer = renderNoctilaWeaponEnhancement();
     else if (isAccessoryEnhance) answer = renderNoctilaAccessoryEnhancement();
     else answer = renderGuideHome(matches);
-    const examples=['세이지 곡괭이 강화하려면?','하급 라이프스톤 어디서 구해?','카르세나의 룬이 뭐야?','루트바인 스태프 강화','좌표 스크롤 어디서 사?','중급 라이프스톤 재료'];
     root.innerHTML = `<div class="content-shell guide-shell">
-      <section class="guide-hero">
-        <div class="guide-hero-copy"><span class="eyebrow">NEWBIE SERVER ENCYCLOPEDIA</span><h2>몰라도 돼. <b>그냥 하고 싶은 걸 물어봐.</b></h2><p>요리·채집이 메인인 개인DB는 그대로 두고, 서버에서 처음 보는 아이템의 획득처뿐 아니라 <b>왜 모으는지, 다음에 뭘 만드는지, 최종적으로 어디까지 이어지는지</b>까지 따라가게 정리했어. 현재 통합 인덱스 <strong>${GUIDE.items.length.toLocaleString('ko-KR')}개</strong> · 리소스팩 모델 <strong>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 전수 확인</strong>.</p></div>
-        <div class="guide-searchbox"><svg><use href="#i-search"/></svg><input id="guideSearchInput" value="${esc(q)}" placeholder="예: 세이지 곡괭이 강화하려면 어떻게 해야해?" autocomplete="off"><button id="guideRunSearch" class="btn primary">찾기</button></div>
-        <div class="guide-examples"><span>바로 질문</span>${examples.map(x=>`<button data-guide-example="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+      <section class="guide-hero guide-search-only">
+        <div class="guide-searchbox"><svg><use href="#i-search"/></svg><input id="guideSearchInput" value="${esc(q)}" placeholder="궁금한 아이템이나 강화 방법을 검색해 보세요!" autocomplete="off"><button id="guideRunSearch" class="btn primary">찾기</button></div>
       </section>
-      <div class="guide-quality-strip"><div><b>초뉴비용</b><span>“이게 뭐야?”부터 설명</span></div><div><b>리소스팩 전수</b><span>${Number(GUIDE.meta?.resourceModelCount||0).toLocaleString('ko-KR')}개 모델 + 아이콘</span></div><div><b>시작→끝 추적</b><span>원재료 → 중간재 → 최종 사용처</span></div><div><b>${GUIDE.items.length.toLocaleString('ko-KR')}개 통합</b><span>공식 설명 + 리소스팩 식별 항목</span></div></div>
       <div class="guide-filterbar">${filters.map(([k,l])=>`<button class="${state.guideFilter===k?'active':''}" data-guide-filter="${k}">${l}</button>`).join('')}</div>
       ${answer}
-      <p class="source-note guide-footnote">기준: 띵타이쿤 공식 위키의 아이템/상점/제작/강화 자료 + 사용자가 제공한 2026-09-30 서버 리소스팩(assets/minecraft/models 루트 모델 전수) + 현재 사이트 요리/채집 DB. 공식 문서에 사용처가 적혀 있지 않은 항목은 지어내지 않고 “미확인/세부 설명 없음”으로 남겼어. 이벤트·확률표·상점은 운영 중 변경될 수 있으니 각 항목의 원문 링크가 최종 기준이야.</p>
     </div>`;
   }
 
@@ -1783,13 +1772,12 @@
       ${item.probability?`<div class="drawer-section"><h3>확률 / 조건</h3><div class="drawer-text"><b>${esc(item.probability)}</b></div></div>`:''}
       ${item.trade?`<div class="drawer-section"><h3>거래 / 가격</h3><div class="drawer-text"><b>${esc(item.trade)}</b></div></div>`:''}
       <div class="drawer-section"><h3>이게 뭐고, 어디서 구해?</h3><div class="drawer-text">${esc(item.acquire || '세부 획득처 미확인')}</div></div>
-      <div class="drawer-section"><h3>뭐에 써?</h3><div class="drawer-text">${esc(item.use || '세부 사용처 미확인')}</div></div>
+      <div class="drawer-section"><h3>어디에 써요?</h3><div class="drawer-text">${esc(item.use || '세부 사용처 미확인')}</div></div>
       ${guideShopTable(item)}
-      ${recipe.length?`<div class="drawer-section"><h3>필요 재료</h3><div class="guide-materials drawer-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><div class="drawer-text guide-drawer-help">재료를 클릭하면 그 재료의 수급처와 하위 재료로 계속 내려갈 수 있어.</div></div>`:''}
-      ${item.iconSourceUrl?`<div class="drawer-section"><h3>아이템 이미지</h3><div class="drawer-text">공식 위키의 이미지와 이름표를 연결했습니다. <a href="${esc(item.iconSourceUrl)}" target="_blank" rel="noopener noreferrer">이미지 출처 확인</a></div></div>`:''}
-      ${item.resourceId?`<div class="drawer-section"><h3>리소스팩 확인</h3><div class="drawer-text"><b>모델 ID:</b> ${esc(item.resourceId)}<br><b>텍스처:</b> ${esc(item.resourceTexture||'—')}<br>${item.resourceVerified?'공식/사이트 표시명과 리소스팩 모델을 연결한 항목이야.':'리소스팩에 모델은 존재하지만 서버 표시명은 리소스팩만으로 확정할 수 없어. 획득처·사용처는 확인 자료가 없으면 추측하지 않아.'}</div></div>`:''}${item.note?`<div class="drawer-section"><h3>참고 / 주의</h3><div class="drawer-text">${esc(item.note)}</div></div>`:''}
+      ${recipe.length?`<div class="drawer-section"><h3>필요 재료</h3><div class="guide-materials drawer-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><div class="drawer-text guide-drawer-help">재료를 누르면 수급처와 하위 재료까지 이어서 확인할 수 있어요!</div></div>`:''}
+      ${item.iconSourceUrl?`<div class="drawer-section"><h3>아이템 이미지</h3><div class="drawer-text">아이템 이미지를 확인할 수 있어요. <a href="${esc(item.iconSourceUrl)}" target="_blank" rel="noopener noreferrer">이미지 출처 확인</a></div></div>`:''}${item.note?`<div class="drawer-section"><h3>참고 / 주의</h3><div class="drawer-text">${esc(item.note)}</div></div>`:''}
       ${(item.related||[]).length?`<div class="drawer-section"><h3>관련 항목</h3><div class="guide-materials drawer-materials">${item.related.map(n=>guideItemChip(n)).join('')}</div></div>`:''}
-      <div class="drawer-section"><h3>자료 상태</h3><div class="drawer-text">${item.official===false?'기본 게임/참고 데이터. 서버 전용 규칙이 있으면 공식 서버 자료가 우선이야.':'공식 위키 기반 데이터.'}<br>${guideSourceLink(item)}</div></div></div>`;
+      <div class="drawer-section"><h3>자료 상태</h3><div class="drawer-text">${item.official===false?'기본 게임/참고 데이터예요. 서버 전용 규칙이 있다면 공식 서버 자료가 우선이에요.':'공식 위키 기반 데이터.'}<br>${guideSourceLink(item)}</div></div></div>`;
     $('#drawerBackdrop').hidden = false;
     $('#detailDrawer').classList.add('open');
     $('#detailDrawer').setAttribute('aria-hidden','false');
@@ -1798,19 +1786,21 @@
   function renderPrices() {
     const rows = D.foods.flatMap(f => [[f,false],[f,true]]).filter(([f,g]) => getPrice(f,g));
     const freshness = priceFreshState();
-    const candidate = freshness.candidate;
     const published = freshness.published;
-    $('#page-prices').innerHTML = `<div class="content-shell">
-      <div class="connect-hero">
-        <div class="card connect-box"><p class="eyebrow">CLOUD PRICE FEED</p><h2>파일 선택 없이 자동 연동</h2><p>모드가 밀키의 요리 판매 상점을 읽으면 현재 가격 주기의 후보값을 Cloudflare에 한 번 보낸다. 사이트 가격은 사용자가 직접 [최신 가격 업데이트]를 누를 때만 바뀐다.</p><div class="connect-actions"><button id="refreshCloudBtn" class="btn">Cloudflare 새로 확인</button><button id="publishLatestBtn3" class="btn primary">최신 가격 업데이트</button></div><div class="steps"><div class="step">모드가 설치된 PC에서 Minecraft 실행</div><div class="step">밀키 → 요리 판매 상점을 한 번 열기</div><div class="step">새 가격 주기 최초 확인값이 candidate로 전송</div><div class="step">사이트에서 최신 가격 업데이트를 눌러 확정</div></div></div>
-        <div class="card connect-box"><p class="eyebrow">SYNC STATUS</p><h2>${freshness.publishedFresh ? '현재 주기 확인 완료' : '가격 확인 필요'}</h2><div class="cloud-status-list"><div><span>현재 가격 주기</span><b>${esc(freshness.cycle.cycleKey.replace('T03:00:00+09:00',' · 03:00'))}</b></div><div><span>모드 후보 확인</span><b>${candidate ? fmtKst(candidate.capturedAt) : '없음'}</b></div><div><span>사이트 최종 확정</span><b>${published ? fmtKst(published.capturedAt) : '없음'}</b></div><div><span>수집 항목</span><b>${published?.itemCount ?? rows.length} / 30</b></div></div>${state.cloudError ? `<p class="cloud-error">${esc(state.cloudError)}</p>` : ''}</div>
-      </div>
-      <section class="section"><div class="section-head"><div><h2>현재 사이트 확정 가격</h2><p>${published ? `Minecraft 실제 확인 ${fmtKst(published.capturedAt)}` : '아직 Cloudflare에 확정된 가격이 없어.'}</p></div><div class="status-row"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span>${freshness.publishedFresh ? '최신 주기' : rows.length ? '이전 주기' : '대기'}</div></div>
+    const lastUpdated = published ? fmtKst(published.capturedAt) : '아직 업데이트된 가격이 없어요.';
+    $('#page-prices').innerHTML = `<div class="content-shell public-price-page">
+      <section class="section public-price-intro">
+        <div class="section-head"><div><h2>최신 가격 정보</h2><p>필요할 때 최신 가격을 확인하고 편하게 비교해 보세요!</p></div>
+          <div class="public-price-actions"><button id="publishLatestBtn3" class="btn primary">최신 가격 업데이트</button><button class="btn ghost" data-tool="price-guide">업데이트 방법</button></div>
+        </div>
+        <div class="public-price-status"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span><b>${freshness.publishedFresh ? '현재 가격은 최신이에요!' : rows.length ? '가격 업데이트를 확인해 주세요!' : '가격 정보를 기다리고 있어요.'}</b><small>마지막 업데이트 · ${esc(lastUpdated)}</small></div>
+      </section>
+      <section class="section"><div class="section-head"><div><h2>현재 가격</h2><p>지금 확인할 수 있는 가격을 한눈에 모아봤어요!</p></div><div class="status-row"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span>${freshness.publishedFresh ? '최신' : rows.length ? '확인 필요' : '대기'}</div></div>
       <div class="card price-panel">${rows.length ? `<div class="price-table-wrap"><table class="price-table"><thead><tr><th>음식</th><th>기준 판매가</th><th>나의 판매가</th><th>범위 내 위치</th></tr></thead><tbody>${rows.map(([f,g]) => {
         const p = getPrice(f,g), pct = normalizedPrice(f,g), percent = pct == null ? null : Math.round(pct * 100);
         return `<tr><td>${g ? '황금 · ' : ''}${esc(g ? f.gold.name : f.name)}</td><td>${fmt(p.marketPrice)}</td><td><b>${fmt(p.myPrice ?? p.marketPrice)}</b></td><td>${percent == null ? '—' : `<div class="price-position"><div class="mini-progress"><span style="width:${percent}%"></span></div>${percent}%</div>`}</td></tr>`;
-      }).join('')}</tbody></table></div>` : `<div class="empty"><strong>확정 가격 데이터가 없어.</strong>모드에서 밀키 상점을 확인한 뒤 최신 가격 업데이트를 눌러줘.</div>`}</div></section>
-      <div class="note-strip" style="margin-top:14px">가격 변동 공식 일정: 매월 <b>1·3·6·9·12·15·18·21·24·27·30일 오전 3시</b>. 사이트는 그 시간이 지나면 자동으로 업데이트 필요 상태로 바뀐다.</div>
+      }).join('')}</tbody></table></div>` : `<div class="empty"><strong>아직 보여드릴 가격이 없어요.</strong>최신 가격 업데이트를 눌러 다시 확인해 주세요!</div>`}</div></section>
+      <div class="note-strip public-price-note" style="margin-top:14px">가격은 매월 <b>1·3·6·9·12·15·18·21·24·27·30일 오전 3시</b>에 바뀔 수 있어요. 필요할 때 업데이트 버튼으로 확인해 주세요!</div>
     </div>`;
   }
 
@@ -1892,7 +1882,7 @@
     const freshness = priceFreshState();
     $('#sidePriceStatus').textContent = freshness.publishedFresh ? `최신 · ${count}개` : count ? '업데이트 필요' : '가격 대기';
     $('#sidePriceDot').classList.toggle('on', !!freshness.publishedFresh);
-    $('#sidePriceUpdated').textContent = freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : 'Cloudflare 확정 가격을 기다리는 중.';
+    $('#sidePriceUpdated').textContent = freshness.published ? `최종 확인 ${fmtKst(freshness.published.capturedAt,false)}` : '가격 정보를 확인하는 중이에요.';
     const quick = $('#quickConnect');
     if (quick) quick.innerHTML = `<span class="connect-indicator" style="background:${freshness.publishedFresh ? '#78d19b' : '#d6a85c'}"></span>${freshness.publishedFresh ? '가격 최신' : '최신 가격 확인'}`;
   }
@@ -1951,10 +1941,10 @@
       applyPublishedSnapshot(bundle.prices);
       state.cloudLoaded = true;
       renderAll();
-      if (showToast) toast('Cloudflare 최신 상태를 확인했어.');
+      if (showToast) toast('최신 가격 상태를 확인했어요!');
       return true;
     } catch (e) {
-      state.cloudError = `Cloudflare 연결 실패: ${e.message}`;
+      state.cloudError = `가격 정보를 불러오지 못했어요: ${e.message}`;
       console.warn(e);
       renderAll();
       if (showToast) toast(state.cloudError);
@@ -1970,12 +1960,12 @@
     await loadCloudState(false);
     const freshness = priceFreshState();
     if (freshness.publishedFresh && !freshness.hasNewCandidate) {
-      toast('현재 가격 주기는 이미 확정되어 있어.');
+      toast('현재 가격은 이미 최신 상태예요!');
       return;
     }
     const candidate = freshness.candidate;
     if (!candidate || candidate.cycleKey !== cycle.cycleKey || !isCurrentCycleStamp(candidate.capturedAt)) {
-      toast('현재 주기 가격이 아직 없어. 밀키의 요리 판매 상점을 한 번 열어줘.');
+      toast('아직 새 가격 정보가 준비되지 않았어요. 잠시 뒤 다시 확인해 주세요!');
       return;
     }
 
@@ -1984,10 +1974,10 @@
       await apiJson('/publish', {method:'POST', body:JSON.stringify({cycleKey:cycle.cycleKey})});
       state.cloudBusy = false;
       await loadCloudState(false);
-      toast(`최신 가격 업데이트 완료 · ${fmtKst(candidate.capturedAt)}`);
+      toast(`최신 가격 업데이트를 완료했어요! · ${fmtKst(candidate.capturedAt)}`);
     } catch (e) {
       state.cloudBusy = false;
-      toast(`가격 업데이트 실패: ${e.message}`);
+      toast(`가격 업데이트에 실패했어요: ${e.message}`);
     }
   }
 
@@ -2058,17 +2048,17 @@
     const area = $('#memoArea');
     if (!area) return;
     const text = area.value.trim();
-    if (!text) { toast('메모 내용을 입력해줘.'); return; }
+    if (!text) { toast('메모 내용을 입력해 주세요!'); return; }
     const rows = loadMemoEntries();
     const now = new Date().toISOString();
     if (state.memoEditingId) {
       const i = rows.findIndex(n => n.id === state.memoEditingId);
       if (i >= 0) rows[i] = {...rows[i], text, updatedAt:now};
       state.memoEditingId = null;
-      toast('메모를 수정했어.');
+      toast('메모를 수정했어요!');
     } else {
       rows.unshift({id:`memo-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, text, createdAt:now, updatedAt:now});
-      toast('메모를 저장했어.');
+      toast('메모를 저장했어요!');
     }
     persistMemoEntries(rows);
     localStorage.setItem('ddingMemoDraft','');
@@ -2098,8 +2088,8 @@
       $('#toolEyebrow').textContent = 'UTILITY 01';
       $('#toolTitle').textContent = '요리 수익 계산기';
       body.innerHTML = `<div class="tool-block"><label class="tool-label">음식 선택</label><select id="calcFood" class="field">${calculatorFoodOptions()}</select></div>
-        <div class="tool-block"><div class="field-row"><div><label class="tool-label">판매 단가</label><input id="calcSale" class="field" inputmode="numeric" placeholder="0"></div><div><label class="tool-label">수량</label><input id="calcQty" class="field" inputmode="numeric" value="1"></div></div><div class="field-row" style="margin-top:8px"><div><label class="tool-label">개당 직접 비용</label><input id="calcCost" class="field" inputmode="numeric" placeholder="0"></div><div><label class="tool-label">추가 고정 비용</label><input id="calcExtra" class="field" inputmode="numeric" placeholder="0"></div></div><div class="tool-result"><small>Estimated net</small><strong id="calcNet">0 G</strong><p id="calcMeta">판매가와 비용을 입력하면 바로 계산돼.</p></div></div>
-        <div class="note-strip">일반·황금 요리 모두 선택할 수 있어. 연결된 현재 판매가와 <b>NPC 실제 구매비</b>를 자동 입력하고, 황금 요리는 효율적인 <b>대량 제작식의 1개당 비용</b>으로 환산해. 황금 가루·직접 수급 재료의 기회비용은 자동 환산하지 않아.</div>`;
+        <div class="tool-block"><div class="field-row"><div><label class="tool-label">판매 단가</label><input id="calcSale" class="field" inputmode="numeric" placeholder="0"></div><div><label class="tool-label">수량</label><input id="calcQty" class="field" inputmode="numeric" value="1"></div></div><div class="field-row" style="margin-top:8px"><div><label class="tool-label">개당 직접 비용</label><input id="calcCost" class="field" inputmode="numeric" placeholder="0"></div><div><label class="tool-label">추가 고정 비용</label><input id="calcExtra" class="field" inputmode="numeric" placeholder="0"></div></div><div class="tool-result"><small>Estimated net</small><strong id="calcNet">0 G</strong><p id="calcMeta">판매가와 비용을 입력하면 바로 계산돼요!</p></div></div>
+        <div class="note-strip">일반·황금 요리 모두 선택할 수 있어요. 연결된 현재 판매가와 <b>NPC 실제 구매비</b>를 자동 입력하고, 황금 요리는 효율적인 <b>대량 제작식의 1개당 비용</b>으로 환산해. 황금 가루·직접 수급 재료의 기회비용은 자동 환산하지 않아요.</div>`;
       updateCalc();
     } else if (state.activeTool === 'timer') {
       $('#toolEyebrow').textContent = 'UTILITY 02';
@@ -2110,7 +2100,7 @@
       const timerSeconds = configured % 60;
       body.innerHTML = `<div class="tool-block"><div id="timerDisplay" class="timer-display">15:00</div>
         <div class="timer-custom"><div class="timer-custom-head"><b>직접 시간 설정</b><span>시 · 분 · 초</span></div><div class="timer-custom-grid"><label><span>시간</span><input id="timerHours" type="number" min="0" max="999" step="1" value="${timerHours}"></label><label><span>분</span><input id="timerMinutes" type="number" min="0" max="59" step="1" value="${timerMinutes}"></label><label><span>초</span><input id="timerSeconds" type="number" min="0" max="59" step="1" value="${timerSeconds}"></label><button id="timerApplyCustom" class="btn">시간 적용</button></div></div>
-        <div class="timer-presets"><button data-timer-preset="300">5분</button><button data-timer-preset="900">15분</button><button data-timer-preset="1800">30분</button><button data-timer-preset="3600">60분</button></div><div class="timer-actions"><button id="timerStart" class="btn primary">${state.timer.target ? '일시정지' : '시작'}</button><button id="timerReset" class="btn">초기화</button></div></div><div class="note-strip">직접 시간을 설정하거나 프리셋을 골라 사용할 수 있어. 메뉴를 이동하거나 새로고침해도 <b>종료 시각 기준</b>으로 남은 시간을 복원하고, 완료되면 <b>띵~</b> 알림음과 함께 알려줘.</div>`;
+        <div class="timer-presets"><button data-timer-preset="300">5분</button><button data-timer-preset="900">15분</button><button data-timer-preset="1800">30분</button><button data-timer-preset="3600">60분</button></div><div class="timer-actions"><button id="timerStart" class="btn primary">${state.timer.target ? '일시정지' : '시작'}</button><button id="timerReset" class="btn">초기화</button></div></div><div class="note-strip">직접 시간을 설정하거나 프리셋을 골라 사용할 수 있어요. 메뉴를 이동하거나 새로고침해도 <b>종료 시각 기준</b>으로 남은 시간을 복원하고, 완료되면 <b>띵~</b> 알림음과 함께 알려드려요!</div>`;
       updateTimerDisplay();
     } else if (state.activeTool === 'memo') {
       $('#toolEyebrow').textContent = 'UTILITY 03';
@@ -2120,7 +2110,15 @@
       const editing = state.memoEditingId ? notes.find(n => n.id === state.memoEditingId) : null;
       body.innerHTML = `<div class="memo-compose"><textarea id="memoArea" class="memo-area" placeholder="오늘 해야 할 것, 살 것, 만들어야 할 것…">${esc(editing?.text ?? draft)}</textarea><div class="memo-compose-foot"><span id="memoCount">${(editing?.text ?? draft).length} chars</span><div class="memo-compose-actions">${editing ? '<button id="memoCancelEdit" class="btn">취소</button>' : ''}<button id="memoSave" class="btn primary">${editing ? '수정 저장' : '저장'}</button></div></div></div>
         <div class="memo-list-head"><b>저장된 메모</b><span>${notes.length}개</span></div>
-        <div class="memo-list">${notes.length ? notes.map(n => `<article class="memo-item"><div class="memo-item-meta"><time>${esc(formatMemoTime(n.updatedAt || n.createdAt))}</time><div><button class="memo-link" data-memo-edit="${esc(n.id)}">수정</button><button class="memo-link danger" data-memo-delete="${esc(n.id)}">삭제</button></div></div><p>${esc(n.text).replace(/\n/g,'<br>')}</p></article>`).join('') : '<div class="memo-empty">아직 저장된 메모가 없어.</div>'}</div>`;
+        <div class="memo-list">${notes.length ? notes.map(n => `<article class="memo-item"><div class="memo-item-meta"><time>${esc(formatMemoTime(n.updatedAt || n.createdAt))}</time><div><button class="memo-link" data-memo-edit="${esc(n.id)}">수정</button><button class="memo-link danger" data-memo-delete="${esc(n.id)}">삭제</button></div></div><p>${esc(n.text).replace(/\n/g,'<br>')}</p></article>`).join('') : '<div class="memo-empty">아직 저장된 메모가 없어요.</div>'}</div>`;
+    } else if (state.activeTool === 'price-guide') {
+      $('#toolEyebrow').textContent = 'PRICE GUIDE';
+      $('#toolTitle').textContent = '가격 업데이트 방법';
+      body.innerHTML = `<div class="price-guide-panel">
+        <div class="price-guide-step"><span>1</span><div><b>최신 가격 업데이트를 눌러 주세요!</b><p>새 가격이 준비되어 있으면 바로 사이트에 반영돼요.</p></div></div>
+        <div class="price-guide-step"><span>2</span><div><b>준비된 가격이 없으면 잠시 뒤 다시 확인해 주세요.</b><p>가격 정보가 준비되면 같은 버튼으로 간단하게 업데이트할 수 있어요!</p></div></div>
+        <div class="price-guide-step"><span>3</span><div><b>업데이트가 끝나면 바로 확인할 수 있어요!</b><p>홈과 가격 정보 화면에 최신 가격이 표시돼요.</p></div></div>
+      </div>`;
     } else if (state.activeTool === 'settings') {
       $('#toolEyebrow').textContent = 'APPEARANCE';
       $('#toolTitle').textContent = '환경 설정';
@@ -2130,9 +2128,8 @@
         ['system','System UI','윈도우/맥 기본 글꼴'],
         ['serif','Editorial','제목만 세리프를 쓰는 조합'],
       ];
-      body.innerHTML = `<div class="setting-block"><div class="setting-title">글꼴</div><div class="setting-copy">선택값은 이 브라우저에 자동 저장돼. Gmarket Sans는 PC 설치본을 우선 사용하고, 없으면 웹폰트로 불러와.</div><div class="font-options">${opts.map(([k,n,d]) => `<button class="font-option ${state.fontChoice===k?'active':''}" data-font-choice="${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div></div>
-        <div class="setting-block"><div class="setting-title">글자 크기</div><div class="setting-copy">정보 밀도를 해치지 않는 범위에서 전체 UI를 조금씩 조절해.</div><div class="range-row"><span>작게</span><input id="fontScaleRange" type="range" min="0.9" max="1.14" step="0.02" value="${state.fontScale}"><span>크게</span></div></div>
-        <div class="setting-preview"><strong>띵타 개인DB</strong><p>발광석 · 꽃잎 공방 · 바름 · 200 G<br>요리와 상점 정보를 같은 화면에서 빠르게 확인.</p></div>
+      body.innerHTML = `<div class="setting-block"><div class="setting-title">글꼴</div><div class="setting-copy">선택값은 이 브라우저에 자동 저장돼요. Gmarket Sans는 PC 설치본을 우선 사용하고, 없으면 웹폰트로 불러와요.</div><div class="font-options">${opts.map(([k,n,d]) => `<button class="font-option ${state.fontChoice===k?'active':''}" data-font-choice="${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div></div>
+        <div class="setting-block"><div class="setting-title">글자 크기</div><div class="setting-copy">정보 밀도를 해치지 않는 범위에서 전체 UI를 조금씩 조절해요.</div><div class="range-row"><span>작게</span><input id="fontScaleRange" type="range" min="0.9" max="1.14" step="0.02" value="${state.fontScale}"><span>크게</span></div></div>
         <button id="resetAppearance" class="btn" style="width:100%;margin-top:10px">환경 설정 기본값으로</button>`;
     }
   }
@@ -2275,7 +2272,7 @@
     updateTimerDisplay();
     const btn = $('#timerStart');
     if (btn) btn.textContent = '시작';
-    toast('쿠킹 타이머가 끝났어. 띵~ 🔔');
+    toast('쿠킹 타이머가 끝났어요! 띵~ 🔔');
   }
 
   function setTimerDuration(seconds) {
@@ -2297,10 +2294,10 @@
     const m = Math.max(0, Math.min(59, Math.floor(Number($('#timerMinutes')?.value) || 0)));
     const s = Math.max(0, Math.min(59, Math.floor(Number($('#timerSeconds')?.value) || 0)));
     const seconds = h * 3600 + m * 60 + s;
-    if (seconds <= 0) { toast('타이머 시간을 1초 이상 입력해줘.'); return; }
+    if (seconds <= 0) { toast('타이머 시간을 1초 이상 입력해 주세요!'); return; }
     setTimerDuration(seconds);
     renderTool();
-    toast('타이머 시간을 적용했어.');
+    toast('타이머 시간을 적용했어요!');
   }
 
   function startPauseTimer() {
@@ -2450,13 +2447,13 @@
         PROFIT_CROP_IDS.forEach(id => state.profitFarm[id] = plan.allocation[id] || 0);
         saveProfitFarm();
         renderProfit();
-        toast('선택 음식 기준 최적 경작지 배치를 적용했어.');
+        toast('선택한 음식 기준으로 경작지 배치를 적용했어요!');
       }
       return;
     }
     const fontChoice = e.target.closest('[data-font-choice]');
     if (fontChoice) { state.fontChoice=fontChoice.dataset.fontChoice; localStorage.setItem('ddingFontChoice',state.fontChoice); applyDisplayPrefs(); renderTool(); return; }
-    if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어.'); return; }
+    if (e.target.closest('#resetAppearance')) { state.fontChoice='gmarket'; state.fontScale=1; localStorage.setItem('ddingFontChoice','gmarket'); localStorage.setItem('ddingFontScale','1'); applyDisplayPrefs(); renderTool(); toast('환경 설정을 기본값으로 돌렸어요!'); return; }
     const trendMode = e.target.closest('[data-trend-mode]');
     if (trendMode) { state.selectedTrendGold=trendMode.dataset.trendMode==='gold'; localStorage.setItem('ddingTrendGold',state.selectedTrendGold?'1':'0'); renderDashboard(); return; }
     const cookingFood = e.target.closest('[data-cooking-food]');
@@ -2481,7 +2478,7 @@
       state.profitFarm = {total:0,tomato:0,onion:0,garlic:0};
       saveProfitFarm();
       renderProfit();
-      toast('예상 수익 경작지 설정을 초기화했어.');
+      toast('예상 수익 경작지 설정을 초기화했어요!');
       return;
     }
     if (e.target.closest('#memoSave')) { saveMemoFromTool(); return; }
