@@ -20,6 +20,7 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const PRICE_API = 'https://dding-price-api.hansuyeon191-6fe.workers.dev';
+  const ANALYTICS_API = 'https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-analytics';
   const PRICE_CHANGE_DAYS = [1,3,6,9,12,15,18,21,24,27,30];
   const PROFIT_CROP_IDS = ['tomato','onion','garlic'];
   const PROFIT_FARM_KEY = 'ddingProfitFarmV1';
@@ -2660,6 +2661,16 @@
       e.preventDefault(); $('#globalSearch').focus();
     }
   });
+
+  // 개인정보 원문(IP)은 브라우저에서 저장하지 않고, 서버에서 해시 식별자로만 집계합니다.
+  fetch(`${ANALYTICS_API}/track`, {
+    method:'POST',
+    mode:'cors',
+    cache:'no-store',
+    keepalive:true,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path:location.pathname})
+  }).catch(()=>{});
 
   renderAll();
   switchPage('dashboard');
