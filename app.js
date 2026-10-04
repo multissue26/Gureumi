@@ -73,7 +73,7 @@
     profit: ['FARM REVENUE', '예상 수익'],
     ingredients: ['INGREDIENT INDEX', '재료 도감'],
     finder: ['TRADE FINDER', '아이템 찾기'],
-    reference: ['NEWBIE GUIDE', '초뉴비 가이드'],
+    reference: ['초뉴비 가이드', '초뉴비 가이드'],
     prices: ['PRICE INFO', '가격 정보'],
   };
 
@@ -96,9 +96,12 @@
 
   function guideIconHTML(item, cls = '') {
     if (item?.icon) return `<img class="${esc(cls)}" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.remove()">`;
-    return '';
+    const atlasHtml = window.DDING_RESOURCE_ATLAS?.html?.(item, cls);
+    return atlasHtml || '';
   }
-  function hasGuideIcon(item) { return !!item?.icon; }
+  function hasGuideIcon(item) {
+    return !!item?.icon || Number.isInteger(item?.iconSprite);
+  }
 
   function iconHTML(item, cls = '') {
     if (item?.icon) {
