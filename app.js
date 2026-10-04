@@ -5,16 +5,16 @@
   const SHOP = window.DDING_SHOP_DATA || {meta:{},items:[]};
   const GUIDE = window.DDING_GUIDE || {meta:{},sources:{},items:[],enhancement:[],sagePickaxeStats:[]};
   const RESOURCE_ITEMS = window.DDING_RESOURCE_ITEMS || [];
-  // 배포 과정에서 guide-data.js가 누락되어도 리소스팩 전수 목록 자체는 0개가 되지 않도록 안전망을 둔다.
+  // 배포 과정에서 guide-data.js가 누락되어도 추가 아이템 목록 자체는 0개가 되지 않도록 안전망을 둔다.
   if (!Array.isArray(GUIDE.items)) GUIDE.items = [];
   if (!GUIDE.items.length && RESOURCE_ITEMS.length) {
     GUIDE.meta = {...(GUIDE.meta||{}), version:'0.10.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
     GUIDE.items = RESOURCE_ITEMS.map(r => ({
-      name:r.name, aliases:r.aliases||[], region:r.region||'리소스팩', category:r.category||'기타/미분류',
-      acquire:'리소스팩에서 존재가 확인된 항목입니다. 서버 내 정확한 획득처는 공식 설명 데이터가 로드되지 않아 확인이 필요합니다.',
-      use:'리소스팩 모델/아이콘이 확인되었습니다. 서버 표시명·사용처는 공식 설명 데이터가 로드되면 함께 표시됩니다.',
+      name:r.name, aliases:r.aliases||[], region:r.region||'기타', category:r.category||'기타/미분류',
+      acquire:'아직 정확한 획득처를 확인 중이에요.',
+      use:'아직 정확한 사용처를 확인 중이에요.',
       icon:r.icon, resourceId:r.id, resourceTexture:r.texture, resourceVerified:!!r.nameVerified,
-      official:false, sourceLabel:'RESOURCE PACK 260930'
+      official:false, sourceLabel:'추가 데이터'
     }));
   }
   const $ = (s, el = document) => el.querySelector(s);
@@ -239,7 +239,7 @@
 
   function npcPurchasePlannerHtml(food, qty = 1) {
     const plan = npcPurchasePlan(food, qty);
-    if (!plan.rows.length) return '<div class="npc-plan-empty">NPC에서 따로 구매해야 하는 재료가 없어.</div>';
+    if (!plan.rows.length) return '<div class="npc-plan-empty">NPC에서 따로 구매해야 하는 재료가 없어요.</div>';
     const rows = plan.rows.map(row => {
       const stack = stackBreakdown(row.qty);
       return `<div class="npc-plan-row">
@@ -505,7 +505,7 @@
         <div class="profit-target-food"><img src="${esc(selected.image)}" alt="${esc(selected.name)}"><div><span class="grade ${esc(selected.grade)}">${esc(gradeText(selected.grade))}</span><h3>${esc(selected.name)}</h3><p>${priceLabel} · <b>${plan.price == null ? '가격 대기' : compactGold(plan.price)}</b> · NPC 구매비/개 ${compactGold(plan.npcCost)}</p></div></div>
         <button class="btn profit-target-apply" data-profit-apply-target="${selected.slug}" ${!totalPlots || plan.insufficient ? 'disabled' : ''}>추천 배치 적용</button>
       </div>
-      ${!totalPlots ? `<div class="profit-target-empty"><b>전체 경작지 수를 먼저 입력해줘.</b><span>위의 ‘현재 전체 경작지’ 값을 기준으로 자동 계산할게.</span></div>`
+      ${!totalPlots ? `<div class="profit-target-empty"><b>전체 경작지 수를 먼저 입력해 주세요!</b><span>위의 ‘현재 전체 경작지’ 값을 기준으로 자동 계산할게.</span></div>`
         : plan.insufficient ? `<div class="profit-target-empty warn"><b>필요 작물 종류보다 경작지가 적어.</b><span>이 음식은 ${reqIds.length}종의 핵심 작물이 필요해서 최소 ${reqIds.length}칸부터 생산량 계산이 가능해.</span></div>`
         : `<div class="profit-target-body">
           <div class="target-crop-plan"><div class="target-plan-title"><b>최적 배치</b><span>평균 수율 기준 · 총 ${plotStackLabel(plan.total)}</span></div>${cropRows}</div>
@@ -551,7 +551,7 @@
     const remaining = Math.max(0, total - used);
     return `<div class="card profit-recommend-card">
       <div class="section-head profit-recommend-head"><div><h2>경작지 균형 추천</h2><p>${hasTotal ? `현재 설치량은 고정하고 남은 ${remaining.toLocaleString('ko-KR')}칸을 평균 생산량이 가장 비슷해지도록 자동 배분해.` : '전체 경작지 수를 입력하면 토마토·양파·마늘의 평균 수율 차이를 반영해 추천해.'}</p></div><span class="profit-recommend-badge">AUTO BALANCE</span></div>
-      ${!hasTotal ? `<div class="profit-recommend-empty">전체 경작지 수를 먼저 입력해줘.</div>` : `
+      ${!hasTotal ? `<div class="profit-recommend-empty">전체 경작지 수를 먼저 입력해 주세요!</div>` : `
       <div class="profit-recommend-table">
         <div class="profit-recommend-row head"><span>작물</span><span>현재</span><span>추가 추천</span><span>최종 추천</span><span>평균 시간당</span></div>
         ${PROFIT_CROP_IDS.map(id => {
@@ -570,7 +570,7 @@
         }).join('')}
         <div class="profit-recommend-row total"><span><b>합계</b></span><span>${used.toLocaleString('ko-KR')}칸</span><span>${remaining > 0 && !rec.over ? `+${remaining.toLocaleString('ko-KR')}칸` : rec.over ? '초과' : '완료'}</span><strong>${PROFIT_CROP_IDS.reduce((sum,id)=>sum+(rec.finalPlots[id]||0),0).toLocaleString('ko-KR')}칸</strong><span>균형 생산</span></div>
       </div>
-      ${rec.over ? `<div class="profit-recommend-warning">현재 입력이 전체 경작지보다 ${rec.over.toLocaleString('ko-KR')}칸 많아서 추가 추천을 멈췄어. 현재 설치량이나 전체 경작지 수를 조정해줘.</div>` : `<div class="profit-recommend-note">추천은 <b>평균 시간당 생산량 균형</b> 기준이야. 이미 많이 설치한 작물은 추가 추천에서 자동으로 빠지고, 남은 칸만 다시 계산해.</div>`}` }
+      ${rec.over ? `<div class="profit-recommend-warning">현재 입력이 전체 경작지보다 ${rec.over.toLocaleString('ko-KR')}칸 많아서 추가 추천을 멈췄어. 현재 설치량이나 전체 경작지 수를 조정해 주세요!</div>` : `<div class="profit-recommend-note">추천은 <b>평균 시간당 생산량 균형</b> 기준이에요. 이미 많이 설치한 작물은 추가 추천에서 자동으로 빠지고, 남은 칸만 다시 계산해.</div>`}` }
     </div>`;
   }
 
@@ -755,7 +755,7 @@
       rows.push(row);
     }
 
-    // Cloudflare observations are authoritative for a date. If a tooltip seed
+    // Remote price observations are authoritative for a date. If a tooltip seed
     // happens to describe the same date, replace it instead of drawing a
     // duplicate point.
     for (const row of cloudRows) {
@@ -767,7 +767,7 @@
       }
     }
 
-    // Backward/local fallback: before any Cloudflare history exists, append the
+    // Backward/local fallback: before any remote history exists, append the
     // currently published market price after the tooltip's past observations.
     if (!cloudRows.length) {
       const now = marketPrice(food, gold);
@@ -821,7 +821,7 @@
 
   function trendChartSvg(food, gold = false) {
     const rows = priceHistory(food, gold);
-    if (rows.length < 2) return `<div class="market-chart-empty"><strong>가격 기록을 기다리고 있어.</strong><span>밀키 가격표의 과거 기록이나 사이트 확정 기록이 2개 이상 모이면 차트가 표시돼.</span></div>`;
+    if (rows.length < 2) return `<div class="market-chart-empty"><strong>가격 기록을 기다리고 있어요.</strong><span>밀키 가격표의 과거 기록이나 사이트 확정 기록이 2개 이상 모이면 차트가 표시돼요.</span></div>`;
 
     const W = 720, H = 292, L = 58, R = 22, T = 22, B = 45;
     const values = rows.map(x => x.price);
@@ -1007,12 +1007,12 @@
 
       <section class="section">
         <div class="section-head"><div><h2>전체 음식 변동</h2><p>직전 확정 가격과 현재 확정 가격을 비교해 얼마나 비싸졌고 싸졌는지 바로 확인해.</p></div></div>
-        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}" data-trend-gold="0"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이야.</strong>가격 기록이 두 번 이상 쌓이면 이전 가격과 비교해 보여드려요!</div>`}</div>
+        <div class="card movement-table-card">${changes.length ? `<div class="movement-table-head"><span>음식</span><span>직전가</span><span>현재가</span><span>변동</span></div>${changes.map(x => `<button class="movement-row" data-trend-food="${x.food.slug}" data-trend-gold="0"><span class="movement-food"><img src="${x.food.image}" alt=""><b>${esc(x.food.name)}</b></span><span>${fmt(x.previous)}</span><span><b>${fmt(x.current)}</b></span><span>${changeBadge(x,true)}</span></button>`).join('')}` : `<div class="empty"><strong>등락 데이터를 기다리는 중이에요.</strong>가격 기록이 두 번 이상 쌓이면 이전 가격과 비교해 보여드려요!</div>`}</div>
       </section>
 
       <section class="section farm-after-market">
-        <div class="section-head"><div><h2>다음 농장 추천</h2><p>현재 체크한 작물 기준으로 제작 가능 요리를 늘리는 작물을 계산했어.</p></div><button class="btn ghost" data-go="farm">농장 수정</button></div>
-        <div class="card crop-suggest">${recommendations.map(x=>`<div class="crop-suggest-row"><span>${iconHTML(D.crops.find(c=>c.id===x.id)||{emoji:'□'})}</span><div><b>${esc(cropName(x.id))}</b><small>관련 요리 ${x.improves}종 · 즉시 완성 ${x.unlock}종</small></div><strong>+${x.unlock}</strong></div>`).join('') || `<div class="empty compact"><strong>농장 정보가 없어.</strong>내 농장에서 현재 재배 작물을 체크해줘.</div>`}</div>
+        <div class="section-head"><div><h2>다음 농장 추천</h2><p>현재 체크한 작물 기준으로 만들 수 있는 요리를 늘려주는 작물을 골라봤어요!</p></div><button class="btn ghost" data-go="farm">농장 수정</button></div>
+        <div class="card crop-suggest">${recommendations.map(x=>`<div class="crop-suggest-row"><span>${iconHTML(D.crops.find(c=>c.id===x.id)||{emoji:'□'})}</span><div><b>${esc(cropName(x.id))}</b><small>관련 요리 ${x.improves}종 · 즉시 완성 ${x.unlock}종</small></div><strong>+${x.unlock}</strong></div>`).join('') || `<div class="empty compact"><strong>농장 정보가 없어요.</strong>내 농장에서 현재 재배 작물을 체크해 주세요!</div>`}</div>
       </section>
     </div>`;
     updateNextPriceChange();
@@ -1030,10 +1030,10 @@
       return (f.name + ' ' + goldName + ' ' + ingredients).toLowerCase().includes(q);
     });
     $('#page-cooking').innerHTML = `<div class="content-shell">
-      <div class="section-head" style="margin-top:2px"><div><h2>요리 인덱스</h2><p>최신 15종을 등급·재료·황금 제작법까지 한 흐름으로 정리했어.</p></div><div class="reference-status">${foods.length} / ${D.foods.length}</div></div>
+      <div class="section-head" style="margin-top:2px"><div><h2>요리 인덱스</h2><p>최신 15종을 등급·재료·황금 제작법까지 한 흐름으로 정리했어요!</p></div><div class="reference-status">${foods.length} / ${D.foods.length}</div></div>
       <div class="toolbar"><div class="pillbar">${filters.map(f => `<button class="pill ${state.cookingFilter === f ? 'active' : ''}" data-filter="${f}">${f === 'ALL' ? '전체' : f === 'GOLD' ? '황금' : f}</button>`).join('')}</div><div class="view-toggle"><button data-view="grid" class="${state.cookingView === 'grid' ? 'active' : ''}" title="그리드"><svg><use href="#i-grid"/></svg></button><button data-view="list" class="${state.cookingView === 'list' ? 'active' : ''}" title="리스트"><svg><use href="#i-list"/></svg></button></div></div>
-      <div class="food-grid ${state.cookingView === 'list' ? 'list-view' : ''}">${foods.length ? foods.map(f => foodCard(f, gold)).join('') : `<div class="card empty"><strong>검색 결과가 없어.</strong>다른 음식명이나 재료명으로 검색해봐.</div>`}</div>
-      <p class="source-note">현재 개인DB 레시피·가격 범위와 업로드된 서버 리소스 이미지를 기준으로 표시해.</p>
+      <div class="food-grid ${state.cookingView === 'list' ? 'list-view' : ''}">${foods.length ? foods.map(f => foodCard(f, gold)).join('') : `<div class="card empty"><strong>검색 결과가 없어요.</strong>다른 음식명이나 재료명으로 검색해 보세요!</div>`}</div>
+      <p class="source-note">띵팜에 정리된 레시피와 가격 정보를 기준으로 보여드려요!</p>
     </div>`;
   }
 
@@ -1066,24 +1066,24 @@
     $('#page-farm').innerHTML = `<div class="content-shell">
       <div class="farm-layout">
         <div class="card farm-card">
-          <div class="section-head" style="margin:0 0 18px"><div><h2>현재 농장·채집</h2><p>체크한 재배·채집 재료는 브라우저에 바로 저장돼.</p></div><button id="clearFarm" class="btn ghost">전체 해제</button></div>
+          <div class="section-head" style="margin:0 0 18px"><div><h2>현재 농장·채집</h2><p>체크한 재배·채집 재료는 브라우저에 바로 저장돼요.</p></div><button id="clearFarm" class="btn ghost">전체 해제</button></div>
           <div class="crop-groups">${groups.map(g => `<div class="crop-group"><h3>${esc(g)}</h3>${D.crops.filter(c => c.group === g).map(c => `<label class="crop-check"><input type="checkbox" data-crop="${c.id}" ${state.farm.has(c.id) ? 'checked' : ''}>${c.icon ? `<img src="${c.icon}" alt="">` : `<span style="font-size:20px">${esc(c.emoji || '·')}</span>`}<span>${esc(c.name)}</span></label>`).join('')}</div>`).join('')}</div>
-          <div class="note-strip" style="margin-top:16px">세레니티 전용 작물은 기존 정리 기준 성장 15분. 드롭 범위 등은 게임 업데이트에 따라 달라질 수 있어.</div>
+          <div class="note-strip" style="margin-top:16px">세레니티 전용 작물은 기존 정리 기준 성장 15분. 드롭 범위 등은 게임 업데이트에 따라 달라질 수 있어요.</div>
         </div>
         <div class="card farm-recommend">
           <div class="section-head" style="margin:0 0 10px"><div><h2>다음 확보 후보</h2><p>재배·채집 재료 1종 추가 시 완성되는 요리 수 기준</p></div></div>
           ${unlocks.length ? unlocks.map((x,i) => {
             const c = D.crops.find(c => c.id === x.id);
             return `<div class="recommend-item">${c.icon ? `<img src="${c.icon}" alt="">` : `<span style="font-size:25px">${esc(c.emoji || '·')}</span>`}<div><div class="name">${String(i + 1).padStart(2,'0')} · ${esc(c.name)}</div><div class="why">관련 ${x.improves}종 · 즉시 완성 ${x.unlock}종</div></div><div class="score">+${x.unlock}</div></div>`;
-          }).join('') : `<div class="empty">모든 작물이 체크되어 있어.</div>`}
+          }).join('') : `<div class="empty">모든 작물이 체크되어 있어요.</div>`}
         </div>
       </div>
 
-      <section class="section farm-ready-section"><div class="section-head"><div><h2>지금 만들 수 있는 요리</h2><p>내 농장·채집 목록에 체크한 재료를 대조해서 재배·채집 조건이 100% 충족된 음식이야.</p></div><div class="reference-status">${readyFoods.length} / ${D.foods.length}</div></div>
-        ${readyFoods.length ? `<div class="food-grid">${readyFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>아직 재배·채집 재료 조건이 완성된 요리가 없어.</strong>위의 다음 확보 후보를 참고해서 작물을 추가해봐.</div>`}
+      <section class="section farm-ready-section"><div class="section-head"><div><h2>지금 만들 수 있는 요리</h2><p>내 농장·채집 목록에 체크한 재료를 대조해서 재배·채집 조건이 100% 충족된 음식이에요.</p></div><div class="reference-status">${readyFoods.length} / ${D.foods.length}</div></div>
+        ${readyFoods.length ? `<div class="food-grid">${readyFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>아직 재배·채집 재료 조건이 완성된 요리가 없어요.</strong>위의 다음 확보 후보를 참고해서 작물을 추가해 보세요!</div>`}
       </section>
 
-      <section class="section"><div class="section-head"><div><h2>조금만 더 확보하면 되는 요리</h2><p>아직 부족한 음식만 식재료 준비도 높은 순으로 정렬했어. 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 재배·채집 재료 조건을 충족했어.</strong></div>`}</section>
+      <section class="section"><div class="section-head"><div><h2>조금만 더 확보하면 되는 요리</h2><p>아직 부족한 음식만 식재료 준비도 높은 순으로 정렬했어요! 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 재배·채집 재료 조건을 충족했어요!</strong></div>`}</section>
     </div>`;
   }
 
@@ -1182,15 +1182,15 @@
     const allocationText = total <= 0
       ? '전체 경작지 수를 입력하면 남은 칸을 계산해.'
       : over
-        ? `${Math.abs(remaining).toLocaleString('ko-KR')}칸 초과 배정됐어. 계산은 입력값 기준이야.`
+        ? `${Math.abs(remaining).toLocaleString('ko-KR')}칸 초과 배정됐어. 계산은 입력값 기준이에요.`
         : remaining === 0
-          ? '모든 경작지를 배정했어.'
-          : `${remaining.toLocaleString('ko-KR')}칸이 아직 미배정이야.`;
+          ? '모든 경작지를 배정했어요!'
+          : `${remaining.toLocaleString('ko-KR')}칸이 아직 미배정이에요.`;
 
     $('#page-profit').innerHTML = `<div class="content-shell profit-page">
       <section class="profit-setup-grid">
         <div class="card profit-input-card">
-          <div class="section-head" style="margin:0 0 16px"><div><h2>경작지 설정</h2><p>입력값은 이 브라우저에 자동 저장돼.</p></div><button id="profitReset" class="btn ghost">초기화</button></div>
+          <div class="section-head" style="margin:0 0 16px"><div><h2>경작지 설정</h2><p>입력값은 이 브라우저에 자동 저장돼요.</p></div><button id="profitReset" class="btn ghost">초기화</button></div>
           <div class="profit-input-list">
             <label class="profit-input-row total"><span><b>현재 전체 경작지</b><small>배정 가능한 총 칸 수</small></span><input data-profit-field="total" type="number" min="0" step="1" value="${total}"><em>칸</em></label>
             ${PROFIT_CROP_IDS.map(id => {
@@ -1208,10 +1208,10 @@
 
       ${best ? `<div class="profit-best-strip"><span>현재 배정 최고 평균 수익</span><b>${esc(best.food.name)}</b><strong>${compactGold(best.revenue.hour.avg)} / 시간</strong><small>${priceLabel} · 최소 ${compactGold(best.revenue.hour.min)} ~ 최대 ${compactGold(best.revenue.hour.max)}</small></div>` : ''}
 
-      <div class="note-strip profit-assumption">계산 가정 · 토마토/양파/마늘 경작지가 생산 병목이라고 보고 계산해. 감자·호박·고기·과일·구매 재료 등 다른 재료는 충분히 확보되어 있고, 가공/조리 대기시간은 없다고 가정한다. 실제 수익은 재료 수급과 플레이 방식에 따라 달라질 수 있어.</div>
+      <div class="note-strip profit-assumption">계산 가정 · 토마토/양파/마늘 경작지가 생산 병목이라고 보고 계산해. 감자·호박·고기·과일·구매 재료 등 다른 재료는 충분히 확보되어 있고, 가공/조리 대기시간은 없다고 가정한다. 실제 수익은 재료 수급과 플레이 방식에 따라 달라질 수 있어요.</div>
 
       <section class="section">
-        <div class="section-head"><div><h2>작물 생산량</h2><p>각 경작지의 드롭 범위에서 평균값을 계산하고, 최소·최대도 함께 보여줘.</p></div></div>
+        <div class="section-head"><div><h2>작물 생산량</h2><p>각 경작지의 드롭 범위에서 평균값을 계산하고, 최소·최대도 함께 보여드려요!</p></div></div>
         <div class="profit-crop-grid">${PROFIT_CROP_IDS.map(profitCropCard).join('')}</div>
       </section>
 
@@ -1226,7 +1226,7 @@
           </div>
         </div>
         <div class="profit-food-list">${filtered.map(profitFoodCard).join('')}</div>
-        <p class="source-note">수익 = 해당 기간의 기대 제작량 × 선택한 현재 판매가. 최소/최대 수익은 작물 드롭 수율 범위만 반영하며 가격 변동폭은 섞지 않아.</p>
+        <p class="source-note">수익 = 해당 기간의 기대 제작량 × 선택한 현재 판매가. 최소/최대 수익은 작물 드롭 수율 범위만 반영하며 가격 변동폭은 섞지 않아요.</p>
       </section>
     </div>`;
   }
@@ -1237,7 +1237,7 @@
     $('#page-ingredients').innerHTML = `<div class="content-shell">
       <div class="section-head" style="margin-top:2px"><div><h2>재료 인덱스</h2><p>획득처와 가공 경로를 카드 하나에서 바로 확인해.</p></div><div class="reference-status">${arr.length} items</div></div>
       <div class="ingredient-grid">${arr.map(i => `<article class="card ingredient-card"><div class="icon-lg">${iconHTML(i,'big-icon')}</div><span class="tag">${esc(i.type)}</span><h3>${esc(i.name)}</h3><p><b>${esc(i.source)}</b></p><p>${esc(i.detail)}</p>${i.recipe?.length ? `<p>필요 · ${i.recipe.map(([c,n]) => `${esc(resolveIngredient(c).name)} ×${n}`).join(' + ')}</p>` : ''}${i.npcPrice != null ? `<p class="cost">NPC 구매비 ${fmt(i.npcPrice)} / 개</p>` : ''}</article>`).join('')}</div>
-      <p class="source-note">세레니티 작물·과일·구매 식재료·고기 수급처는 기존 조사 내용을 기반으로 정리되어 있어.</p>
+      <p class="source-note">세레니티 작물·과일·구매 식재료·고기 수급처는 기존 조사 내용을 기반으로 정리되어 있어요.</p>
     </div>`;
   }
 
@@ -1278,12 +1278,12 @@
     </article>`).join('');
     $('#page-finder').innerHTML = `<div class="content-shell">
       <div class="finder-hero">
-        <section class="finder-intro"><p class="eyebrow">OFFICIAL TRADE INDEX</p><h2>이 물건, <b>어디서 사고 어디에 팔지?</b></h2><p>스폰 일반 상점·특수 상점·세레니티 상점가의 거래 정보를 한 검색창으로 묶었어. 아이템뿐 아니라 NPC나 장소 이름으로도 바로 찾을 수 있어.</p></section>
+        <section class="finder-intro"><p class="eyebrow">OFFICIAL TRADE INDEX</p><h2>이 물건, <b>어디서 사고 어디에 팔지?</b></h2><p>스폰 일반 상점·특수 상점·세레니티 상점가의 거래 정보를 한 검색창으로 묶었어. 아이템뿐 아니라 NPC나 장소 이름으로도 바로 찾을 수 있어요.</p></section>
         <section class="card finder-example"><div class="mini-label">예시 · 바로 찾기</div><strong>발광석</strong><p>${exactGlow ? `${esc(exactGlow.value)}에 구매 가능` : '공식 상점 정보 검색'}</p><div class="route"><span>스폰</span><span>›</span><span>꽃잎 공방</span><span>›</span><b>바름</b></div></section>
       </div>
       <div class="finder-toolbar"><div class="finder-filters">${filters.map(([k,label]) => `<button class="finder-filter ${filter===k?'active':''}" data-finder-filter="${k}">${label}</button>`).join('')}</div><div class="finder-count"><b>${total.toLocaleString('ko-KR')}</b>건 · 공식 위키 ${esc(sourceDate)} 확인</div></div>
-      <div class="finder-grid">${cards || `<div class="finder-search-hint" style="grid-column:1/-1"><strong>검색 결과가 없어.</strong><br>아이템 이름 일부, NPC 이름, 장소 이름으로 다시 찾아봐.</div>`}</div>
-      ${total > visible.length ? `<div class="finder-sourcebar"><span>검색 전에는 앞 ${visible.length}개만 보여줘. 검색어를 입력하면 최대 160개까지 좁혀 보여줘.</span><span>${total-visible.length}개 추가 결과</span></div>` : ''}
+      <div class="finder-grid">${cards || `<div class="finder-search-hint" style="grid-column:1/-1"><strong>검색 결과가 없어요.</strong><br>아이템 이름 일부, NPC 이름, 장소 이름으로 다시 찾아보세요!</div>`}</div>
+      ${total > visible.length ? `<div class="finder-sourcebar"><span>검색 전에는 앞 ${visible.length}개만 보여드려요! 검색어를 입력하면 최대 160개까지 좁혀 보여드려요!</span><span>${total-visible.length}개 추가 결과</span></div>` : ''}
       <div class="finder-sourcebar"><span>현재 카탈로그는 공식 위키의 스폰 상점·특수 상점·세레니티 상점가를 기준으로 정리.</span><span>값이 바뀌면 공식 위키 링크를 우선 확인</span></div>
     </div>`;
   }
@@ -1357,7 +1357,7 @@
       .sort((a,b) => {
         if (q) return b.score-a.score || a.item.name.localeCompare(b.item.name,'ko');
         // 기본 백과에서는 검증된 한글/공식 항목을 먼저 보여주고,
-        // 표시명이 아직 확인되지 않은 리소스팩 식별 항목은 뒤쪽 페이지에 보존한다.
+        // 표시명이 아직 확인되지 않은 추가 항목은 뒤쪽 페이지에 보존한다.
         const rank = x => x.item.official !== false ? 0 : (x.item.resourceVerified ? 1 : 2);
         return rank(a)-rank(b) || a.index-b.index;
       });
@@ -1524,7 +1524,7 @@
     const exampleUniq=[...new Set(examples)].slice(0,8);
 
     return `<section class="guide-lifecycle ${compact?'compact':''}">
-      <div class="guide-lifecycle-head"><div><span>ITEM FLOW</span><h3>어디서 얻고, 어디에 쓰는지</h3><p>같은 설명을 반복하지 않고 실제 흐름만 순서대로 정리했어.</p></div></div>
+      <div class="guide-lifecycle-head"><div><span>ITEM FLOW</span><h3>어디서 얻고, 어디에 쓰는지</h3><p>같은 설명을 반복하지 않고 실제 흐름만 순서대로 정리했어요!</p></div></div>
       <div class="guide-journey" role="list">${primaryHtml}</div>
       ${secondaryHtml?`<div class="guide-route-table"><div class="guide-route-title"><b>다른 사용 경로</b><span>여러 곳에 쓰이는 아이템만 표시</span></div>${secondaryHtml}</div>`:''}
       ${exampleUniq.length&&!compact?`<div class="guide-use-examples"><b>실제 사용 예시</b><div>${exampleUniq.map(x=>`<span>${esc(x)}</span>`).join('')}</div></div>`:''}
@@ -1550,7 +1550,7 @@
     if (!rows.length) return '';
     return `<section class="guide-panel guide-shop-panel"><div class="guide-panel-head"><div><span>공식 상점 정보</span><h3>돈·교환값 / 어디서 거래해?</h3></div></div>
       <div class="guide-table-wrap"><table class="guide-table guide-shop-table"><thead><tr><th>구분</th><th>가격/교환값</th><th>지역</th><th>장소</th><th>NPC</th><th>비고</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(guideTradeLabel(x.action))}</b></td><td><strong>${esc(x.value || '—')}</strong></td><td>${esc(x.region || '—')}</td><td>${esc(x.location || '—')}</td><td>${esc(x.npc || '—')}</td><td>${esc(x.note || x.category || '—')}</td></tr>`).join('')}</tbody></table></div>
-      <p class="guide-panel-copy">상점 가격은 현재 사이트에 편입한 공식 상점 카탈로그 값이야. 운영 중 변경될 수 있으니 이상하면 원문 링크를 최종 기준으로 봐.</p>
+      <p class="guide-panel-copy">상점 가격은 현재 사이트에 편입한 공식 상점 카탈로그 값이에요. 운영 중 변경될 수 있으니 이상하면 원문 링크를 최종 기준으로 봐.</p>
     </section>`;
   }
 
@@ -1584,11 +1584,11 @@
       <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 무기 강화</span><h2>${esc(weapon)} 0강 → +${target}</h2><p>초뉴비 기준으로 <b>NPC 위치 → 강화 단계 → 정확한 골드 → 재료 → 재료 수급처</b>까지 한 화면에서 보게 만들었어.</p></div>
         <div class="guide-target dual"><label><span>무기</span><select id="noctilaWeaponSelect">${noctilaWeaponNames().map(n=>`<option value="${esc(n)}" ${n===weapon?'selected':''}>${esc(n)}</option>`).join('')}</select></label><label><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></label></div>
       </div>
-      <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span>브론에게 말을 걸고 <strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(weapon)} 올리기</b><span>현재 단계에서 요구하는 골드와 재료를 준비해.</span></div></div><div class="guide-step"><i>3</i><div><b>강화 실행</b><span>공식 표 기준 노크틸라 무기 강화는 <strong>전 단계 성공률 100%</strong>야.</span></div></div><div class="guide-step"><i>4</i><div><b>스킬 해금도 확인</b><span>무기 +3/+6/+9/+12에서 스킬 슬롯 조건이 열리므로 시온의 스킬 시스템도 같이 확인해.</span></div></div></div>
+      <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span>브론에게 말을 걸고 <strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(weapon)} 올리기</b><span>현재 단계에서 요구하는 골드와 재료를 준비해.</span></div></div><div class="guide-step"><i>3</i><div><b>강화 실행</b><span>공식 표 기준 노크틸라 무기 강화는 <strong>전 단계 성공률이 <strong>100%</strong>예요.</span></div></div><div class="guide-step"><i>4</i><div><b>스킬 해금도 확인</b><span>무기 +3/+6/+9/+12에서 스킬 슬롯 조건이 열리므로 시온의 스킬 시스템도 같이 확인해.</span></div></div></div>
       <div class="guide-summary-grid"><article><span>등급</span><strong>${esc(tier)}</strong><small>${esc(item?.subcategory||'노크틸라 무기')}</small></article><article><span>0 → +${target} 고정 골드</span><strong>${fmt(totalGold)}</strong><small>단계별 공식 골드 합계</small></article><article><span>성공률</span><strong>100%</strong><small>공식 무기 강화표 기준</small></article><article><span>외형 변화</span><strong>+3·6·9·12·14·15</strong><small>해당 강화 구간에서 변화</small></article></div>
-      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>필요 재료 합계</span><h3>0강부터 +${target}까지 한 번에 준비</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaWeaponEnhancement,sourceLabel:'공식 무기 강화'})}</div><div class="guide-materials">${mats.map(([n,q])=>guideItemChip(n,q)).join('')}</div><p class="guide-panel-copy">각 재료에 마우스를 올리면 획득처·사용처가 뜨고, 클릭하면 그 재료 상세로 계속 내려갈 수 있어.</p></section>
+      <section class="guide-panel wide"><div class="guide-panel-head"><div><span>필요 재료 합계</span><h3>0강부터 +${target}까지 한 번에 준비</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaWeaponEnhancement,sourceLabel:'공식 무기 강화'})}</div><div class="guide-materials">${mats.map(([n,q])=>guideItemChip(n,q)).join('')}</div><p class="guide-panel-copy">각 재료에 마우스를 올리면 획득처·사용처가 뜨고, 클릭하면 그 재료 상세로 계속 내려갈 수 있어요.</p></section>
       <section class="guide-panel wide"><div class="guide-panel-head"><div><span>공식 단계표</span><h3>${esc(weapon)} · ${esc(tier)} 강화 비용</h3></div></div><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>강화</th><th>골드</th><th>필요 재료</th><th>성공률</th></tr></thead><tbody>${allStages.map(x=>`<tr class="${x.stage<=target?'selected-row':''}"><td><b>+${x.stage}</b></td><td>${fmt(x.gold)}</td><td class="table-mats">${(x.materials||[]).map(([n,q])=>`${esc(n)} ×${esc(String(q))}`).join(' · ')}</td><td><strong>${x.chance}%</strong></td></tr>`).join('')}</tbody></table></div></section>
-      <div class="guide-note important"><b>참고 · 강화만 보고 끝내면 안 돼</b><span>+3/+6/+9/+12는 스킬 슬롯 해금 조건과 연결돼. 스킬 슬롯은 <strong>봉인 해방의 인장</strong>, 개별 스킬 해금은 <strong>능력 개방의 문장 + 골드</strong>, 스킬 강화는 무기 등급에 맞는 <strong>각성석</strong>이 필요해. 검색창에서 “${esc(weapon)} 스킬” 또는 재료 이름을 그대로 검색하면 이어서 볼 수 있어.</span></div>
+      <div class="guide-note important"><b>참고 · 강화만 보고 끝내면 안 돼요!</b><span>+3/+6/+9/+12는 스킬 슬롯 해금 조건과 연결돼요. 스킬 슬롯은 <strong>봉인 해방의 인장</strong>, 개별 스킬 해금은 <strong>능력 개방의 문장 + 골드</strong>, 스킬 강화는 무기 등급에 맞는 <strong>각성석</strong>이 필요해. 검색창에서 “${esc(weapon)} 스킬” 또는 재료 이름을 그대로 검색하면 이어서 볼 수 있어요.</span></div>
       <div class="guide-sourcebar"><span>고정 골드·재료·성공률은 공식 노크틸라 무기 강화표 기준</span>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaWeaponEnhancement,sourceLabel:'공식 원문'})}</div>
     </section>`;
   }
@@ -1601,8 +1601,8 @@
     const rows = Array.from({length:5},(_,i)=>({stage:i+1,gold:d.gold[i],chance:d.chance[i],pity:d.pity[i]}));
     const onePassGold = rows.reduce((a,x)=>a+x.gold,0);
     return `<section class="guide-answer guide-enhancement noctila-enhancement">
-      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 장신구 강화</span><h2>${esc(tier)} 장신구 강화</h2><p>브론에게 강화하는 방법과 +1~+5 비용, 성공률, 확정 시도, 다음 등급 승급 조건을 같이 정리했어.</p></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaAccessoryEnhancement,sourceLabel:'공식 장신구 강화'})}</div>
-      <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span><strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(d.stone)} 준비</b><span>등급 내 강화 1회마다 ${esc(d.stone)} ×${d.count}와 단계별 골드가 필요해.</span></div></div><div class="guide-step"><i>3</i><div><b>+5까지 강화</b><span>실패할 수 있지만 단계별 <strong>확정 강화 시도 횟수</strong>가 있어.</span></div></div>${d.next?`<div class="guide-step"><i>4</i><div><b>${esc(d.next)} 등급 승급</b><span>승급 성공률 5%, 확정 26회. ${esc(d.stone)} ×${d.upgradeStone} + 어빌리티 스톤 ×${d.upgradeAbility}가 추가로 필요해.</span></div></div>`:''}</div>
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 장신구 강화</span><h2>${esc(tier)} 장신구 강화</h2><p>브론에게 강화하는 방법과 +1~+5 비용, 성공률, 확정 시도, 다음 등급 승급 조건을 같이 정리했어요!</p></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaAccessoryEnhancement,sourceLabel:'공식 장신구 강화'})}</div>
+      <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span><strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(d.stone)} 준비</b><span>등급 내 강화 1회마다 ${esc(d.stone)} ×${d.count}와 단계별 골드가 필요해.</span></div></div><div class="guide-step"><i>3</i><div><b>+5까지 강화</b><span>실패할 수 있지만 단계별 <strong>확정 강화 시도 횟수</strong>가 있어요.</span></div></div>${d.next?`<div class="guide-step"><i>4</i><div><b>${esc(d.next)} 등급 승급</b><span>승급 성공률 5%, 확정 26회. ${esc(d.stone)} ×${d.upgradeStone} + 어빌리티 스톤 ×${d.upgradeAbility}가 추가로 필요해.</span></div></div>`:''}</div>
       <div class="guide-summary-grid"><article><span>등급 내 최소 골드</span><strong>${fmt(onePassGold)}</strong><small>각 단계 1회 성공 가정</small></article><article><span>1회 강화 재료</span><strong>${esc(d.stone)} ×${d.count}</strong><small>+1~+5 공통</small></article><article><span>강화 성공률</span><strong>90 → 10%</strong><small>+1부터 +5 순서</small></article><article><span>승급</span><strong>${d.next?'5% · 확정 26회':'최종 등급'}</strong><small>${d.next?`${tier} → ${d.next}`:'오브레 +5까지'}</small></article></div>
       <section class="guide-panel wide"><div class="guide-panel-head"><div><span>공식 단계표</span><h3>${esc(tier)} +1 ~ +5</h3></div></div><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>목표</th><th>수호석</th><th>골드</th><th>성공률</th><th>확정 강화</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${guideItemChip(d.stone,d.count)}</td><td>${fmt(x.gold)}</td><td><strong class="chance ${x.chance<=10?'low':''}">${x.chance}%</strong></td><td>${x.pity}회</td></tr>`).join('')}</tbody></table></div></section>
       ${d.next?`<div class="guide-note important"><b>+5 다음 등급 승급</b><span><strong>${esc(tier)} → ${esc(d.next)}</strong>: 성공률 5%, 확정 26회. ${guideItemChip(d.stone,d.upgradeStone)} ${guideItemChip('어빌리티 스톤',d.upgradeAbility)}가 필요해. 승급 실패/소모 규칙은 공식 원문을 최종 기준으로 확인해.</span></div>`:''}
@@ -1654,7 +1654,7 @@
     const stages = GUIDE.enhancement.filter(x=>x.stage<=target);
     const stats = GUIDE.sagePickaxeStats.filter(x=>x.stage<=target);
     return `<section class="guide-answer guide-enhancement">
-      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 도구 강화</span><h2>세이지 곡괭이 강화, 처음부터 ${target}강까지</h2><p>초뉴비 기준으로 <b>어디로 가는지 → 뭘 넣는지 → 단계별 돈/재료/확률 → 라이프스톤 제작 → 곡괭이 성능</b> 순서로 정리했어.</p></div><div class="guide-target"><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></div></div>
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 도구 강화</span><h2>세이지 곡괭이 강화, 처음부터 ${target}강까지</h2><p>초뉴비 기준으로 <b>어디로 가는지 → 뭘 넣는지 → 단계별 돈/재료/확률 → 라이프스톤 제작 → 곡괭이 성능</b> 순서로 정리했어요!</p></div><div class="guide-target"><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></div></div>
       <div class="guide-steps">
         <div class="guide-step"><i>1</i><div><b>세레니티 마을로 이동</b><span>NPC <strong>로니</strong>를 찾는다.</span></div></div>
         <div class="guide-step"><i>2</i><div><b>로니에게 말 걸기</b><span><strong>2번 → 강화하기</strong>를 선택한다.</span></div></div>
@@ -1668,12 +1668,12 @@
         <article><span>최소 루비</span><strong>${num1(min.ruby)}개</strong><small>+7 이후 단계 합계</small></article>
         <article class="expected"><span>단순 확률 기대 골드*</span><strong>${fmt(Math.round(exp.gold))}</strong><small>성공확률 역수로 계산</small></article>
       </div>
-      <div class="guide-note caution"><b>* 기대값 계산 주의</b><span>공식 강화표의 성공 확률을 이용해 단계별 평균 시도 횟수를 <code>1 ÷ 성공확률</code>로 단순 계산한 값이야. <strong>실패 시 단계 유지 + 해당 1회 비용/재료가 소모된다는 가정</strong>이 들어가며, 공식 문서에서 실패 패널티가 별도로 명시되지 않은 경우 실제 체감 비용과 달라질 수 있어. 아래의 “최소 비용” 표는 공식 수치를 그대로 사용해.</span></div>
+      <div class="guide-note caution"><b>* 기대값 계산 주의</b><span>공식 강화표의 성공 확률을 이용해 단계별 평균 시도 횟수를 <code>1 ÷ 성공확률</code>로 단순 계산한 값이에요. <strong>실패 시 단계 유지 + 해당 1회 비용/재료가 소모된다는 가정</strong>이 들어가며, 공식 문서에서 실패 패널티가 별도로 명시되지 않은 경우 실제 체감 비용과 달라질 수 있어요. 아래의 “최소 비용” 표는 공식 수치를 그대로 사용해.</span></div>
       <div class="guide-two-col">
         <section class="guide-panel"><div class="guide-panel-head"><div><span>강화석 제작</span><h3>라이프스톤은 이렇게 만든다</h3></div></div>
           ${['하급 라이프스톤','중급 라이프스톤','상급 라이프스톤'].map(n=>{const it=guideByName(n);return `<div class="guide-recipe-card"><div><b>${esc(n)}</b><small>${esc(it?.note||'')}</small></div><div class="guide-materials">${(it?.recipe||[]).map(([x,q])=>guideItemChip(x,q)).join('')}</div></div>`}).join('')}
         </section>
-        <section class="guide-panel"><div class="guide-panel-head"><div><span>0 → +${target}</span><h3>최소 라이프스톤 제작 원재료</h3></div></div><p class="guide-panel-copy">강화석을 전부 직접 제작하고, 각 강화가 한 번에 성공한다고 가정했을 때의 원재료 환산이야.</p><div class="guide-materials dense">${raw.map(([n,q])=>guideItemChip(n,q)).join('')}</div></section>
+        <section class="guide-panel"><div class="guide-panel-head"><div><span>0 → +${target}</span><h3>최소 라이프스톤 제작 원재료</h3></div></div><p class="guide-panel-copy">강화석을 전부 직접 제작하고, 각 강화가 한 번에 성공한다고 가정했을 때의 원재료 환산이에요.</p><div class="guide-materials dense">${raw.map(([n,q])=>guideItemChip(n,q)).join('')}</div></section>
       </div>
       <section class="guide-panel wide"><div class="guide-panel-head"><div><span>OFFICIAL ENHANCEMENT TABLE</span><h3>단계별 강화 비용 · 재료 · 성공률</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.enhancement,sourceLabel:'공식 강화표'})}</div>
         <div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>목표</th><th>하급</th><th>중급</th><th>상급</th><th>골드</th><th>루비</th><th>성공률</th></tr></thead><tbody>${stages.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${x.low}</td><td>${x.mid||'—'}</td><td>${x.high||'—'}</td><td>${fmt(x.gold)}</td><td>${x.ruby||'—'}</td><td><strong class="chance ${x.chance<=5?'low':''}">${x.chance}%</strong></td></tr>`).join('')}</tbody></table></div>
@@ -1682,7 +1682,7 @@
         <p class="guide-panel-copy">세이지 곡괭이는 채광 1회당 스태미나 10을 사용해. 아래는 ${target}강까지 공식 강화 성능표야.</p>
         <div class="guide-table-wrap"><table class="guide-table stats"><thead><tr><th>강화</th><th>채광력</th><th>채광속도</th><th>광물 드롭</th><th>유물%</th><th>코비%</th><th>광채 속도%</th><th>광채 확률%</th><th>경험치</th></tr></thead><tbody>${stats.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${x.power}</td><td>${x.speed}</td><td>${x.drops}</td><td>${x.relic}</td><td>${x.kobi}</td><td>${x.glowSpeed==null?'—':x.glowSpeed}</td><td>${x.glowChance==null?'—':x.glowChance}</td><td>${x.xp}</td></tr>`).join('')}</tbody></table></div>
       </section>
-      <div class="guide-note"><b>돈 계산 범위</b><span>위 골드는 <strong>강화창에서 직접 요구하는 고정 골드</strong>야. 라이프스톤 원재료를 다른 유저에게 구매할 때 드는 시세 비용은 서버 시장가가 고정값이 아니므로 임의로 만들지 않았어. 대신 필요한 강화석/원재료 수량은 전부 계산해서 바로 비교할 수 있게 했어.</span></div>
+      <div class="guide-note"><b>돈 계산 범위</b><span>위 골드는 <strong>강화창에서 직접 요구하는 고정 골드</strong>야. 라이프스톤 원재료를 다른 유저에게 구매할 때 드는 시세 비용은 서버 시장가가 고정값이 아니므로 임의로 만들지 않았어. 대신 필요한 강화석/원재료 수량은 전부 계산해서 바로 비교할 수 있게 했어요!</span></div>
     </section>`;
   }
 
@@ -1694,11 +1694,11 @@
       ${item.probability ? `<div class="guide-inline-fact"><span>확률/조건</span><b>${esc(item.probability)}</b></div>`:''}
       ${item.trade ? `<div class="guide-inline-fact"><span>거래/가격</span><b>${esc(item.trade)}</b></div>`:''}
       <div class="guide-info-grid">
-        <article><span>이게 뭐고, 어디서 구해요?</span><p>${esc(item.acquire || '공식 문서에서 세부 획득처를 확인하지 못했어.')}</p></article>
-        <article><span>어디에 써?</span><p>${esc(item.use || '공식 문서에서 세부 사용처를 확인하지 못했어.')}</p></article>
+        <article><span>이게 뭐고, 어디서 구해요?</span><p>${esc(item.acquire || '공식 문서에서 세부 획득처를 확인하지 못했어요!')}</p></article>
+        <article><span>어디에 써?</span><p>${esc(item.use || '공식 문서에서 세부 사용처를 확인하지 못했어요!')}</p></article>
       </div>
       ${guideShopTable(item)}
-      ${recipe.length ? `<section class="guide-panel recipe-main"><div class="guide-panel-head"><div><span>필요 재료</span><h3>${esc(item.name)} 제작 재료</h3></div></div><div class="guide-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><p class="guide-panel-copy">재료에 마우스를 올리면 수급처가 뜨고, 클릭하면 그 재료의 획득법·사용처·하위 재료까지 이어서 볼 수 있어.</p></section>`:''}
+      ${recipe.length ? `<section class="guide-panel recipe-main"><div class="guide-panel-head"><div><span>필요 재료</span><h3>${esc(item.name)} 제작 재료</h3></div></div><div class="guide-materials">${recipe.map(([n,q])=>guideItemChip(n,q)).join('')}</div><p class="guide-panel-copy">재료에 마우스를 올리면 수급처가 뜨고, 클릭하면 그 재료의 획득법·사용처·하위 재료까지 이어서 볼 수 있어요.</p></section>`:''}
       ${item.note ? `<div class="guide-note important"><b>참고 / 꼭 알아둘 것</b><span>${esc(item.note)}</span></div>`:''}
       ${(item.related||[]).length ? `<div class="guide-related"><span>같이 보면 좋은 항목</span><div>${item.related.map(n=>guideItemChip(n)).join('')}</div></div>`:''}
       <div class="guide-sourcebar"><span>${item.official === false ? '기본 게임/참고 정보 · 서버 전용 규칙이 있으면 공식 공지가 우선' : `공식 자료 기준 · 확인 ${esc(item.verified||GUIDE.meta.verified||'')}`}</span>${guideSourceLink(item)}</div>
@@ -1823,15 +1823,15 @@
         const ing = resolveIngredient(id);
         return `<div class="recipe-line">${iconHTML(ing)}<div><div class="rname">${esc(ing.name)}</div><div class="rsource">${esc(ing.source)}</div></div><div class="qty">×${n}</div></div>`;
       }).join('')}</div></div>` : ''}
-      ${!gold ? `<div class="drawer-section"><h3>내 농장 관점</h3><div class="drawer-text">필요 농작물 · ${crops.length ? esc(crops.join(', ')) : '없음'}<br>${miss.length ? `아직 없는 작물 · <b>${esc(miss.join(', '))}</b>` : '<b>농작물 조건은 모두 충족했어.</b>'}</div></div>
+      ${!gold ? `<div class="drawer-section"><h3>내 농장 관점</h3><div class="drawer-text">필요 농작물 · ${crops.length ? esc(crops.join(', ')) : '없음'}<br>${miss.length ? `아직 없는 작물 · <b>${esc(miss.join(', '))}</b>` : '<b>농작물 조건은 모두 충족했어요!</b>'}</div></div>
       <div class="drawer-section"><h3>NPC 구매비</h3><div class="npc-unit-cost"><span>1개 제작 기준</span><strong>${fmt(unitNpcCost)}</strong></div><div class="drawer-text">직접 수급하는 농작물·과일·고기 가치는 제외하고, 밀키에게 실제 골드를 주고 사는 식재료만 합산해.</div></div>
       <div class="drawer-section craft-planner"><div class="craft-planner-head"><div><h3>제작 수량 계산</h3><p>만들 수량을 입력하면 NPC에서 사야 할 재료와 총 비용을 자동 계산해.</p></div><div class="craft-planner-total"><span>예상 총 비용</span><b id="craftPlannerTotal">${fmt(unitNpcCost)}</b></div></div>
         <label class="craft-qty-field"><span>만들 음식 수량</span><div><input class="craft-qty-input" data-craft-food="${food.slug}" type="number" inputmode="numeric" min="1" step="1" value="1"><em>개</em></div></label>
         <div class="craft-preset-row"><button data-craft-preset="1" data-craft-food="${food.slug}">1개</button><button data-craft-preset="10" data-craft-food="${food.slug}">10개</button><button data-craft-preset="64" data-craft-food="${food.slug}">1세트</button><button data-craft-preset="640" data-craft-food="${food.slug}">10세트</button></div>
         <div id="npcPurchasePlanner">${npcPurchasePlannerHtml(food,1)}</div>
-        <div class="npc-plan-note">세트 환산은 <b>1세트 = 64개</b>. 현재 인벤토리 보유량은 차감하지 않은 ‘처음부터 전부 구매’ 기준이야.</div>
+        <div class="npc-plan-note">세트 환산은 <b>1세트 = 64개</b>. 현재 인벤토리 보유량은 차감하지 않은 ‘처음부터 전부 구매’ 기준이에요.</div>
       </div>` : ''}
-      <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p ? `기준 ${fmt(p.marketPrice)} · 나의 판매가 <b>${fmt(p.myPrice ?? p.marketPrice)}</b>` : '가격 파일에서 아직 이 음식 값을 읽지 못했어.'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map((h,i) => `<div class="mini-row"><span>${esc(historyLabel(h,i))}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
+      <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p ? `기준 ${fmt(p.marketPrice)} · 나의 판매가 <b>${fmt(p.myPrice ?? p.marketPrice)}</b>` : '가격 파일에서 아직 이 음식 값을 읽지 못했어요!'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map((h,i) => `<div class="mini-row"><span>${esc(historyLabel(h,i))}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
       <p class="source-note">완성 요리 레시피·밀키 구매가는 공식 위키와 대조. 버터 조각은 2026-10-03 인게임 확인값(요리용 우유 ×8 + 오일 ×4)을 우선 반영.</p></div>`;
     $('#drawerBackdrop').hidden = false;
     $('#detailDrawer').classList.add('open');
@@ -2079,7 +2079,7 @@
     persistMemoEntries(rows);
     if (state.memoEditingId === id) state.memoEditingId = null;
     renderTool();
-    toast('메모를 삭제했어.');
+    toast('메모를 삭제했어요!');
   }
 
   function renderTool() {
@@ -2123,9 +2123,9 @@
       $('#toolEyebrow').textContent = 'APPEARANCE';
       $('#toolTitle').textContent = '환경 설정';
       const opts = [
-        ['gmarket','Gmarket Sans','네가 준 폰트 계열 · 기본값'],
+        ['gmarket','Gmarket Sans','띵팜 기본 폰트 · 추천'],
         ['pretendard','Pretendard','웹 UI에 익숙한 단정한 느낌'],
-        ['system','System UI','윈도우/맥 기본 글꼴'],
+        ['system','System UI','기기 기본 글꼴'],
         ['serif','Editorial','제목만 세리프를 쓰는 조합'],
       ];
       body.innerHTML = `<div class="setting-block"><div class="setting-title">글꼴</div><div class="setting-copy">선택값은 이 브라우저에 자동 저장돼요. Gmarket Sans는 PC 설치본을 우선 사용하고, 없으면 웹폰트로 불러와요.</div><div class="font-options">${opts.map(([k,n,d]) => `<button class="font-option ${state.fontChoice===k?'active':''}" data-font-choice="${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div></div>
