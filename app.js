@@ -1746,6 +1746,7 @@
     if (!root) return;
     const q = state.query.trim();
     const filters = [['all','전체'],['images','이미지 있음'],['missing-images','이미지 미확인'],['official','공식 설명'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
+    if (state.guideFilter === 'resource') { state.guideFilter = 'all'; localStorage.setItem('ddingGuideFilter','all'); }
     const matches = guideMatches(q,state.guideFilter);
     const compactQ = q.replace(/\s+/g,'');
     const isNoctilaWeaponEnhance = /강화/.test(compactQ) && (/노크틸라무기/.test(compactQ) || noctilaWeaponNames().some(n=>compactQ.includes(n.replace(/\s+/g,''))));
