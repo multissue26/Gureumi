@@ -962,7 +962,7 @@
 
     $('#page-dashboard').innerHTML = `<div class="content-shell market-home">
       <section class="hero market-hero market-banner" aria-label="띵팜 시세 안내">
-        <img class="market-banner-art" src="assets/brand/ddingfarm-price-banner-v2.webp?v=0.12.4" alt="띵팜 시세 안내">
+        <img class="market-banner-art" src="assets/brand/ddingfarm-price-banner-v3.webp?v=0.12.5" alt="띵팜 시세 안내">
         <div class="market-banner-actions">
           <button id="publishLatestBtn" class="btn primary">최신 가격 업데이트</button>
           <button class="btn banner-help-btn" data-tool="price-guide">업데이트 방법</button>
