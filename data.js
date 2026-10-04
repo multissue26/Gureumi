@@ -9742,16 +9742,103 @@ window.DDING_SHOP_DATA = {
     iconLinked += 1;
   });
 
+  // 공식 위키 기준으로 초뉴비가 바로 이해할 수 있게 핵심 분류와 실제 사용 흐름을 보정합니다.
+  const exactByName = new Map(items.map(item => [item.name, item]));
+  const patchGuide = (name, patch) => {
+    const item = exactByName.get(name);
+    if (item) Object.assign(item, patch);
+  };
+
+  ['토마토 씨앗','양파 씨앗','마늘 씨앗'].forEach(name => patchGuide(name,{
+    region:'세레니티',
+    category:'농사 · 씨앗',
+    acquire:'세레니티 밭의 작물을 세이지 괭이로 채집해 얻습니다.',
+    use:'자신의 마을 경작지에 심어 토마토·양파·마늘을 재배할 때 사용합니다.'
+  }));
+  ['토마토','양파','마늘'].forEach(name => patchGuide(name,{
+    region:'세레니티',
+    category:'농사 · 작물',
+    acquire:'자신의 마을 경작지에서 해당 씨앗을 재배한 뒤 수확합니다.',
+    use:'농작물 가공 시설에서 베이스·가공 재료로 만들거나 관련 상점 판매와 요리 제작에 사용합니다.'
+  }));
+  ['파인애플','코코넛'].forEach(name => patchGuide(name,{
+    region:'세레니티',
+    category:'채집 · 과일',
+    acquire:'세레니티 과수원에서 손으로 채집합니다.',
+    use:'요리 제작과 농작물 가공 계열 재료로 사용합니다.'
+  }));
+  ['소금','요리용 달걀','요리용 우유','오일'].forEach(name => patchGuide(name,{
+    region:'세레니티',
+    category:'요리 · 구매 식재료',
+    acquire:'세레니티 마을의 밀키에게서 구입합니다.',
+    use:'농작물 가공 시설과 요리 제작 시설에서 가공 식재료·요리를 만드는 데 사용합니다.'
+  }));
+  ['설탕 큐브','요리용 소금','치즈 조각','밀가루 반죽','버터 조각'].forEach(name => patchGuide(name,{
+    region:'세레니티',
+    category:'요리 · 가공 식재료',
+    acquire:'세레니티 마을의 농작물 가공 시설에서 농작물과 구매 식재료를 조합해 만듭니다.',
+    use:'요리 제작 시설에서 완성 요리를 만드는 재료로 사용합니다.'
+  }));
+
+  patchGuide('세이지 괭이',{
+    region:'세레니티',category:'도구 · 세이지',
+    acquire:'세레니티 마을의 도구 제작 시설에서 제작합니다.',
+    use:'세레니티 밭에서 좌클릭으로 작물을 채집해 씨앗을 얻는 농사 전용 도구입니다.'
+  });
+  patchGuide('세이지 곡괭이',{
+    region:'세레니티',category:'도구 · 세이지',
+    acquire:'세레니티 마을의 도구 제작 시설에서 제작합니다.',
+    use:'세레니티 동굴에서 좌클릭으로 코룸·리프톤·세렌트 등의 광석을 채광하는 도구입니다.'
+  });
+  patchGuide('세이지 낚싯대',{
+    region:'세레니티',category:'도구 · 세이지',
+    acquire:'세레니티 마을의 도구 제작 시설에서 제작합니다.',
+    use:'세레니티 해역에서 낚시해 물고기·열쇠 조각·바다 상자 등 해양 아이템을 얻는 데 사용합니다.'
+  });
+  patchGuide('세이지 대검',{
+    region:'세레니티',category:'도구 · 세이지',
+    acquire:'세레니티 마을의 도구 제작 시설에서 제작합니다.',
+    use:'세레니티 사냥 콘텐츠에서 몬스터·동물을 상대하고 사냥 재료를 얻는 데 사용하는 전투 도구입니다.'
+  });
+  patchGuide('도구 강화',{
+    region:'세레니티',category:'성장 시스템',
+    acquire:'세레니티 마을의 로니에게서 세이지 도구 강화를 진행합니다.',
+    use:'강화 단계에 따라 채집·채광·낚시·사냥 효율과 관련 수치를 높이는 성장 시스템입니다.'
+  });
+
+  items.forEach(item => {
+    if (item.category === '각인') {
+      item.category = '도구 · 각인';
+      if (!item.use || /미확인|확인 필요/.test(item.use)) {
+        item.use = '세이지 도구에 각인 효과를 부여하거나 각인 성장에 사용하는 재료입니다. 도구 종류와 각인 효과에 맞춰 사용합니다.';
+      }
+    }
+    if (item.category === '룬' && /노크틸라|루미디아/.test(item.region || '')) item.category = '노크틸라 · 룬';
+    if (item.category === '무기 스킬') item.category = '노크틸라 · 무기 스킬';
+    if (item.category === '장신구' && /노크틸라|루미디아/.test(item.region || '')) item.category = '노크틸라 · 장신구';
+    if (item.category === '무기' && /노크틸라|루미디아/.test(item.region || '')) item.category = '노크틸라 · 무기';
+    if (item.category === '뱃지' && (!item.use || /미확인|확인 필요/.test(item.use))) {
+      item.use = '뱃지 메뉴에서 장착해 캐릭터 능력 옵션을 적용합니다. 노크틸라에서는 뱃지 옵션이 적용되지 않습니다.';
+    }
+
+    // 내부 파일명/식별자는 검색 별칭이나 태그에도 공개하지 않습니다.
+    item.aliases = (item.aliases || []).filter(a => !/^[a-z0-9_\-]+$/i.test(String(a)));
+    item.tags = (item.tags || []).filter(t => !/리소스팩|resource/i.test(String(t)) && !/^[a-z0-9_\-]+$/i.test(String(t)));
+    delete item.resourceId;
+    delete item.resourceTexture;
+    delete item.resourceVerified;
+  });
+
   // 공개 백과에는 한국어 표시명이 확인된 항목만 유지합니다.
   // 기본 게임 재료처럼 서버 제작식에 실제로 연결되는 참고 항목은 한국어 이름 그대로 남깁니다.
   const publicItems = items.filter(item => /[가-힣]/.test(item.name || ''));
 
   window.DDING_GUIDE = {
     meta:{
-      version:'0.11.5',
+      version:'0.14.0',
       verified:'2026-10-05',
-      scope:'띵타이쿤 공식 위키의 아이템·제작·강화·상점·지역 문서를 기준으로 정리한 초뉴비용 아이템 백과',
-      disclaimer:'표시명·획득처·사용처는 공식 공개자료에서 확인된 내용만 사용하며, 확인되지 않은 내부 식별명을 별도 아이템처럼 노출하지 않습니다.',
+      scope:'띵타이쿤 공식 위키의 아이템·제작·강화·상점·거래·지역 문서를 기준으로 실제 획득과 사용 흐름까지 정리한 초뉴비용 아이템 백과',
+      disclaimer:'표시명·획득처·사용처는 공식 공개자료에서 확인된 내용만 사용하며, 확인되지 않은 내부 파일명이나 식별명은 공개하지 않습니다.',
       iconLinked
     },
     sources:OFFICIAL,
