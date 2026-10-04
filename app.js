@@ -550,7 +550,7 @@
     const hasTotal = total > 0;
     const remaining = Math.max(0, total - used);
     return `<div class="card profit-recommend-card">
-      <div class="section-head profit-recommend-head"><div><h2>경작지 균형 추천</h2><p>${hasTotal ? `현재 설치량은 고정하고 남은 ${remaining.toLocaleString('ko-KR')}칸을 평균 생산량이 가장 비슷해지도록 자동 배분해.` : '전체 경작지 수를 입력하면 토마토·양파·마늘의 평균 수율 차이를 반영해 추천해.'}</p></div><span class="profit-recommend-badge">AUTO BALANCE</span></div>
+      <div class="section-head profit-recommend-head"><div><h2>경작지 균형 추천</h2><p>${hasTotal ? `현재 설치량은 고정하고 남은 ${remaining.toLocaleString('ko-KR')}칸을 평균 생산량이 가장 비슷해지도록 자동 배분해.` : '전체 경작지 수를 입력하면 토마토·양파·마늘의 평균 수율 차이를 반영해 추천해요.'}</p></div><span class="profit-recommend-badge">AUTO BALANCE</span></div>
       ${!hasTotal ? `<div class="profit-recommend-empty">전체 경작지 수를 먼저 입력해 주세요!</div>` : `
       <div class="profit-recommend-table">
         <div class="profit-recommend-row head"><span>작물</span><span>현재</span><span>추가 추천</span><span>최종 추천</span><span>평균 시간당</span></div>
@@ -570,7 +570,7 @@
         }).join('')}
         <div class="profit-recommend-row total"><span><b>합계</b></span><span>${used.toLocaleString('ko-KR')}칸</span><span>${remaining > 0 && !rec.over ? `+${remaining.toLocaleString('ko-KR')}칸` : rec.over ? '초과' : '완료'}</span><strong>${PROFIT_CROP_IDS.reduce((sum,id)=>sum+(rec.finalPlots[id]||0),0).toLocaleString('ko-KR')}칸</strong><span>균형 생산</span></div>
       </div>
-      ${rec.over ? `<div class="profit-recommend-warning">현재 입력이 전체 경작지보다 ${rec.over.toLocaleString('ko-KR')}칸 많아서 추가 추천을 멈췄어. 현재 설치량이나 전체 경작지 수를 조정해 주세요!</div>` : `<div class="profit-recommend-note">추천은 <b>평균 시간당 생산량 균형</b> 기준이에요. 이미 많이 설치한 작물은 추가 추천에서 자동으로 빠지고, 남은 칸만 다시 계산해.</div>`}` }
+      ${rec.over ? `<div class="profit-recommend-warning">현재 입력이 전체 경작지보다 ${rec.over.toLocaleString('ko-KR')}칸 많아서 추가 추천을 멈췄어. 현재 설치량이나 전체 경작지 수를 조정해 주세요!</div>` : `<div class="profit-recommend-note">추천은 <b>평균 시간당 생산량 균형</b> 기준이에요. 이미 많이 설치한 작물은 추가 추천에서 자동으로 빠지고, 남은 칸만 다시 계산해요.</div>`}` }
     </div>`;
   }
 
@@ -844,7 +844,7 @@
   }
 
   function efficiencyRankHtml(rows) {
-    if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
+    if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해요.</div>`;
     return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-cooking-food="${x.food.slug}" aria-label="${esc(x.food.name)} 제작법으로 이동">
       <span class="market-rank-no">${i+1}</span>
       <span class="market-rank-food" data-tip="1">
@@ -857,7 +857,7 @@
   }
 
   function highPriceRankHtml(rows) {
-    if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해.</div>`;
+    if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해요.</div>`;
     return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-trend-food="${x.food.slug}" data-trend-gold="0">
       <span class="market-rank-no">${i+1}</span>
       <span class="market-rank-food" data-tip="1">
@@ -1030,7 +1030,7 @@
       return (f.name + ' ' + goldName + ' ' + ingredients).toLowerCase().includes(q);
     });
     $('#page-cooking').innerHTML = `<div class="content-shell">
-      <div class="section-head" style="margin-top:2px"><div><h2>요리 인덱스</h2><p>최신 15종을 등급·재료·황금 제작법까지 한 흐름으로 정리했어요!</p></div><div class="reference-status">${foods.length} / ${D.foods.length}</div></div>
+      <div class="section-head" style="margin-top:2px"><div><h2>요리 인덱스</h2><p>최신 15종을 등급·재료·황금 제작법까지 한 흐름으로 정리해뒀어요!</p></div><div class="reference-status">${foods.length} / ${D.foods.length}</div></div>
       <div class="toolbar"><div class="pillbar">${filters.map(f => `<button class="pill ${state.cookingFilter === f ? 'active' : ''}" data-filter="${f}">${f === 'ALL' ? '전체' : f === 'GOLD' ? '황금' : f}</button>`).join('')}</div><div class="view-toggle"><button data-view="grid" class="${state.cookingView === 'grid' ? 'active' : ''}" title="그리드"><svg><use href="#i-grid"/></svg></button><button data-view="list" class="${state.cookingView === 'list' ? 'active' : ''}" title="리스트"><svg><use href="#i-list"/></svg></button></div></div>
       <div class="food-grid ${state.cookingView === 'list' ? 'list-view' : ''}">${foods.length ? foods.map(f => foodCard(f, gold)).join('') : `<div class="card empty"><strong>검색 결과가 없어요.</strong>다른 음식명이나 재료명으로 검색해 보세요!</div>`}</div>
       <p class="source-note">띵팜에 정리된 레시피와 가격 정보를 기준으로 보여드려요!</p>
@@ -1083,7 +1083,7 @@
         ${readyFoods.length ? `<div class="food-grid">${readyFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>아직 재배·채집 재료 조건이 완성된 요리가 없어요.</strong>위의 다음 확보 후보를 참고해서 작물을 추가해 보세요!</div>`}
       </section>
 
-      <section class="section"><div class="section-head"><div><h2>조금만 더 확보하면 되는 요리</h2><p>아직 부족한 음식만 식재료 준비도 높은 순으로 정렬했어요! 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 재배·채집 재료 조건을 충족했어요!</strong></div>`}</section>
+      <section class="section"><div class="section-head"><div><h2>조금만 더 확보하면 되는 요리</h2><p>아직 부족한 음식만 식재료 준비도 높은 순으로 정렬했어요! 준비도 바에 마우스를 올리면 부족한 작물이 바로 보여요.</p></div></div>${nearFoods.length ? `<div class="food-grid">${nearFoods.map(f => foodCard(f,false)).join('')}</div>` : `<div class="card empty"><strong>모든 음식의 재배·채집 재료 조건을 충족했어요!</strong></div>`}</section>
     </div>`;
   }
 
@@ -1180,9 +1180,9 @@
     const best = priced[0] || null;
     const priceLabel = state.profitPriceMode === 'market' ? '시장 기준가' : '나의 판매가';
     const allocationText = total <= 0
-      ? '전체 경작지 수를 입력하면 남은 칸을 계산해.'
+      ? '전체 경작지 수를 입력하면 남은 칸을 계산해요.'
       : over
-        ? `${Math.abs(remaining).toLocaleString('ko-KR')}칸 초과 배정됐어. 계산은 입력값 기준이에요.`
+        ? `${Math.abs(remaining).toLocaleString('ko-KR')}칸 초과 배정됐어요! 계산은 입력값 기준이에요.`
         : remaining === 0
           ? '모든 경작지를 배정했어요!'
           : `${remaining.toLocaleString('ko-KR')}칸이 아직 미배정이에요.`;
@@ -1208,7 +1208,7 @@
 
       ${best ? `<div class="profit-best-strip"><span>현재 배정 최고 평균 수익</span><b>${esc(best.food.name)}</b><strong>${compactGold(best.revenue.hour.avg)} / 시간</strong><small>${priceLabel} · 최소 ${compactGold(best.revenue.hour.min)} ~ 최대 ${compactGold(best.revenue.hour.max)}</small></div>` : ''}
 
-      <div class="note-strip profit-assumption">계산 가정 · 토마토/양파/마늘 경작지가 생산 병목이라고 보고 계산해. 감자·호박·고기·과일·구매 재료 등 다른 재료는 충분히 확보되어 있고, 가공/조리 대기시간은 없다고 가정한다. 실제 수익은 재료 수급과 플레이 방식에 따라 달라질 수 있어요.</div>
+      <div class="note-strip profit-assumption">계산 가정 · 토마토/양파/마늘 경작지가 생산 병목이라고 보고 계산해요. 감자·호박·고기·과일·구매 재료 등 다른 재료는 충분히 확보되어 있고, 가공/조리 대기시간은 없다고 가정해요. 실제 수익은 재료 수급과 플레이 방식에 따라 달라질 수 있어요.</div>
 
       <section class="section">
         <div class="section-head"><div><h2>작물 생산량</h2><p>각 경작지의 드롭 범위에서 평균값을 계산하고, 최소·최대도 함께 보여드려요!</p></div></div>
@@ -1524,7 +1524,7 @@
     const exampleUniq=[...new Set(examples)].slice(0,8);
 
     return `<section class="guide-lifecycle ${compact?'compact':''}">
-      <div class="guide-lifecycle-head"><div><span>ITEM FLOW</span><h3>어디서 얻고, 어디에 쓰는지</h3><p>같은 설명을 반복하지 않고 실제 흐름만 순서대로 정리했어요!</p></div></div>
+      <div class="guide-lifecycle-head"><div><span>ITEM FLOW</span><h3>어디서 얻고, 어디에 쓰는지</h3><p>같은 설명을 반복하지 않고 실제 흐름만 순서대로 정리해뒀어요!</p></div></div>
       <div class="guide-journey" role="list">${primaryHtml}</div>
       ${secondaryHtml?`<div class="guide-route-table"><div class="guide-route-title"><b>다른 사용 경로</b><span>여러 곳에 쓰이는 아이템만 표시</span></div>${secondaryHtml}</div>`:''}
       ${exampleUniq.length&&!compact?`<div class="guide-use-examples"><b>실제 사용 예시</b><div>${exampleUniq.map(x=>`<span>${esc(x)}</span>`).join('')}</div></div>`:''}
@@ -1550,7 +1550,7 @@
     if (!rows.length) return '';
     return `<section class="guide-panel guide-shop-panel"><div class="guide-panel-head"><div><span>공식 상점 정보</span><h3>돈·교환값 / 어디서 거래해?</h3></div></div>
       <div class="guide-table-wrap"><table class="guide-table guide-shop-table"><thead><tr><th>구분</th><th>가격/교환값</th><th>지역</th><th>장소</th><th>NPC</th><th>비고</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>${esc(guideTradeLabel(x.action))}</b></td><td><strong>${esc(x.value || '—')}</strong></td><td>${esc(x.region || '—')}</td><td>${esc(x.location || '—')}</td><td>${esc(x.npc || '—')}</td><td>${esc(x.note || x.category || '—')}</td></tr>`).join('')}</tbody></table></div>
-      <p class="guide-panel-copy">상점 가격은 현재 사이트에 편입한 공식 상점 카탈로그 값이에요. 운영 중 변경될 수 있으니 이상하면 원문 링크를 최종 기준으로 봐.</p>
+      <p class="guide-panel-copy">상점 가격은 현재 사이트에 편입한 공식 상점 카탈로그 값이에요. 운영 중 변경될 수 있으니 이상하면 원문 링크를 최종 기준으로 확인해 주세요!</p>
     </section>`;
   }
 
@@ -1601,7 +1601,7 @@
     const rows = Array.from({length:5},(_,i)=>({stage:i+1,gold:d.gold[i],chance:d.chance[i],pity:d.pity[i]}));
     const onePassGold = rows.reduce((a,x)=>a+x.gold,0);
     return `<section class="guide-answer guide-enhancement noctila-enhancement">
-      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 장신구 강화</span><h2>${esc(tier)} 장신구 강화</h2><p>브론에게 강화하는 방법과 +1~+5 비용, 성공률, 확정 시도, 다음 등급 승급 조건을 같이 정리했어요!</p></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaAccessoryEnhancement,sourceLabel:'공식 장신구 강화'})}</div>
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 노크틸라 장신구 강화</span><h2>${esc(tier)} 장신구 강화</h2><p>브론에게 강화하는 방법과 +1~+5 비용, 성공률, 확정 시도, 다음 등급 승급 조건을 같이 정리해뒀어요!</p></div>${guideSourceLink({sourceUrl:GUIDE.sources.noctilaAccessoryEnhancement,sourceLabel:'공식 장신구 강화'})}</div>
       <div class="guide-steps"><div class="guide-step"><i>1</i><div><b>노크틸라 마을 NPC 브론</b><span><strong>1번 → 장비 강화하기</strong>를 선택해.</span></div></div><div class="guide-step"><i>2</i><div><b>${esc(d.stone)} 준비</b><span>등급 내 강화 1회마다 ${esc(d.stone)} ×${d.count}와 단계별 골드가 필요해.</span></div></div><div class="guide-step"><i>3</i><div><b>+5까지 강화</b><span>실패할 수 있지만 단계별 <strong>확정 강화 시도 횟수</strong>가 있어요.</span></div></div>${d.next?`<div class="guide-step"><i>4</i><div><b>${esc(d.next)} 등급 승급</b><span>승급 성공률 5%, 확정 26회. ${esc(d.stone)} ×${d.upgradeStone} + 어빌리티 스톤 ×${d.upgradeAbility}가 추가로 필요해.</span></div></div>`:''}</div>
       <div class="guide-summary-grid"><article><span>등급 내 최소 골드</span><strong>${fmt(onePassGold)}</strong><small>각 단계 1회 성공 가정</small></article><article><span>1회 강화 재료</span><strong>${esc(d.stone)} ×${d.count}</strong><small>+1~+5 공통</small></article><article><span>강화 성공률</span><strong>90 → 10%</strong><small>+1부터 +5 순서</small></article><article><span>승급</span><strong>${d.next?'5% · 확정 26회':'최종 등급'}</strong><small>${d.next?`${tier} → ${d.next}`:'오브레 +5까지'}</small></article></div>
       <section class="guide-panel wide"><div class="guide-panel-head"><div><span>공식 단계표</span><h3>${esc(tier)} +1 ~ +5</h3></div></div><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>목표</th><th>수호석</th><th>골드</th><th>성공률</th><th>확정 강화</th></tr></thead><tbody>${rows.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${guideItemChip(d.stone,d.count)}</td><td>${fmt(x.gold)}</td><td><strong class="chance ${x.chance<=10?'low':''}">${x.chance}%</strong></td><td>${x.pity}회</td></tr>`).join('')}</tbody></table></div></section>
@@ -1654,7 +1654,7 @@
     const stages = GUIDE.enhancement.filter(x=>x.stage<=target);
     const stats = GUIDE.sagePickaxeStats.filter(x=>x.stage<=target);
     return `<section class="guide-answer guide-enhancement">
-      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 도구 강화</span><h2>세이지 곡괭이 강화, 처음부터 ${target}강까지</h2><p>초뉴비 기준으로 <b>어디로 가는지 → 뭘 넣는지 → 단계별 돈/재료/확률 → 라이프스톤 제작 → 곡괭이 성능</b> 순서로 정리했어요!</p></div><div class="guide-target"><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></div></div>
+      <div class="guide-answer-head"><div><span class="guide-answer-type">질문 분석 · 도구 강화</span><h2>세이지 곡괭이 강화, 처음부터 ${target}강까지</h2><p>초뉴비 기준으로 <b>어디로 가는지 → 뭘 넣는지 → 단계별 돈/재료/확률 → 라이프스톤 제작 → 곡괭이 성능</b> 순서로 정리해뒀어요!</p></div><div class="guide-target"><span>목표 강화</span><select id="guideTargetStage">${Array.from({length:15},(_,i)=>`<option value="${i+1}" ${target===i+1?'selected':''}>+${i+1}</option>`).join('')}</select></div></div>
       <div class="guide-steps">
         <div class="guide-step"><i>1</i><div><b>세레니티 마을로 이동</b><span>NPC <strong>로니</strong>를 찾는다.</span></div></div>
         <div class="guide-step"><i>2</i><div><b>로니에게 말 걸기</b><span><strong>2번 → 강화하기</strong>를 선택한다.</span></div></div>
@@ -1668,9 +1668,9 @@
         <article><span>최소 루비</span><strong>${num1(min.ruby)}개</strong><small>+7 이후 단계 합계</small></article>
         <article class="expected"><span>단순 확률 기대 골드*</span><strong>${fmt(Math.round(exp.gold))}</strong><small>성공확률 역수로 계산</small></article>
       </div>
-      <div class="guide-note caution"><b>* 기대값 계산 주의</b><span>공식 강화표의 성공 확률을 이용해 단계별 평균 시도 횟수를 <code>1 ÷ 성공확률</code>로 단순 계산한 값이에요. <strong>실패 시 단계 유지 + 해당 1회 비용/재료가 소모된다는 가정</strong>이 들어가며, 공식 문서에서 실패 패널티가 별도로 명시되지 않은 경우 실제 체감 비용과 달라질 수 있어요. 아래의 “최소 비용” 표는 공식 수치를 그대로 사용해.</span></div>
+      <div class="guide-note caution"><b>* 기대값 계산 주의</b><span>공식 강화표의 성공 확률을 이용해 단계별 평균 시도 횟수를 <code>1 ÷ 성공확률</code>로 단순 계산한 값이에요. <strong>실패 시 단계 유지 + 해당 1회 비용/재료가 소모된다는 가정</strong>이 들어가며, 공식 문서에서 실패 패널티가 별도로 명시되지 않은 경우 실제 체감 비용과 달라질 수 있어요. 아래의 “최소 비용” 표는 공식 수치를 그대로 사용해요.</span></div>
       <div class="guide-two-col">
-        <section class="guide-panel"><div class="guide-panel-head"><div><span>강화석 제작</span><h3>라이프스톤은 이렇게 만든다</h3></div></div>
+        <section class="guide-panel"><div class="guide-panel-head"><div><span>강화석 제작</span><h3>라이프스톤은 이렇게 만들어요!</h3></div></div>
           ${['하급 라이프스톤','중급 라이프스톤','상급 라이프스톤'].map(n=>{const it=guideByName(n);return `<div class="guide-recipe-card"><div><b>${esc(n)}</b><small>${esc(it?.note||'')}</small></div><div class="guide-materials">${(it?.recipe||[]).map(([x,q])=>guideItemChip(x,q)).join('')}</div></div>`}).join('')}
         </section>
         <section class="guide-panel"><div class="guide-panel-head"><div><span>0 → +${target}</span><h3>최소 라이프스톤 제작 원재료</h3></div></div><p class="guide-panel-copy">강화석을 전부 직접 제작하고, 각 강화가 한 번에 성공한다고 가정했을 때의 원재료 환산이에요.</p><div class="guide-materials dense">${raw.map(([n,q])=>guideItemChip(n,q)).join('')}</div></section>
@@ -1679,10 +1679,10 @@
         <div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>목표</th><th>하급</th><th>중급</th><th>상급</th><th>골드</th><th>루비</th><th>성공률</th></tr></thead><tbody>${stages.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${x.low}</td><td>${x.mid||'—'}</td><td>${x.high||'—'}</td><td>${fmt(x.gold)}</td><td>${x.ruby||'—'}</td><td><strong class="chance ${x.chance<=5?'low':''}">${x.chance}%</strong></td></tr>`).join('')}</tbody></table></div>
       </section>
       <section class="guide-panel wide"><div class="guide-panel-head"><div><span>SAGE PICKAXE</span><h3>그래서 강화하면 뭐가 좋아져?</h3></div>${guideSourceLink({sourceUrl:GUIDE.sources.sagePickaxe,sourceLabel:'공식 세이지 곡괭이'})}</div>
-        <p class="guide-panel-copy">세이지 곡괭이는 채광 1회당 스태미나 10을 사용해. 아래는 ${target}강까지 공식 강화 성능표야.</p>
+        <p class="guide-panel-copy">세이지 곡괭이는 채광 1회당 스태미나 10을 사용해요. 아래는 ${target}강까지 공식 강화 성능표예요!</p>
         <div class="guide-table-wrap"><table class="guide-table stats"><thead><tr><th>강화</th><th>채광력</th><th>채광속도</th><th>광물 드롭</th><th>유물%</th><th>코비%</th><th>광채 속도%</th><th>광채 확률%</th><th>경험치</th></tr></thead><tbody>${stats.map(x=>`<tr><td><b>+${x.stage}</b></td><td>${x.power}</td><td>${x.speed}</td><td>${x.drops}</td><td>${x.relic}</td><td>${x.kobi}</td><td>${x.glowSpeed==null?'—':x.glowSpeed}</td><td>${x.glowChance==null?'—':x.glowChance}</td><td>${x.xp}</td></tr>`).join('')}</tbody></table></div>
       </section>
-      <div class="guide-note"><b>돈 계산 범위</b><span>위 골드는 <strong>강화창에서 직접 요구하는 고정 골드</strong>야. 라이프스톤 원재료를 다른 유저에게 구매할 때 드는 시세 비용은 서버 시장가가 고정값이 아니므로 임의로 만들지 않았어. 대신 필요한 강화석/원재료 수량은 전부 계산해서 바로 비교할 수 있게 했어요!</span></div>
+      <div class="guide-note"><b>돈 계산 범위</b><span>위 골드는 <strong>강화창에서 직접 요구하는 고정 골드</strong>예요. 라이프스톤 원재료를 다른 유저에게 구매할 때 드는 시세 비용은 서버 시장가가 고정값이 아니므로 임의로 만들지 않았어요. 대신 필요한 강화석/원재료 수량은 전부 계산해서 바로 비교할 수 있게 했어요!</span></div>
     </section>`;
   }
 
@@ -1826,7 +1826,7 @@
       }).join('')}</div></div>` : ''}
       ${!gold ? `<div class="drawer-section"><h3>내 농장 관점</h3><div class="drawer-text">필요 농작물 · ${crops.length ? esc(crops.join(', ')) : '없음'}<br>${miss.length ? `아직 없는 작물 · <b>${esc(miss.join(', '))}</b>` : '<b>농작물 조건은 모두 충족했어요!</b>'}</div></div>
       <div class="drawer-section"><h3>NPC 구매비</h3><div class="npc-unit-cost"><span>1개 제작 기준</span><strong>${fmt(unitNpcCost)}</strong></div><div class="drawer-text">직접 수급하는 농작물·과일·고기 가치는 제외하고, 밀키에게 실제 골드를 주고 사는 식재료만 합산해.</div></div>
-      <div class="drawer-section craft-planner"><div class="craft-planner-head"><div><h3>제작 수량 계산</h3><p>만들 수량을 입력하면 NPC에서 사야 할 재료와 총 비용을 자동 계산해.</p></div><div class="craft-planner-total"><span>예상 총 비용</span><b id="craftPlannerTotal">${fmt(unitNpcCost)}</b></div></div>
+      <div class="drawer-section craft-planner"><div class="craft-planner-head"><div><h3>제작 수량 계산</h3><p>만들 수량을 입력하면 NPC에서 사야 할 재료와 총 비용을 자동 계산해요.</p></div><div class="craft-planner-total"><span>예상 총 비용</span><b id="craftPlannerTotal">${fmt(unitNpcCost)}</b></div></div>
         <label class="craft-qty-field"><span>만들 음식 수량</span><div><input class="craft-qty-input" data-craft-food="${food.slug}" type="number" inputmode="numeric" min="1" step="1" value="1"><em>개</em></div></label>
         <div class="craft-preset-row"><button data-craft-preset="1" data-craft-food="${food.slug}">1개</button><button data-craft-preset="10" data-craft-food="${food.slug}">10개</button><button data-craft-preset="64" data-craft-food="${food.slug}">1세트</button><button data-craft-preset="640" data-craft-food="${food.slug}">10세트</button></div>
         <div id="npcPurchasePlanner">${npcPurchasePlannerHtml(food,1)}</div>
