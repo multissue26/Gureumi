@@ -4,19 +4,6 @@
   const D = window.DDING_DATA;
   const SHOP = window.DDING_SHOP_DATA || {meta:{},items:[]};
   const GUIDE = window.DDING_GUIDE || {meta:{},sources:{},items:[],enhancement:[],sagePickaxeStats:[]};
-  const RESOURCE_ITEMS = window.DDING_RESOURCE_ITEMS || [];
-  // 배포 과정에서 guide-data.js가 누락되어도 추가 아이템 목록 자체는 0개가 되지 않도록 안전망을 둔다.
-  if (!Array.isArray(GUIDE.items)) GUIDE.items = [];
-  if (!GUIDE.items.length && RESOURCE_ITEMS.length) {
-    GUIDE.meta = {...(GUIDE.meta||{}), version:'0.10.0', resourcePackVersion:'260930', resourceModelCount:RESOURCE_ITEMS.length, resourceFallback:true};
-    GUIDE.items = RESOURCE_ITEMS.map(r => ({
-      name:r.name, aliases:r.aliases||[], region:r.region||'기타', category:r.category||'기타/미분류',
-      acquire:'아직 정확한 획득처를 확인 중이에요.',
-      use:'아직 정확한 사용처를 확인 중이에요.',
-      icon:r.icon, resourceId:r.id, resourceTexture:r.texture, resourceVerified:!!r.nameVerified,
-      official:false, sourceLabel:'추가 데이터'
-    }));
-  }
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const PRICE_API = 'https://dding-price-api.hansuyeon191-6fe.workers.dev';
@@ -108,20 +95,16 @@
   }
 
   function guideIconHTML(item, cls = '') {
-    const sprite = window.DDING_RESOURCE_ATLAS?.html(item, cls);
-    if (sprite) return sprite;
-    if (item?.icon) return `<img class="${esc(cls)}" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('missing');this.remove()">`;
+    if (item?.icon) return `<img class="${esc(cls)}" src="${esc(item.icon)}" alt="" loading="lazy" onerror="this.remove()">`;
     return '';
   }
-  function hasGuideIcon(item) { return item?.iconSprite !== undefined || !!item?.icon; }
+  function hasGuideIcon(item) { return !!item?.icon; }
 
   function iconHTML(item, cls = '') {
     if (item?.icon) {
       const fallbackClass = cls.includes('big') ? 'big-fallback' : 'fallback-icon';
       return `<img class="${cls}" src="${esc(item.icon)}" alt="${esc(item.name)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="${fallbackClass}" hidden>${esc(item.emoji || '□')}</span>`;
     }
-    const sprite = window.DDING_RESOURCE_ATLAS?.html(item, cls);
-    if (sprite) return sprite;
     return `<span class="${cls.includes('big') ? 'big-fallback' : 'fallback-icon'}">${esc(item?.emoji || '□')}</span>`;
   }
 
@@ -1298,7 +1281,7 @@
   function guideText(item) {
     const shopText = (item.shopEntries || []).flatMap(x => [x.action,x.value,x.region,x.location,x.npc,x.category,x.note]);
     const lifecycleText=[...(item.usedIn||[]),...(item.usageExamples||[]),...(item.lifecyclePaths||[]).flat(),item.noviceTip,item.finalUse];
-    return [item.name,item.resourceId,item.resourceTexture,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[]),...lifecycleText].filter(Boolean).join(' ').toLowerCase();
+    return [item.name,item.region,item.category,item.subcategory,item.acquire,item.use,item.note,item.probability,item.trade,...shopText,...(item.aliases||[]),...(item.tags||[]),...(item.related||[]),...lifecycleText].filter(Boolean).join(' ').toLowerCase();
   }
 
   function cleanGuideQuery(q) {
@@ -1332,9 +1315,7 @@
 
   function guideFilterMatch(item, filter) {
     if (!filter || filter === 'all') return true;
-    if (filter === 'resource') return !!item.resourceId;
     if (filter === 'images') return hasGuideIcon(item);
-    if (filter === 'missing-images') return !hasGuideIcon(item);
     if (filter === 'official') return item.official !== false;
     const r = `${item.region} ${item.category} ${item.subcategory}`;
     if (filter === 'general') return /공통|스폰|마을|특별/.test(r) && !/야생|세레니티|루미디아|파라다이스/.test(item.region);
@@ -1357,9 +1338,8 @@
       .filter(x => !q || x.score > 0)
       .sort((a,b) => {
         if (q) return b.score-a.score || a.item.name.localeCompare(b.item.name,'ko');
-        // 기본 백과에서는 검증된 한글/공식 항목을 먼저 보여주고,
-        // 표시명이 아직 확인되지 않은 추가 항목은 뒤쪽 페이지에 보존한다.
-        const rank = x => x.item.official !== false ? 0 : (x.item.resourceVerified ? 1 : 2);
+        // 기본 백과는 공식 문서에 정리된 순서를 유지합니다.
+        const rank = x => x.item.official !== false ? 0 : 1;
         return rank(a)-rank(b) || a.index-b.index;
       });
   }
@@ -1708,11 +1688,10 @@
 
   function guideCard(item) {
     const recipe = (item.recipe || []).slice(0,3);
-    const sourceBadge = item.official===false ? '참고' : '공식';
-    const icon = guideIconHTML(item, 'guide-card-icon-img');
-    const rid = '';
+    const sourceBadge = item.official===false ? '기본 재료' : '공식';
+    const icon = hasGuideIcon(item) ? `<div class="guide-card-icon">${guideIconHTML(item, 'guide-card-icon-img')}</div>` : '';
     const endpoint=guideFinalLabel(item);
-    return `<article class="guide-card" data-guide-open="${esc(item.name)}"><div class="guide-card-main"><div class="guide-card-icon ${hasGuideIcon(item)?'':'missing'}">${icon}<span class="guide-icon-placeholder">이미지<br>미확인</span></div><div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3>${rid}<p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
+    return `<article class="guide-card ${hasGuideIcon(item)?'has-item-image':'text-only'}" data-guide-open="${esc(item.name)}"><div class="guide-card-main">${icon}<div class="guide-card-copy"><div class="guide-card-top"><span>${esc(item.region)}</span><em>${esc(item.category)}</em></div><h3>${esc(item.name)}</h3><p>${esc(item.use || item.acquire || '세부 정보 확인 필요')}</p></div></div>${recipe.length?`<div class="guide-card-recipe">${recipe.map(([n,q])=>`<span>${esc(n)} ×${esc(String(q))}</span>`).join('')}</div>`:''}<div class="guide-card-flow"><span>결국 어디에 써?</span><b>${esc(endpoint)}</b></div><div class="guide-card-bottom"><span class="guide-data-badge">${sourceBadge}</span><button type="button">상세 보기 <svg><use href="#i-arrow"/></svg></button></div></article>`;
   }
 
   function guidePagination(totalPages,current){
@@ -1733,7 +1712,6 @@
     const visible = matches.slice(start,start+pageSize).map(x=>guideCard(x.item)).join('');
     const exactish = q ? matches.filter(x=>x.score>=100).slice(0,4) : [];
     const itemAnswer = exactish.length ? renderGuideItemAnswer(exactish[0].item) : '';
-    const rpCount = GUIDE.meta?.resourceModelCount || 0;
     return `${itemAnswer}<section class="guide-catalog-section"><div class="section-head guide-catalog-head"><div><h2>${q ? '관련 아이템·시스템' : '서버 아이템 백과'}</h2><p>${q ? `검색어 “${esc(q)}”와 관련도가 높은 순서로 보여드려요!` : `검색하지 않아도 전체 목록을 페이지로 넘겨 볼 수 있어요!`}</p></div><div class="guide-count-stack"><b>${matches.length.toLocaleString('ko-KR')}개</b><span>${state.guidePage} / ${totalPages} 페이지</span></div></div><div class="guide-catalog">${visible || '<div class="card empty"><strong>검색 결과가 없어요.</strong>띄어쓰기를 바꾸거나 아이템 이름 일부만 입력해 보세요!</div>'}</div>${guidePagination(totalPages,state.guidePage)}</section>`;
   }
 
@@ -1746,8 +1724,8 @@
     const root = $('#page-reference');
     if (!root) return;
     const q = state.query.trim();
-    const filters = [['all','전체'],['images','이미지 있음'],['missing-images','이미지 미확인'],['official','공식 설명'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
-    if (state.guideFilter === 'resource') { state.guideFilter = 'all'; localStorage.setItem('ddingGuideFilter','all'); }
+    const filters = [['all','전체'],['images','이미지 있음'],['official','공식 설명'],['general','일반/공통'],['wild','야생'],['serenity','세레니티'],['lumidia','루미디아'],['noctila','노크틸라'],['paradise','파라다이스'],['badge','뱃지'],['odds','확률·장식']];
+    if (['resource','missing-images'].includes(state.guideFilter)) { state.guideFilter = 'all'; localStorage.setItem('ddingGuideFilter','all'); }
     const matches = guideMatches(q,state.guideFilter);
     const compactQ = q.replace(/\s+/g,'');
     const isNoctilaWeaponEnhance = /강화/.test(compactQ) && (/노크틸라무기/.test(compactQ) || noctilaWeaponNames().some(n=>compactQ.includes(n.replace(/\s+/g,''))));
