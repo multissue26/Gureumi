@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>판매 장부 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.3.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   
 </head>
@@ -29,39 +29,36 @@
         <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
       </a>
       <div class="top-actions">
-        <span class="status-note">실제 데이터만 표시</span>
+        <span class="status-note">Supabase 실데이터 연결</span>
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-
     <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="active">판매 장부</a></nav>
-
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">SALES LEDGER</p>
-        <h1>판매 장부</h1>
-        <p class="subtitle">실제 구매 완료 채팅을 기준으로 매출·시장 매입 원가·이익과 평균 판매가를 정리합니다.</p>
-      </div>
-    </header>
+    <header class="topbar"><div><p class="eyebrow">SALES LEDGER</p><h1>판매 장부</h1><p class="subtitle">Supabase에 저장된 실제 플리마켓 판매 완료 기록만 집계합니다.</p></div></header>
     
     <section class="metrics">
-      <article class="metric"><div class="metric-head">총 매출</div><div class="metric-value pending">—</div><div class="metric-foot">판매 완료 금액 합계</div></article>
-      <article class="metric"><div class="metric-head">총 원가</div><div class="metric-value pending">—</div><div class="metric-foot">판매된 수량의 시장 매입 원가</div></article>
-      <article class="metric"><div class="metric-head">예상 순이익</div><div class="metric-value pending">—</div><div class="metric-foot">매출 − 원가</div></article>
-      <article class="metric"><div class="metric-head">전체 ROI</div><div class="metric-value pending">—</div><div class="metric-foot">순이익 ÷ 원가 × 100</div></article>
+      <article class="metric"><div class="metric-head">최근 30일 총 매출</div><div id="sRevenue" class="metric-value pending">—</div><div class="metric-foot">실제 완료 기록 합계</div></article>
+      <article class="metric"><div class="metric-head">총 판매량</div><div id="sQty" class="metric-value pending">—</div><div class="metric-foot">실제 판매 아이템 수</div></article>
+      <article class="metric"><div class="metric-head">판매 품목</div><div id="sKinds" class="metric-value pending">—</div><div class="metric-foot">서로 다른 품목 수</div></article>
+      <article class="metric"><div class="metric-head">64개 환산 평균가</div><div id="sAvg64" class="metric-value pending">—</div><div class="metric-foot">수량 가중 실제 판매가</div></article>
     </section>
-
-    <section class="section">
-      <div class="section-head"><div><h2>최근 판매</h2><p>실제 판매량을 기준으로 개당 평균 판매가와 64개 환산 값을 계산합니다.</p></div></div>
-      <div class="panel table-wrap">
-        <table><thead><tr><th>상품</th><th>판매량</th><th>매출</th><th>개당 평균</th><th>64개 환산</th></tr></thead>
-        <tbody><tr><td colspan="5"><div class="empty-state"><strong>판매 기록이 없습니다</strong><p>모드가 실제 플리마켓 구매 완료 메시지를 수집하면 이곳에 판매 기록이 쌓입니다.</p></div></td></tr></tbody></table>
-      </div>
+    <section class="section"><div class="section-head"><div><h2>최근 판매 기록</h2><p>상품·수량·판매금액·구매자·시간을 실제 저장값으로 표시합니다.</p></div></div>
+      <div class="panel table-wrap"><table><thead><tr><th>판매 시각</th><th>상품</th><th>수량</th><th>총 판매금액</th><th>개당 평균</th><th>구매자</th></tr></thead><tbody id="salesRows"></tbody></table></div>
     </section>
-  
   </main>
-
-  <script src="admin-market-core.js?v=0.3.0"></script>
-  <script>MarketAdmin.boot(()=>{});</script>
+  
+  <script src="admin-market-core.js?v=0.4.0"></script>
+  <script>
+  async function render(){
+    const F=MarketAdmin,t=document.querySelector("#salesRows");
+    try{
+      const d=await F.market("market-sales",{days:30}),s=d.summary||{},rows=d.sales||[];
+      document.querySelector("#sRevenue").textContent=F.gold(s.revenue||0);document.querySelector("#sQty").textContent=F.fmt(s.sold_qty||0)+"개";document.querySelector("#sKinds").textContent=F.fmt(s.kinds||0)+"종";document.querySelector("#sAvg64").textContent=s.average_stack64_price==null?"—":F.gold(s.average_stack64_price);
+      ["#sRevenue","#sQty","#sKinds","#sAvg64"].forEach(x=>document.querySelector(x).classList.remove("pending"));
+      t.innerHTML=rows.length?rows.map(r=>'<tr><td>'+F.dateTime(r.sold_at)+'</td><td class="item-name">'+F.escapeHtml(r.item_name)+'</td><td>'+F.fmt(r.quantity)+'개</td><td class="price">'+F.gold(r.total_amount)+'</td><td class="price">'+F.gold(Number(r.total_amount)/Number(r.quantity||1))+'</td><td>'+F.escapeHtml(r.buyer_name||"—")+'</td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state"><strong>실제 판매 기록이 없습니다</strong><p>모드가 판매 완료 메시지를 업로드하면 자동으로 쌓입니다.</p></div></td></tr>';
+    }catch(e){t.innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
+  }
+  MarketAdmin.boot(render);
+  </script>
 </body>
 </html>
