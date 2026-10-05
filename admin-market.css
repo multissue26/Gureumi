@@ -49,7 +49,7 @@ h1{margin:0;font-size:30px;line-height:1.12;letter-spacing:-.045em;font-weight:7
 .section-head h2{font-size:20px;margin:0;letter-spacing:-.035em}
 .section-head p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
 .scan-strip{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:15px 17px;margin-bottom:14px}
-.scan-dot{width:10px;height:10px;border-radius:50%;background:#72a486;box-shadow:0 0 0 5px #e6eee9}
+.scan-dot{width:10px;height:10px;border-radius:50%;background:#72a486;box-shadow:0 0 0 5px #e6eee9}\n.scan-dot.idle{background:#aeb4af;box-shadow:0 0 0 5px #eceeea}
 .scan-dot.stale{background:#c18c2e;box-shadow:0 0 0 5px #f8efd9}
 .scan-title{font-weight:800;font-size:13px}
 .scan-copy{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}
@@ -101,3 +101,11 @@ tbody tr:hover{background:#fff}
   .cards{grid-template-columns:1fr}
   .scan-strip{grid-template-columns:auto 1fr}.scan-age{grid-column:2}
 }
+
+.empty-state{padding:46px 22px;text-align:center;color:var(--muted)}
+.empty-state strong{display:block;color:var(--ink2);font-size:15px;margin-bottom:7px}
+.empty-state p{max-width:620px;margin:0 auto;font-size:11px;line-height:1.65}
+.metric-value.pending{color:#a0a6a1}
+button:disabled,select:disabled{cursor:not-allowed;opacity:.45}
+.status-note{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-weight:750}
+.status-note:before{content:"";width:7px;height:7px;border-radius:50%;background:#aeb4af}
