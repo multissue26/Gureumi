@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>제작품 수익 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.5.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.5.1">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
 </head>
 <body>
@@ -38,23 +38,23 @@
     </header>
 
     <section class="metrics">
-      <article class="metric"><div class="metric-head">전체 품목</div><div id="mAll" class="metric-value pending">—</div><div class="metric-foot">마지막 완전 스캔의 고유 품목</div></article>
-      <article class="metric"><div class="metric-head">판매 품목</div><div id="mSale" class="metric-value pending">—</div><div class="metric-foot">내가 살 수 있는 판매 매물</div></article>
-      <article class="metric"><div class="metric-head">매입 품목</div><div id="mBuy" class="metric-value pending">—</div><div class="metric-foot">내가 팔 수 있는 매입 매물</div></article>
+      <article class="metric"><div class="metric-head">전체 품목</div><div id="mAll" class="metric-value pending">—</div><div class="metric-foot">마지막 완전 스캔의 고유 아이템</div></article>
+      <article class="metric"><div class="metric-head">판매 품목</div><div id="mSale" class="metric-value pending">—</div><div class="metric-foot">다른 유저가 올린 판매 가격</div></article>
+      <article class="metric"><div class="metric-head">매입 품목</div><div id="mBuy" class="metric-value pending">—</div><div class="metric-foot">다른 유저가 제시한 매입 가격</div></article>
       <article class="metric"><div class="metric-head">이상치 감지</div><div id="mOutlier" class="metric-value pending">—</div><div class="metric-foot">원본은 보존하고 정상 시세 계산에서 제외</div></article>
     </section>
 
     <section class="section">
       <div class="section-head">
-        <div><h2>현재 시장 데이터</h2><p><b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p></div>
+        <div><h2>현재 시장 데이터</h2><p>판매 시장은 내가 올릴 가격을 정하기 위한 경쟁 매물 비교입니다. <b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p></div>
         <div class="market-search"><input id="marketSearch" type="search" placeholder="아이템 검색 · 예: 하얀색 양털, 엔드 막대기" autocomplete="off"></div>
       </div>
 
       <div class="market-toolbar">
         <div class="market-toolbar-left">
           <div id="tradeTabs" class="segmented">
-            <button class="active" data-mode="sale">판매 · 내가 사기</button>
-            <button data-mode="buy">매입 · 내가 팔기</button>
+            <button class="active" data-mode="sale">판매 시장 · 다른 유저 판매가</button>
+            <button data-mode="buy">매입 시장 · 내가 판매할 가격</button>
           </div>
           <span id="resultCount" class="market-count">—</span>
         </div>
@@ -78,15 +78,12 @@
     </section>
 
     <section class="section">
-      <div class="section-head"><div><h2>제작 원가 · 수익 분석</h2><p>제작식이 검증된 품목부터 실제 재료 매입 원가로 ROI와 추천 우선순위를 계산합니다.</p></div></div>
-      <div class="segmented">
-        <button disabled>추천 우선순위</button><button disabled>ROI 높은 순</button><button disabled>예상 이익 높은 순</button>
-      </div>
-      <div class="notice"><strong>아직 비활성화된 이유</strong>시장 가격은 실제 데이터로 연결됐지만 일반 제작품 전체의 정확한 제작식·산출량이 아직 검증되지 않았습니다. 제작식이 확인된 품목부터 이 정렬을 활성화합니다.</div>
+      <div class="section-head"><div><h2>제작 원가 · 수익 분석</h2><p>제작식과 산출량이 검증된 품목부터 시장 재료비를 이용해 원가·예상 이익·ROI·추천 우선순위를 계산합니다.</p></div></div>
+      <div class="notice"><strong>현재는 시장 가격 비교만 활성화</strong>일반 제작품 전체의 정확한 제작식·산출량이 아직 검증되지 않아 원가와 ROI를 임의로 만들지 않습니다. 제작식 데이터가 확인되는 품목부터 이 영역에 실제 계산 결과를 추가합니다.</div>
     </section>
   </main>
 
-  <script src="admin-market-core.js?v=0.5.0"></script>
+  <script src="admin-market-core.js?v=0.5.1"></script>
   <script>
   (()=>{"use strict";
     const F=MarketAdmin;
@@ -105,24 +102,27 @@
       return (u-med)/(1.4826*mad)>6;
     }
     function summarize(){
-      const grouped=new Map();
+      const itemGroups=new Map(),bundleGroups=new Map();
       for(const o of offers){
-        const t=o.trade_type==="buy"?"buy":"sale",name=String(o.item_name||"").trim();
+        const t=o.trade_type==="buy"?"buy":"sale",name=String(o.item_name||"").trim(),qty=Math.max(1,Number(o.quantity||1));
         if(!name)continue;
-        const k=t+"\u0000"+name,a=grouped.get(k)||[];a.push(o);grouped.set(k,a);
+        const ik=t+"\u0000"+name,ia=itemGroups.get(ik)||[];ia.push(o);itemGroups.set(ik,ia);
+        const bk=ik+"\u0000"+qty,ba=bundleGroups.get(bk)||[];ba.push(o);bundleGroups.set(bk,ba);
       }
       const rows=[];
-      for(const [k,g] of grouped){
-        const t=k.startsWith("buy\u0000")?"buy":"sale",name=k.slice(k.indexOf("\u0000")+1);
-        const flagged=g.filter(o=>isHighOutlier(o,g));
+      for(const [k,g] of bundleGroups){
+        const parts=k.split("\u0000"),t=parts[0],name=parts[1],bundleQuantity=Number(parts[2]||1);
+        const itemGroup=itemGroups.get(t+"\u0000"+name)||g;
+        const flaggedAll=itemGroup.filter(o=>isHighOutlier(o,itemGroup));
+        const flagged=g.filter(o=>flaggedAll.includes(o));
         const normal=t==="sale"?g.filter(o=>!flagged.includes(o)):g;
         const pool=normal.length?normal:g;
-        const sorted=pool.slice().sort((a,b)=>t==="sale"?unit(a)-unit(b):unit(b)-unit(a));
+        const sorted=pool.slice().sort((a,b)=>t==="sale"?Number(a.listing_price)-Number(b.listing_price):Number(b.listing_price)-Number(a.listing_price));
         const best=sorted[0]||null;
         const sellerCount=new Set(g.map(o=>o.seller_name).filter(Boolean)).size;
         const totalStock=g.reduce((a,o)=>a+Math.max(0,Number(o.stock_quantity??0)),0);
         const confidence=g.length===1?"단일 매물":normal.length<2?"시세 부족":"정상";
-        rows.push({mode:t,item_name:name,best,offers:g,normal,flagged,sellerCount,totalStock,confidence,bestFlagged:best?flagged.includes(best):false});
+        rows.push({mode:t,item_name:name,bundleQuantity,best,offers:g,normal,flagged,sellerCount,totalStock,confidence,bestFlagged:best?flagged.includes(best):false});
       }
       return rows;
     }
@@ -131,7 +131,7 @@
       const q=query.trim().toLowerCase();
       if(q)rows=rows.filter(r=>r.item_name.toLowerCase().includes(q));
       rows.sort((a,b)=>{
-        if(sort==="name")return a.item_name.localeCompare(b.item_name,"ko");
+        if(sort==="name")return a.item_name.localeCompare(b.item_name,"ko")||a.bundleQuantity-b.bundleQuantity;
         if(sort==="stock")return b.totalStock-a.totalStock||a.item_name.localeCompare(b.item_name,"ko");
         if(sort==="offers")return b.offers.length-a.offers.length||a.item_name.localeCompare(b.item_name,"ko");
         const au=unit(a.best)??(mode==="sale"?Infinity:-Infinity),bu=unit(b.best)??(mode==="sale"?Infinity:-Infinity);
@@ -163,21 +163,22 @@
 
       const rows=currentRows(),pages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));page=Math.min(page,pages);
       const shown=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
-      document.querySelector("#resultCount").textContent=F.fmt(rows.length)+"종 · "+page+"/"+pages+"페이지";
+      document.querySelector("#resultCount").textContent=F.fmt(rows.length)+"개 묶음 · "+page+"/"+pages+"페이지";
       document.querySelector("#marketHead").innerHTML=mode==="sale"
-        ?'<th>아이템</th><th>최저 판매가</th><th>환산 정보</th><th>남은 재고</th><th>판매자 / 상점</th><th>시장 상태</th>'
-        :'<th>아이템</th><th>최고 매입가</th><th>환산 정보</th><th>납품 가능</th><th>매입자 / 상점</th><th>시장 상태</th>';
+        ?'<th>아이템</th><th>묶음</th><th>묶음 최저 판매가</th><th>환산 정보</th><th>남은 재고</th><th>판매자 / 상점</th><th>시장 상태</th>'
+        :'<th>아이템</th><th>묶음</th><th>묶음 최고 매입가</th><th>환산 정보</th><th>납품 가능</th><th>매입자 / 상점</th><th>시장 상태</th>';
       const body=document.querySelector("#marketRows");
       body.innerHTML=shown.length?shown.map(r=>{
         const o=r.best,shop=o?.raw_data?.shopName||"—";
         return '<tr>'+
-          '<td class="item-name">'+F.escapeHtml(r.item_name)+'<small>'+F.fmt(r.offers.length)+'개 매물 · '+F.fmt(r.sellerCount)+'명</small></td>'+
-          '<td><span class="offer-main">'+F.offerText(o)+'</span><span class="offer-sub">원본 등록 단위</span></td>'+
-          '<td><span class="offer-main">'+F.gold(unit(o))+' / 1개</span><span class="offer-sub">'+F.gold((unit(o)||0)*64)+' / 64개 · 비교용</span></td>'+
+          '<td class="item-name">'+F.escapeHtml(r.item_name)+'<small>'+F.fmt(r.offers.length)+'개 경쟁 매물 · '+F.fmt(r.sellerCount)+'명</small></td>'+
+          '<td><span class="market-badge muted">'+F.fmt(r.bundleQuantity)+'개 묶음</span></td>'+
+          '<td><span class="offer-main">'+F.offerText(o)+'</span><span class="offer-sub">'+(mode==="sale"?"이 묶음에서 가장 싼 판매가":"이 묶음에서 가장 높은 매입가")+'</span></td>'+
+          '<td><span class="offer-main">'+F.gold(unit(o))+' / 1개</span><span class="offer-sub">'+F.gold((unit(o)||0)*64)+' / 64개 · 다른 묶음 비교용</span></td>'+
           '<td>'+F.fmt(o?.stock_quantity??0)+'개<span class="offer-sub">'+(mode==="sale"?"현재 판매 재고":"현재 납품 가능")+'</span></td>'+
           '<td class="shop-cell"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+'</small></td>'+
           '<td>'+badge(r)+'</td></tr>';
-      }).join(""):'<tr><td colspan="6"><div class="empty-state"><strong>검색 결과가 없습니다</strong><p>다른 아이템명으로 검색해 주세요.</p></div></td></tr>';
+      }).join(""):'<tr><td colspan="7"><div class="empty-state"><strong>검색 결과가 없습니다</strong><p>다른 아이템명으로 검색해 주세요.</p></div></td></tr>';
 
       const p=document.querySelector("#pagination"),buttons=[];
       buttons.push('<button data-page="'+(page-1)+'" '+(page<=1?"disabled":"")+'>이전</button>');
