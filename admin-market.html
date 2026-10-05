@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>플리마켓 운영 홈 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.3.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   
 </head>
@@ -29,57 +29,54 @@
         <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
       </a>
       <div class="top-actions">
-        <span class="status-note">실제 데이터만 표시</span>
+        <span class="status-note">Supabase 실데이터 연결</span>
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-
     <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="active">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">PRIVATE · FLEA MARKET</p>
-        <h1>플리마켓 운영 홈</h1>
-        <p class="subtitle">Minecraft /스캔과 실제 판매 기록이 들어오면 장사 상태와 분석 결과를 이곳에서 확인합니다.</p>
-      </div>
-    </header>
+    <header class="topbar"><div><p class="eyebrow">PRIVATE · FLEA MARKET</p><h1>플리마켓 운영 홈</h1><p class="subtitle">Supabase에 저장된 실제 스캔과 판매 기록을 바로 조회합니다.</p></div></header>
     
     <section class="scan-strip" aria-live="polite">
       <span id="scanDot" class="scan-dot idle"></span>
-      <div>
-        <div id="scanTitle" class="scan-title">아직 시장 스캔 기록이 없습니다</div>
-        <div id="scanCopy" class="scan-copy">Minecraft에서 <b>/스캔</b>을 실행하면 첫 시장 데이터가 표시됩니다.</div>
-      </div>
+      <div><div id="scanTitle" class="scan-title">시장 데이터 확인 중</div><div id="scanCopy" class="scan-copy">Supabase에서 마지막 스캔을 불러오고 있습니다.</div></div>
       <div id="scanAge" class="scan-age">—</div>
     </section>
-
     <section class="metrics">
-      <article class="metric"><div class="metric-head">총 매출</div><div id="metricRevenue" class="metric-value pending">—</div><div class="metric-foot">실제 판매 완료 기록 기준</div></article>
-      <article class="metric"><div class="metric-head">예상 순이익</div><div id="metricProfit" class="metric-value pending">—</div><div class="metric-foot">매출 − 시장 매입 원가</div></article>
-      <article class="metric"><div class="metric-head">현재 추천 1순위</div><div id="metricRecommendation" class="metric-value pending" style="font-size:18px">—</div><div class="metric-foot">시장·원가·경쟁 분석 기준</div></article>
-      <article class="metric"><div class="metric-head">가격 급등 감지</div><div id="metricSurge" class="metric-value pending">—</div><div class="metric-foot">스캔 기록이 2회 이상 필요</div></article>
+      <article class="metric"><div class="metric-head">최근 30일 매출</div><div id="mRevenue" class="metric-value pending">—</div><div class="metric-foot">실제 판매 완료 기록 합계</div></article>
+      <article class="metric"><div class="metric-head">최근 30일 판매량</div><div id="mQty" class="metric-value pending">—</div><div class="metric-foot">실제 판매 아이템 수</div></article>
+      <article class="metric"><div class="metric-head">마지막 스캔 매물</div><div id="mListings" class="metric-value pending">—</div><div class="metric-foot">스캔 완료 시 저장된 매물 수</div></article>
+      <article class="metric"><div class="metric-head">마지막 스캔 페이지</div><div id="mPages" class="metric-value pending">—</div><div class="metric-foot">자동 순회 완료 페이지 수</div></article>
     </section>
-
     <section class="section">
-      <div class="section-head"><div><h2>분석 메뉴</h2><p>각 메뉴는 독립 페이지이며 실제 수집 데이터만 표시합니다.</p></div></div>
+      <div class="section-head"><div><h2>분석 메뉴</h2><p>각 화면은 같은 실데이터 API를 사용합니다.</p></div></div>
       <div class="cards">
-        <a class="panel link-card" href="admin-market-recommend.html"><p class="eyebrow">FOOD MATERIALS</p><h3>음식 원재료 추천</h3><p>현재 가격이 가장 높은 음식의 제작 재료를 모아 최저가·재고·추천 판매가를 분석합니다.</p><strong>분석 열기 →</strong></a>
-        <a class="panel link-card" href="admin-market-crafting.html"><p class="eyebrow">CRAFTING PROFIT</p><h3>제작품 수익</h3><p>제작법을 끝까지 풀어 실제 플리마켓 최저 매입 원가와 완성품 판매가를 비교합니다.</p><strong>분석 열기 →</strong></a>
-        <a class="panel link-card" href="admin-market-listings.html"><p class="eyebrow">MY LISTINGS</p><h3>내 등록 매물</h3><p>내 등록가와 현재 시장 최저가·추천가를 비교합니다.</p><strong>매물 보기 →</strong></a>
-        <a class="panel link-card" href="admin-market-history.html"><p class="eyebrow">PRICE HISTORY</p><h3>가격 변동</h3><p>실제 스캔 스냅샷이 누적되면 시세 흐름을 차트와 상세 표로 확인합니다.</p><strong>차트 열기 →</strong></a>
-        <a class="panel link-card" href="admin-market-sales.html"><p class="eyebrow">SALES LEDGER</p><h3>판매 장부</h3><p>실제 구매 완료 채팅을 기준으로 매출·원가·이익·ROI를 기록합니다.</p><strong>장부 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-recommend.html"><p class="eyebrow">FOOD MATERIALS</p><h3>음식 원재료 추천</h3><p>현재 음식 1위와 해당 재료의 실제 시장 데이터를 확인합니다.</p><strong>분석 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-crafting.html"><p class="eyebrow">CRAFTING PROFIT</p><h3>제작품 수익</h3><p>실제 시장값을 기반으로 제작 원가 계산에 사용할 데이터를 확인합니다.</p><strong>분석 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-listings.html"><p class="eyebrow">MY LISTINGS</p><h3>내 등록 매물</h3><p>실제 캡처된 내 매물과 시장 최저가를 비교합니다.</p><strong>매물 보기 →</strong></a>
+        <a class="panel link-card" href="admin-market-history.html"><p class="eyebrow">PRICE HISTORY</p><h3>가격 변동</h3><p>실제 스캔 시점별 최저가·평균가를 차트로 봅니다.</p><strong>차트 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-sales.html"><p class="eyebrow">SALES LEDGER</p><h3>판매 장부</h3><p>실제 구매 완료 기록의 매출과 판매량을 확인합니다.</p><strong>장부 열기 →</strong></a>
       </div>
     </section>
-
-    <div class="notice"><strong>현재 상태</strong>미리보기용 가상 데이터는 모두 제거했습니다. 첫 실제 /스캔 및 판매 기록이 연결되기 전까지 수치 영역은 비어 있는 것이 정상입니다.</div>
-  
   </main>
-
-  <script src="admin-market-core.js?v=0.3.0"></script>
+  
+  <script src="admin-market-core.js?v=0.4.0"></script>
   <script>
-    const scannedAt=null;
-    function render(){MarketAdmin.updateScanAge(scannedAt)}
-    MarketAdmin.boot(render);
+  async function render(){
+    const F=MarketAdmin;
+    try{
+      const d=await F.market("market-overview");
+      F.updateScanAge(d.latest_scan?.completed_at);
+      document.querySelector("#mRevenue").textContent=F.gold(d.sales_30d?.revenue||0);
+      document.querySelector("#mQty").textContent=F.fmt(d.sales_30d?.sold_qty||0)+"개";
+      document.querySelector("#mListings").textContent=d.latest_scan?F.fmt(d.latest_scan.listing_count||0)+"개":"—";
+      document.querySelector("#mPages").textContent=d.latest_scan?F.fmt(d.latest_scan.total_pages||0)+"페이지":"—";
+      ["#mRevenue","#mQty","#mListings","#mPages"].forEach(s=>document.querySelector(s)?.classList.remove("pending"));
+    }catch(e){
+      F.updateScanAge(null);
+      document.querySelector("#scanCopy").textContent="실데이터 API 조회에 실패했습니다. 잠시 뒤 다시 시도해 주세요.";
+    }
+  }
+  MarketAdmin.boot(render);
   </script>
 </body>
 </html>
