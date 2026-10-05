@@ -109,3 +109,33 @@ tbody tr:hover{background:#fff}
 button:disabled,select:disabled{cursor:not-allowed;opacity:.45}
 .status-note{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-weight:750}
 .status-note:before{content:"";width:7px;height:7px;border-radius:50%;background:#aeb4af}
+
+.market-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.market-toolbar-left,.market-toolbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.market-search{position:relative;min-width:280px}
+.market-search input{width:100%;height:40px;border:1px solid var(--line2);background:#fff;border-radius:11px;padding:0 38px 0 13px;font-size:12px;outline:none}
+.market-search input:focus{border-color:#8ca797;box-shadow:0 0 0 3px #edf3ef}
+.market-search:after{content:"⌕";position:absolute;right:13px;top:50%;transform:translateY(-52%);color:var(--muted2);font-size:18px;pointer-events:none}
+.market-sort{height:40px;border:1px solid var(--line2);background:#fff;border-radius:11px;padding:0 32px 0 12px;font-size:11px;font-weight:750;color:var(--ink2)}
+.market-count{color:var(--muted);font-size:10px;font-weight:750}
+.offer-main{font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
+.offer-sub{display:block;margin-top:4px;color:var(--muted2);font-size:9px;font-weight:650;white-space:nowrap}
+.market-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:800;white-space:nowrap}
+.market-badge.ok{background:var(--greenSoft);color:var(--green)}
+.market-badge.warn{background:var(--amberSoft);color:var(--amber)}
+.market-badge.danger{background:var(--redSoft);color:var(--red)}
+.market-badge.muted{background:#eceeeb;color:#737b76}
+.market-pagination{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:14px;flex-wrap:wrap}
+.market-pagination button{min-width:34px;height:34px;border:1px solid var(--line);background:var(--paper);border-radius:9px;font-size:10px;font-weight:800}
+.market-pagination button:hover{background:#fff;border-color:#c7cbc5}
+.market-pagination button.active{background:var(--dark);border-color:var(--dark);color:#fff}
+.market-pagination button:disabled{opacity:.35}
+.table-note{color:var(--muted2);font-size:9px;line-height:1.45}
+.shop-cell strong{display:block;font-size:11px}
+.shop-cell small{display:block;margin-top:3px;color:var(--muted2);font-size:9px}
+@media(max-width:720px){
+  .market-toolbar,.market-toolbar-left,.market-toolbar-right{width:100%}
+  .market-toolbar-right{align-items:stretch}
+  .market-search{min-width:0;flex:1 1 100%}
+  .market-sort{width:100%}
+}
