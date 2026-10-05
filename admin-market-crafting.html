@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>제작품 수익 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.3.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   
 </head>
@@ -29,44 +29,39 @@
         <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
       </a>
       <div class="top-actions">
-        <span class="status-note">실제 데이터만 표시</span>
+        <span class="status-note">Supabase 실데이터 연결</span>
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-
     <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="active">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">CRAFTING PROFIT</p>
-        <h1>제작품 수익</h1>
-        <p class="subtitle">제작법을 끝까지 풀고 필요한 원재료를 실제 플리마켓에서 산다고 가정한 시장 매입 원가로 계산합니다.</p>
-      </div>
-    </header>
+    <header class="topbar"><div><p class="eyebrow">CRAFTING PROFIT</p><h1>제작품 수익</h1><p class="subtitle">실제 플리마켓 스캔 데이터를 제작 원가 엔진에 연결할 준비 상태를 확인합니다.</p></div></header>
     
     <section class="metrics">
-      <article class="metric"><div class="metric-head">현재 추천 제작품</div><div class="metric-value pending" style="font-size:18px">—</div><div class="metric-foot">실제 시장 데이터 필요</div></article>
-      <article class="metric"><div class="metric-head">시장 매입 원가</div><div class="metric-value pending">—</div><div class="metric-foot">필요 수량별 최저 조달 경로</div></article>
-      <article class="metric"><div class="metric-head">추천 판매가</div><div class="metric-value pending">—</div><div class="metric-foot">시장 경쟁 데이터 기준</div></article>
-      <article class="metric"><div class="metric-head">예상 ROI</div><div class="metric-value pending">—</div><div class="metric-foot">예상 이익 ÷ 시장 매입 원가</div></article>
+      <article class="metric"><div class="metric-head">마지막 스캔 품목</div><div id="cItems" class="metric-value pending">—</div><div class="metric-foot">시장에 확인된 고유 품목 수</div></article>
+      <article class="metric"><div class="metric-head">전체 경쟁 재고</div><div id="cStock" class="metric-value pending">—</div><div class="metric-foot">마지막 스캔 집계</div></article>
+      <article class="metric"><div class="metric-head">제작 원가 엔진</div><div class="metric-value" style="font-size:18px">연결 대기</div><div class="metric-foot">모드 완성본에서 레시피 트리 연결</div></article>
+      <article class="metric"><div class="metric-head">추천 제작품</div><div class="metric-value pending">—</div><div class="metric-foot">원가 계산 완료 후 표시</div></article>
     </section>
-
-    <section class="section">
-      <div class="section-head"><div><h2>원가 계산 경로</h2><p>중간 재료를 다시 분해해 가장 싼 실제 시장 구매 경로를 찾습니다.</p></div></div>
-      <div class="panel"><div class="empty-state"><strong>계산 가능한 제작품 데이터가 없습니다</strong><p>제작법 DB와 실제 시장 스캔이 연결되면 아이템별 제작 트리와 선택된 최저 조달 경로가 표시됩니다.</p></div></div>
+    <section class="section"><div class="section-head"><div><h2>현재 시장 데이터</h2><p>가짜 제작 수익은 표시하지 않고 실제 스캔된 품목만 확인합니다.</p></div></div>
+      <div class="panel table-wrap"><table><thead><tr><th>아이템</th><th>최저가 /64</th><th>평균가 /64</th><th>경쟁 재고</th><th>판매자</th></tr></thead><tbody id="craftRows"></tbody></table></div>
     </section>
-
-    <section class="section">
-      <div class="section-head"><div><h2>제작품 후보</h2><p>실제 예상 이익, ROI, 경쟁 재고, 가격 흐름으로 정렬합니다.</p></div></div>
-      <div class="panel table-wrap">
-        <table><thead><tr><th>제작품</th><th>시장 매입 원가</th><th>추천 판매가</th><th>예상 이익</th><th>ROI</th><th>경쟁 재고</th></tr></thead>
-        <tbody><tr><td colspan="6"><div class="empty-state"><strong>제작품 분석 데이터 없음</strong><p>실제 스캔 후 계산 가능한 제작품부터 표시됩니다.</p></div></td></tr></tbody></table>
-      </div>
-    </section>
-  
   </main>
-
-  <script src="admin-market-core.js?v=0.3.0"></script>
-  <script>MarketAdmin.boot(()=>{});</script>
+  
+  <script src="admin-market-core.js?v=0.4.0"></script>
+  <script>
+  async function render(){
+    const F=MarketAdmin,t=document.querySelector("#craftRows");
+    try{
+      const d=await F.market("market-latest"),items=d.items||[];
+      document.querySelector("#cItems").textContent=F.fmt(items.length)+"종";
+      document.querySelector("#cStock").textContent=F.fmt(items.reduce((a,x)=>a+Number(x.total_stock||0),0))+"개";
+      document.querySelector("#cItems").classList.remove("pending");document.querySelector("#cStock").classList.remove("pending");
+      t.innerHTML=items.length?items.slice().sort((a,b)=>(b.average_stack64_price||0)-(a.average_stack64_price||0)).slice(0,100).map(x=>
+        '<tr><td class="item-name">'+F.escapeHtml(x.item_name)+'</td><td class="price">'+F.gold(x.lowest_stack64_price)+'</td><td class="price">'+F.gold(x.average_stack64_price)+'</td><td>'+F.fmt(x.total_stock)+'개</td><td>'+F.fmt(x.seller_count)+'명</td></tr>'
+      ).join(""):'<tr><td colspan="5"><div class="empty-state"><strong>시장 스캔 데이터 없음</strong><p>첫 /스캔 업로드를 기다리고 있습니다.</p></div></td></tr>';
+    }catch(e){t.innerHTML='<tr><td colspan="5">'+F.errorState()+'</td></tr>'}
+  }
+  MarketAdmin.boot(render);
+  </script>
 </body>
 </html>
