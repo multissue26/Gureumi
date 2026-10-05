@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>내 등록 매물 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.3.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   
 </head>
@@ -29,30 +29,38 @@
         <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
       </a>
       <div class="top-actions">
-        <span class="status-note">실제 데이터만 표시</span>
+        <span class="status-note">Supabase 실데이터 연결</span>
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-
     <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="active">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">MY LISTINGS</p>
-        <h1>내 등록 매물</h1>
-        <p class="subtitle">실제로 등록한 내 매물과 현재 경쟁 시장 가격을 비교합니다.</p>
-      </div>
-    </header>
+    <header class="topbar"><div><p class="eyebrow">MY LISTINGS</p><h1>내 등록 매물</h1><p class="subtitle">실제로 캡처된 내 플리마켓 매물을 마지막 시장 스캔과 비교합니다.</p></div></header>
     
-    <section class="panel table-wrap">
-      <table><thead><tr><th>상품</th><th>내 등록가</th><th>시장 최저가</th><th>추천 판매가</th><th>등록 수량</th><th>남은 수량</th><th>판단</th></tr></thead>
-      <tbody><tr><td colspan="7"><div class="empty-state"><strong>등록 매물 데이터가 없습니다</strong><p>모드에서 실제 내 플리마켓 매물을 확인할 수 있게 연결되면 이곳에 자동으로 표시됩니다.</p></div></td></tr></tbody></table>
-    </section>
-    <div class="notice"><strong>내 매물 비교</strong>내 등록가를 시장 최저가와 단순 비교하는 데서 끝내지 않고, 추천 판매가와 경쟁 재고까지 함께 판단하도록 연결합니다.</div>
-  
+    <section class="panel table-wrap"><table>
+      <thead><tr><th>상품</th><th>내 등록가 /64 환산</th><th>시장 최저가 /64</th><th>등록 수량</th><th>남은 수량</th><th>시장 대비</th></tr></thead>
+      <tbody id="listingRows"></tbody>
+    </table></section>
   </main>
-
-  <script src="admin-market-core.js?v=0.3.0"></script>
-  <script>MarketAdmin.boot(()=>{});</script>
+  
+  <script src="admin-market-core.js?v=0.4.0"></script>
+  <script>
+  async function render(){
+    const F=MarketAdmin,t=document.querySelector("#listingRows");
+    try{
+      const [own,market]=await Promise.all([F.market("market-own-listings"),F.market("market-latest")]);
+      const mm=new Map((market.items||[]).map(x=>[x.item_name,x]));
+      const rows=own.listings||[];
+      t.innerHTML=rows.length?rows.map(r=>{
+        const own64=Number(r.listed_quantity)>0?Number(r.listing_price)/Number(r.listed_quantity)*64:null;
+        const m=mm.get(r.item_name),low=m?.lowest_stack64_price;
+        const gap=(Number.isFinite(own64)&&Number.isFinite(Number(low))&&Number(low)>0)?(own64-Number(low))/Number(low)*100:null;
+        const cls=gap==null?"flat":Math.abs(gap)<=2?"up":gap>0?"down":"up";
+        const label=gap==null?"비교 불가":Math.abs(gap)<=2?"경쟁 구간":gap>0?"시장보다 높음":"시장보다 낮음";
+        return '<tr><td class="item-name">'+F.escapeHtml(r.item_name)+'</td><td class="price">'+F.gold(own64)+'</td><td class="price">'+(m?F.gold(low):"미확인")+'</td><td>'+F.fmt(r.listed_quantity)+'개</td><td>'+(r.remaining_quantity==null?"—":F.fmt(r.remaining_quantity)+"개")+'</td><td class="'+cls+'"><b>'+label+(gap==null?"":" · "+F.pct(gap))+'</b></td></tr>';
+      }).join(""):'<tr><td colspan="6"><div class="empty-state"><strong>내 등록 매물 데이터 없음</strong><p>모드가 실제 내 매물 화면을 캡처해 업로드하면 이곳에 표시됩니다.</p></div></td></tr>';
+    }catch(e){t.innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
+  }
+  MarketAdmin.boot(render);
+  </script>
 </body>
 </html>
