@@ -5,168 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
-  <title>띵팜 플리마켓 운영실</title>
-  <style>
-    :root{
-      --bg:#f2f1ed;--paper:#faf9f6;--white:#fff;--ink:#171a18;--ink2:#2c302d;
-      --muted:#747b76;--muted2:#969c98;--line:#dedfd9;--line2:#cfd2ca;
-      --green:#194f3b;--green2:#256348;--greenSoft:#e6eee9;--amber:#8b641f;
-      --amberSoft:#f7f0dd;--red:#a8473d;--redSoft:#faece9;
-      --shadow:0 12px 35px rgba(29,34,30,.06);
-      --font:"Pretendard","Pretendard Variable","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased}
-    button,input{font:inherit}
-    button{cursor:pointer;color:inherit}
-    button:focus-visible,input:focus-visible{outline:2px solid rgba(25,79,59,.35);outline-offset:2px}
-    .hidden{display:none!important}
-    .shell{max-width:1480px;margin:0 auto;padding:34px 30px 72px}
-    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:22px;margin-bottom:22px}
-    .eyebrow{margin:0 0 7px;color:var(--muted2);font-size:10px;font-weight:800;letter-spacing:.14em}
-    h1{margin:0;font-size:30px;line-height:1.12;letter-spacing:-.045em;font-weight:780}
-    .subtitle{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
-    .top-actions{display:flex;align-items:center;gap:8px}
-    .btn{border:1px solid var(--line2);background:var(--paper);border-radius:10px;height:39px;padding:0 14px;font-weight:750;font-size:12px}
-    .btn:hover{background:#fff;border-color:#bfc5be}
-    .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
-    .btn.primary:hover{background:#143f30}
-    .login{max-width:440px;margin:13vh auto 0;background:var(--white);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:var(--shadow)}
-    .login h2{font-size:22px;margin:0 0 8px;letter-spacing:-.035em}
-    .login p{margin:0 0 18px;color:var(--muted);line-height:1.65}
-    .login-form{display:grid;grid-template-columns:1fr auto;gap:8px}
-    .login input{min-width:0;border:1px solid var(--line2);border-radius:10px;padding:12px 13px;outline:none;background:#fff}
-    .login input:focus{border-color:#8ca797;box-shadow:0 0 0 3px #edf3ef}
-    .login-msg{min-height:20px;margin-top:10px;color:var(--red);font-size:12px}
-    .scan-strip{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:15px 17px;margin-bottom:14px}
-    .scan-dot{width:10px;height:10px;border-radius:50%;background:#72a486;box-shadow:0 0 0 5px #e6eee9}
-    .scan-dot.stale{background:#c18c2e;box-shadow:0 0 0 5px #f8efd9}
-    .scan-title{font-weight:800;font-size:13px}
-    .scan-copy{margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}
-    .scan-age{font-size:12px;font-weight:800;color:var(--green);white-space:nowrap}
-    .scan-age.stale{color:var(--amber)}
-    .metrics{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:15px;background:var(--paper);overflow:visible}
-    .metric{position:relative;padding:17px 18px;min-height:98px;border-right:1px solid var(--line)}
-    .metric:last-child{border-right:0}
-    .metric-head{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;font-weight:700}
-    .metric-value{margin-top:10px;font-size:23px;line-height:1;font-weight:800;letter-spacing:-.035em}
-    .metric-foot{margin-top:8px;color:var(--muted2);font-size:10px;line-height:1.4}
-    .help{width:18px;height:18px;border:1px solid #d7d9d3;background:#fff;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;color:#747a76;padding:0;position:relative}
-    .help:after{content:attr(data-tip);position:absolute;z-index:20;left:50%;bottom:calc(100% + 9px);width:260px;transform:translateX(-50%) translateY(4px);background:#202522;color:#f3f5f3;border:1px solid #343b37;border-radius:10px;padding:10px 11px;font-size:11px;font-weight:500;line-height:1.55;text-align:left;opacity:0;pointer-events:none;transition:.14s ease;box-shadow:0 12px 35px rgba(0,0,0,.17)}
-    .help:hover:after,.help:focus:after{opacity:1;transform:translateX(-50%) translateY(0)}
-    .section{margin-top:28px}
-    .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:11px}
-    .section-head h2{font-size:20px;margin:0;letter-spacing:-.035em}
-    .section-head p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.5}
-    .segmented{display:inline-flex;align-items:center;padding:4px;border:1px solid var(--line);border-radius:11px;background:#f7f6f3;gap:2px}
-    .segmented button{border:0;background:transparent;border-radius:8px;padding:8px 12px;color:#737a75;font-size:11px;font-weight:750;white-space:nowrap}
-    .segmented button.active{background:#fff;color:#202522;box-shadow:0 1px 3px rgba(31,37,33,.08),0 0 0 1px #e2e3de}
-    .market-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.55fr);gap:14px;align-items:start}
-    .panel{background:var(--paper);border:1px solid var(--line);border-radius:15px;box-shadow:0 1px 0 rgba(255,255,255,.65)}
-    .table-wrap{overflow:auto;border-radius:15px}
-    table{width:100%;border-collapse:collapse;min-width:800px}
-    thead th{position:sticky;top:0;background:#f5f4f1;color:#7a817c;font-size:10px;text-align:left;font-weight:800;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
-    tbody td{padding:14px;border-bottom:1px solid #e6e6e1;vertical-align:middle}
-    tbody tr:last-child td{border-bottom:0}
-    tbody tr{transition:background .12s ease}
-    tbody tr:hover{background:#fff}
-    .rank{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:#eceeea;font-size:11px;font-weight:850;color:#5d655f}
-    .rank.top{background:#e4eee8;color:#1d5a42}
-    .item{font-weight:800}
-    .item small{display:block;margin-top:4px;color:var(--muted2);font-weight:600;font-size:10px}
-    .price{font-variant-numeric:tabular-nums;font-weight:800}
-    .price small{display:block;margin-top:3px;color:var(--muted2);font-size:9px;font-weight:650}
-    .delta.up{color:#1e7654}.delta.down{color:var(--red)}
-    .score{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:11px}
-    .score:before{content:"";width:7px;height:7px;border-radius:50%;background:#58a178}
-    .score.medium:before{background:#c29137}
-    .reason-panel{padding:18px}
-    .reason-panel h3{margin:0;font-size:15px;letter-spacing:-.025em}
-    .reason-item{padding:14px 0;border-bottom:1px solid #e5e6e1}
-    .reason-item:last-child{border-bottom:0;padding-bottom:0}
-    .reason-label{color:var(--muted2);font-size:9px;font-weight:850;letter-spacing:.09em}
-    .reason-item strong{display:block;margin-top:6px;font-size:14px}
-    .reason-item p{margin:6px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
-    .reason-price{font-size:26px!important;color:var(--green)}
-    .rule{height:1px;background:var(--line);margin:4px 0}
-    .sales-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.65fr);gap:14px}
-    .sales-panel{padding:18px}
-    .sales-panel h3{margin:0 0 14px;font-size:15px}
-    .sales-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:11px 0;border-bottom:1px solid #e5e6e1}
-    .sales-row:last-child{border-bottom:0}
-    .sales-row span{color:var(--muted);font-size:11px}
-    .sales-row b{font-size:12px}
-    .term-list{display:grid;gap:0}
-    .term{padding:12px 0;border-bottom:1px solid #e5e6e1}
-    .term:last-child{border-bottom:0}
-    .term b{display:block;font-size:11px}
-    .term span{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.55}
-    .notice{margin-top:14px;border:1px solid #e4d5ae;background:var(--amberSoft);color:#73551e;border-radius:12px;padding:13px 15px;font-size:11px;line-height:1.6}
-    .notice strong{display:block;margin-bottom:3px;color:#604616}
-    .empty{padding:58px 20px;text-align:center;color:var(--muted)}
-    .empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:7px}
-    .preview-badge{display:inline-flex;align-items:center;gap:6px;border:1px solid #d8ded9;background:#f6f8f6;border-radius:999px;padding:6px 9px;color:#5e6962;font-size:10px;font-weight:750}
-    .preview-badge:before{content:"";width:6px;height:6px;border-radius:50%;background:#8ba596}
-
-    .jumpnav{display:flex;align-items:center;gap:6px;overflow:auto;padding:4px;margin:0 0 14px;border-bottom:1px solid var(--line)}
-    .jumpnav a{flex:0 0 auto;text-decoration:none;color:#6d756f;font-size:11px;font-weight:760;padding:8px 10px;border-radius:8px}
-    .jumpnav a:hover{background:#fff;color:#202522}
-    .section-anchor{scroll-margin-top:18px}
-    .listing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px}
-    .listing{border:1px solid #e1e3de;border-radius:12px;background:#fff;padding:15px}
-    .listing-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-    .listing-name{font-size:14px;font-weight:820}
-    .listing-status{font-size:10px;font-weight:800;padding:5px 7px;border-radius:999px;background:var(--greenSoft);color:var(--green)}
-    .listing-status.warn{background:var(--amberSoft);color:var(--amber)}
-    .listing-price{font-size:21px;font-weight:850;letter-spacing:-.035em;margin-top:12px}
-    .listing-price small{font-size:10px;color:var(--muted2);font-weight:700;margin-left:3px}
-    .listing-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-    .listing-meta div{padding-top:10px;border-top:1px solid #ecece8}
-    .listing-meta span{display:block;color:var(--muted2);font-size:9px;font-weight:750}
-    .listing-meta b{display:block;margin-top:4px;font-size:11px}
-    .history-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px}
-    .history-list{padding:0 16px}
-    .history-row{display:grid;grid-template-columns:minmax(150px,1fr) repeat(4,minmax(90px,.65fr));gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #e5e6e1}
-    .history-row:last-child{border-bottom:0}
-    .history-row.head{padding:10px 0;color:var(--muted2);font-size:9px;font-weight:850}
-    .history-row .history-name{font-weight:820}
-    .history-value{font-size:12px;font-weight:760;font-variant-numeric:tabular-nums}
-    .change-pill{display:inline-flex;align-items:center;justify-content:center;width:max-content;border-radius:999px;padding:6px 8px;font-size:10px;font-weight:850}
-    .change-pill.up{background:#e7f1eb;color:#1f7654}.change-pill.down{background:#f7e9e7;color:#a8473d}.change-pill.flat{background:#eeeeea;color:#687069}
-    .history-summary{padding:18px}
-    .history-summary h3{margin:0 0 12px;font-size:15px}
-    .summary-stat{padding:12px 0;border-bottom:1px solid #e5e6e1}
-    .summary-stat:last-child{border-bottom:0}
-    .summary-stat span{display:block;color:var(--muted2);font-size:9px;font-weight:800}
-    .summary-stat b{display:block;margin-top:5px;font-size:15px}
-    .signal-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-    .signal{padding:16px}
-    .signal-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .signal h3{margin:0;font-size:14px}
-    .signal-food-change{font-size:11px;font-weight:850;color:#1e7654;white-space:nowrap}
-    .signal-price{margin-top:6px;color:var(--muted);font-size:10px}
-    .signal-copy{margin:12px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
-    .ingredient-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-    .ingredient-tag{border:1px solid #dde1dc;background:#fff;border-radius:999px;padding:6px 8px;font-size:10px;font-weight:750}
-    .ingredient-tag strong{color:#1e7654;margin-left:4px}
-    .signal-foot{margin-top:12px;padding-top:11px;border-top:1px solid #e5e6e1;display:flex;justify-content:space-between;gap:8px;color:var(--muted2);font-size:9px}
-    .confidence{font-weight:850;color:var(--green)}
-    .insight-note{margin-top:10px;color:var(--muted);font-size:10px;line-height:1.6}
-    @media(max-width:1180px){
-      .metrics{grid-template-columns:repeat(4,1fr)}
-      .metric:nth-child(4){border-right:0}.metric:nth-child(-n+4){border-bottom:1px solid var(--line)}
-      .market-layout,.sales-grid,.history-grid{grid-template-columns:1fr}
-      .signal-list{grid-template-columns:1fr 1fr}
-      .listing-grid{grid-template-columns:1fr}
-    }
-    @media(max-width:760px){
-      .shell{padding:24px 14px 54px}.topbar,.section-head{align-items:flex-start;flex-direction:column}.top-actions{width:100%}.metrics{grid-template-columns:repeat(2,1fr)}
-      .metric{border-right:1px solid var(--line);border-bottom:1px solid var(--line)!important}.metric:nth-child(even){border-right:0}.metric:last-child{border-bottom:0!important}
-      .scan-strip{grid-template-columns:auto 1fr}.scan-age{grid-column:2}
-      .segmented{width:100%}.segmented button{flex:1}.signal-list{grid-template-columns:1fr}.history-row{grid-template-columns:1fr 1fr}.history-row.head{display:none}.listing-meta{grid-template-columns:1fr 1fr 1fr}.help:after{left:0;transform:none;width:min(260px,70vw)}.help:hover:after,.help:focus:after{transform:none}
-    }
-  </style>
+  <title>플리마켓 운영 홈 | 띵팜</title>
+  <link rel="stylesheet" href="admin-market.css?v=0.2.0">
+  <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
 </head>
 <body>
   <main id="loginView" class="login">
@@ -181,430 +22,60 @@
   </main>
 
   <main id="appView" class="shell hidden">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">PRIVATE · FLEA MARKET</p>
-        <h1>플리마켓 운영실</h1>
-        <p class="subtitle">경쟁 매물과 실제 판매 기록을 함께 보고, 가장 경쟁력 있는 판매 가격을 결정합니다.</p>
-      </div>
+    <div class="brandbar">
+      <a class="brand" href="admin-market.html">
+        <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
+        <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
+      </a>
       <div class="top-actions">
         <span class="preview-badge">웹 UI 미리보기</span>
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
-    </header>
+    </div>
 
+    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="active">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
+
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">PRIVATE · FLEA MARKET</p>
+        <h1>플리마켓 운영 홈</h1>
+        <p class="subtitle">/스캔 결과와 장사 상태를 빠르게 확인하고 필요한 분석 메뉴로 이동합니다.</p>
+      </div>
+    </header>
+    
     <section class="scan-strip" aria-live="polite">
       <span id="scanDot" class="scan-dot"></span>
-      <div>
-        <div id="scanTitle" class="scan-title">마지막 시장 스캔을 확인하는 중</div>
-        <div id="scanCopy" class="scan-copy">/스캔은 자동 실행되지 않으며, Minecraft에서 직접 입력할 때만 1회 전체 재료를 조사합니다.</div>
-      </div>
+      <div><div id="scanTitle" class="scan-title">마지막 시장 스캔 확인 중</div><div id="scanCopy" class="scan-copy"></div></div>
       <div id="scanAge" class="scan-age">—</div>
     </section>
 
-    <nav class="jumpnav" aria-label="플리마켓 운영 메뉴">
-      <a href="#recommendSection">판매 추천</a>
-      <a href="#myListingsSection">내 등록 매물</a>
-      <a href="#priceHistorySection">가격 변동</a>
-      <a href="#demandSignalSection">수요 신호</a>
-      <a href="#salesSection">판매 장부</a>
-    </nav>
-
     <section class="metrics">
-      <article class="metric">
-        <div class="metric-head">총 매출 <button class="help" aria-label="총 매출 설명" data-tip="실제로 판매 완료된 상품의 판매금액을 모두 더한 값입니다. 아직 팔리지 않은 등록 매물은 포함하지 않습니다.">?</button></div>
-        <div id="metricRevenue" class="metric-value">—</div><div class="metric-foot">판매 완료 금액 합계</div>
-      </article>
-      <article class="metric">
-        <div class="metric-head">총 원가 <button class="help" aria-label="총 원가 설명" data-tip="실제로 판매된 상품을 생산하거나 확보하는 데 들어간 원가의 합계입니다. 재료 원가 데이터가 없는 항목은 계산에서 제외하고 별도로 표시합니다.">?</button></div>
-        <div id="metricCost" class="metric-value">—</div><div class="metric-foot">판매된 상품 기준</div>
-      </article>
-      <article class="metric">
-        <div class="metric-head">예상 순이익 <button class="help" aria-label="예상 순이익 설명" data-tip="총 매출에서 총 원가를 뺀 값입니다. 서버 수수료가 확인되면 수수료까지 차감하도록 연결할 예정입니다.">?</button></div>
-        <div id="metricProfit" class="metric-value">—</div><div class="metric-foot">매출 − 원가</div>
-      </article>
-      <article class="metric">
-        <div class="metric-head">판매량 <button class="help" aria-label="판매량 설명" data-tip="실제로 구매가 완료된 아이템의 총 개수입니다. 판매 건수와는 다른 값입니다.">?</button></div>
-        <div id="metricQty" class="metric-value">—</div><div class="metric-foot">실제 판매 아이템 수</div>
-      </article>
-      <article class="metric">
-        <div class="metric-head">판매 품목 <button class="help" aria-label="판매 품목 설명" data-tip="선택 기간 동안 실제 판매가 한 번이라도 발생한 서로 다른 아이템 종류 수입니다.">?</button></div>
-        <div id="metricKinds" class="metric-value">—</div><div class="metric-foot">서로 다른 상품 종류</div>
-      </article>
-      <article class="metric">
-        <div class="metric-head">전체 ROI <button class="help" aria-label="ROI 설명" data-tip="전체 순이익 ÷ 전체 원가 × 100으로 계산합니다. 상품별 ROI를 단순 평균내지 않아 실제 전체 투자 성과를 더 정확하게 보여줍니다.">?</button></div>
-        <div id="metricRoi" class="metric-value">—</div><div class="metric-foot">순이익 ÷ 원가 × 100</div>
-      </article>
-      <article class="metric">
-        <div class="metric-head">개당 평균 판매가 <button class="help" aria-label="개당 평균 판매가 설명" data-tip="총 매출 ÷ 총 판매량으로 계산하는 수량 가중 평균입니다. 서로 다른 묶음 크기로 판매해도 실제 판매 수량을 기준으로 계산합니다.">?</button></div>
-        <div id="metricUnitAvg" class="metric-value">—</div><div id="metricStackAvg" class="metric-foot">64개 기준 —</div>
-      </article>
+      <article class="metric"><div class="metric-head">총 매출</div><div class="metric-value">182,400 G</div><div class="metric-foot">판매 완료 금액 합계</div></article>
+      <article class="metric"><div class="metric-head">예상 순이익</div><div class="metric-value">91,200 G</div><div class="metric-foot">매출 − 시장 매입 원가</div></article>
+      <article class="metric"><div class="metric-head">현재 추천 1순위</div><div class="metric-value" style="font-size:18px">비트 묶음</div><div class="metric-foot">현재 음식 수요 신호 기준</div></article>
+      <article class="metric"><div class="metric-head">가격 급등 감지</div><div class="metric-value">+249.9%</div><div class="metric-foot">비트 묶음 · 이전 스캔 대비</div></article>
     </section>
 
-    <section id="recommendSection" class="section section-anchor">
-      <div class="section-head">
-        <div>
-          <h2>지금 판매하기 좋은 재료</h2>
-          <p>음식 가격과 경쟁 매물의 가격·재고를 함께 비교해 판매 우선순위를 정합니다.</p>
-        </div>
-        <div id="priceMode" class="segmented" role="tablist" aria-label="가격 기준">
-          <button class="active" data-mode="recommended" type="button">추천 판매가</button>
-          <button data-mode="lowest" type="button">최저가</button>
-          <button data-mode="average" type="button">평균가</button>
-        </div>
-      </div>
-
-      <div class="market-layout">
-        <div class="panel table-wrap">
-          <table>
-            <thead><tr><th>순위</th><th>재료</th><th id="priceHead">추천 판매가</th><th>개당</th><th>예상 원가</th><th>예상 이익</th><th>경쟁 재고</th><th>판매 추천도</th></tr></thead>
-            <tbody id="marketRows"></tbody>
-          </table>
-        </div>
-
-        <aside class="panel reason-panel">
-          <p class="eyebrow">PRICE DECISION</p>
-          <h3 id="focusName">추천 가격 근거</h3>
-          <div class="reason-item">
-            <div id="focusPriceLabel" class="reason-label">추천 판매가</div>
-            <strong id="focusPrice" class="reason-price">—</strong>
-            <p id="focusUnit">—</p>
-          </div>
-          <div class="reason-item">
-            <div class="reason-label">경쟁 상황</div>
-            <strong id="focusCompetition">—</strong>
-            <p id="focusCompetitionCopy">—</p>
-          </div>
-          <div class="reason-item">
-            <div class="reason-label">추천 이유</div>
-            <strong id="focusReason">—</strong>
-            <p id="focusReasonCopy">—</p>
-          </div>
-          <div class="reason-item">
-            <div class="reason-label">가격 원칙</div>
-            <p>무조건 최저가보다 1골드 싸게 내리는 방식이 아니라, 저가 매물의 남은 재고와 다음 가격대의 간격을 보고 <b>팔릴 가능성과 마진을 함께</b> 고려합니다.</p>
-          </div>
-        </aside>
+    <section class="section">
+      <div class="section-head"><div><h2>분석 메뉴</h2><p>각 메뉴는 이제 별도 페이지로 열립니다. 아래로 스크롤해서 찾을 필요가 없습니다.</p></div></div>
+      <div class="cards">
+        <a class="panel link-card" href="admin-market-recommend.html"><p class="eyebrow">FOOD MATERIALS</p><h3>음식 원재료 추천</h3><p>현재 가장 비싼 음식의 제작 재료만 모아서 가격·재고·추천 판매가를 분석합니다.</p><strong>분석 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-crafting.html"><p class="eyebrow">CRAFTING PROFIT</p><h3>제작품 수익</h3><p>강화 횃불 같은 제작품의 재료를 끝까지 풀고, 시장 최저가 매입 원가와 판매가를 비교합니다.</p><strong>분석 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-listings.html"><p class="eyebrow">MY LISTINGS</p><h3>내 등록 매물</h3><p>내가 올린 가격과 현재 시장 최저가·추천가를 나란히 비교합니다.</p><strong>매물 보기 →</strong></a>
+        <a class="panel link-card" href="admin-market-history.html"><p class="eyebrow">PRICE HISTORY</p><h3>가격 변동</h3><p>주식 차트처럼 시세 흐름을 보고, 이전 스캔과 현재 스캔의 차이를 상세하게 확인합니다.</p><strong>차트 열기 →</strong></a>
+        <a class="panel link-card" href="admin-market-sales.html"><p class="eyebrow">SALES LEDGER</p><h3>판매 장부</h3><p>실제 구매 완료 기록을 기준으로 매출·원가·이익·평균 판매가·ROI를 봅니다.</p><strong>장부 열기 →</strong></a>
       </div>
     </section>
 
-    <section id="myListingsSection" class="section section-anchor">
-      <div class="section-head">
-        <div>
-          <h2>내 등록 매물</h2>
-          <p>내가 플리마켓에 올려둔 상품을 현재 경쟁 가격과 비교합니다. 모드 연결 후 실제 등록·남은 재고로 교체됩니다.</p>
-        </div>
-      </div>
-      <div class="panel">
-        <div id="myListingRows" class="listing-grid"></div>
-      </div>
-    </section>
-
-    <section id="priceHistorySection" class="section section-anchor">
-      <div class="section-head">
-        <div>
-          <h2>가격 변동</h2>
-          <p>이전 스캔과 현재 스캔을 비교해 얼마가 올랐거나 내렸는지 금액과 비율로 함께 보여줍니다.</p>
-        </div>
-        <div id="historyMode" class="segmented" role="tablist" aria-label="가격 변동 기준">
-          <button class="active" data-history-mode="lowest" type="button">최저가 기준</button>
-          <button data-history-mode="average" type="button">평균가 기준</button>
-        </div>
-      </div>
-      <div class="history-grid">
-        <section class="panel">
-          <div id="historyRows" class="history-list"></div>
-        </section>
-        <aside class="panel history-summary">
-          <p class="eyebrow">SCAN COMPARISON</p>
-          <h3>이번 스캔에서 눈에 띈 변화</h3>
-          <div class="summary-stat"><span>가장 많이 오른 재료</span><b id="historyTopUp">—</b></div>
-          <div class="summary-stat"><span>가장 많이 내린 재료</span><b id="historyTopDown">—</b></div>
-          <div class="summary-stat"><span>비교 기준</span><b id="historyCompareTime">—</b></div>
-          <p class="insight-note">예: 어제 10,000G → 오늘 20,000G라면 <b>+10,000G · +100%</b>로 표시합니다. 스캔 사이에 일어난 중간 변동은 다음 단계에서 스냅샷이 누적되면 더 세밀하게 볼 수 있습니다.</p>
-        </aside>
-      </div>
-    </section>
-
-    <section id="demandSignalSection" class="section section-anchor">
-      <div class="section-head">
-        <div>
-          <h2>음식 가격 기반 원재료 수요 신호</h2>
-          <p>비싸진 음식을 사람들이 더 많이 만들 가능성을 고려해, 해당 음식에 들어가는 원재료의 수요 상승 가능성을 별도 신호로 계산합니다.</p>
-        </div>
-      </div>
-      <div id="demandSignals" class="signal-list"></div>
-      <div class="notice">
-        <strong>해석 주의</strong>
-        음식 가격 상승이 원재료 가격 상승을 반드시 보장하는 것은 아닙니다. 실제 추천에서는 음식 가격 변화와 함께 원재료의 현재 최저가, 재고 감소, 경쟁 판매자 수, 이전 스캔 대비 가격 변화가 실제로 같이 움직이는지 확인해 신뢰도를 조정합니다.
-      </div>
-    </section>
-
-    <section id="salesSection" class="section section-anchor">
-      <div class="section-head">
-        <div><h2>내 플리마켓 판매 현황</h2><p>채팅의 실제 구매 완료 알림을 기준으로 쌓이게 될 장부 영역입니다.</p></div>
-      </div>
-      <div class="sales-grid">
-        <section class="panel sales-panel">
-          <h3>최근 판매 요약</h3>
-          <div id="salesRows"></div>
-        </section>
-        <section class="panel sales-panel">
-          <h3>지표 뜻</h3>
-          <div class="term-list">
-            <div class="term"><b>총 매출</b><span>실제로 판매 완료된 금액의 합계입니다.</span></div>
-            <div class="term"><b>총 원가</b><span>판매된 상품을 만들거나 확보하는 데 든 비용의 합계입니다.</span></div>
-            <div class="term"><b>예상 순이익</b><span>총 매출에서 총 원가를 뺀 값입니다. 추후 확인되는 수수료가 있으면 함께 차감합니다.</span></div>
-            <div class="term"><b>전체 ROI</b><span>(전체 순이익 ÷ 전체 원가) × 100. 품목별 ROI의 단순 평균이 아닙니다.</span></div>
-            <div class="term"><b>개당 평균 판매가</b><span>총 매출 ÷ 총 판매량. 실제 판매 수량으로 가중한 평균입니다.</span></div>
-            <div class="term"><b>64개당 평균 판매가</b><span>개당 평균 판매가 × 64. 플리마켓의 묶음 가격과 빠르게 비교하기 위한 값입니다.</span></div>
-          </div>
-        </section>
-      </div>
-      <div class="notice">
-        <strong>현재 단계</strong>
-        웹 화면과 계산·전환 UI를 먼저 준비한 상태입니다. 실제 스캔 데이터와 판매 알림은 다음 단계에서 Minecraft 모드와 백엔드를 연결한 뒤 이 화면으로 들어옵니다. 자동 스캔은 만들지 않고, 사용자가 <b>/스캔</b>을 실행할 때만 1회 조사하도록 설계합니다.
-      </div>
-    </section>
+    <div class="notice"><strong>스캔 원칙</strong>/스캔은 자동 반복하지 않고 사용자가 직접 실행할 때만 1회 조사합니다. 30분이 지나면 웹에서 재스캔을 권장합니다.</div>
+  
   </main>
-
-<script>
-(()=>{"use strict";
-  const ADMIN_API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-admin-v2";
-  const tokenKey="ddingfarmAdminStatsToken";
-  const $=s=>document.querySelector(s);
-  const fmt=n=>Math.round(Number(n||0)).toLocaleString("ko-KR");
-  const gold=n=>fmt(n)+" G";
-  const pct=n=>(Number(n||0)>=0?"+":"")+Number(n||0).toLocaleString("ko-KR",{maximumFractionDigits:1})+"%";
-
-  const sample={
-    preview:true,
-    scannedAt:Date.now()-18*60*1000,
-    sales:{
-      revenue:182400,cost:91200,soldQty:436,kinds:12,
-      recent:[
-        {name:"비트 묶음",qty:192,revenue:104997},
-        {name:"당근 묶음",qty:128,revenue:46080},
-        {name:"밀 묶음",qty:116,revenue:31323}
-      ]
-    },
-    myListings:[
-      {name:"비트 묶음",listedQty:640,remainingQty:256,price:36999,marketLowest:34999,recommended:35400},
-      {name:"당근 묶음",listedQty:320,remainingQty:64,price:42000,marketLowest:41900,recommended:42100},
-      {name:"밀 묶음",listedQty:512,remainingQty:448,price:29500,marketLowest:28500,recommended:28700}
-    ],
-    foodSignals:[
-      {food:"황금 비트 요리",previous:82000,current:124000,confidence:91,ingredients:[["비트 묶음",18.4],["설탕",6.8],["우유",4.2]],copy:"음식 가격이 크게 상승했고 비트 묶음의 저가 재고도 줄어 원재료 수요 증가 신호가 강합니다."},
-      {food:"당근 수프",previous:61000,current:73500,confidence:76,ingredients:[["당근 묶음",10.1],["우유",3.6]],copy:"음식 가격 상승과 당근 묶음 가격 상승이 같은 방향입니다. 재고 감소가 이어지는지 다음 스캔에서 확인할 가치가 있습니다."},
-      {food:"밀크 브레드",previous:54000,current:55200,confidence:43,ingredients:[["밀 묶음",-1.9],["우유",1.2]],copy:"음식 가격 변화는 작고 핵심 재료 가격도 혼조라 수요 상승 근거가 아직 약합니다."}
-    ],
-    market:[
-      {name:"비트 묶음",recommended:35400,lowest:34999,average:41280,previousLowest:10000,previousAverage:19800,cost:19200,stock:6903,sellers:3,lowStock:320,nextPrice:35500,score:94,change:8.7,reason:"낮은 가격대 재고가 적고 다음 가격대와 간격이 작아, 최저가를 깨지 않아도 경쟁 가능한 구간입니다.",reasonTitle:"최저가 덤핑 없이 판매 가능"},
-      {name:"당근 묶음",recommended:42100,lowest:41900,average:45600,previousLowest:38000,previousAverage:41200,cost:24700,stock:3580,sellers:5,lowStock:640,nextPrice:42500,score:88,change:5.2,reason:"최저가 재고가 과도하지 않고 최근 관련 음식 가격이 올라 마진과 판매속도의 균형이 좋습니다.",reasonTitle:"원가 대비 판매가 우수"},
-      {name:"밀 묶음",recommended:28700,lowest:28500,average:30120,previousLowest:30400,previousAverage:31850,cost:19600,stock:11240,sellers:8,lowStock:3100,nextPrice:28900,score:71,change:-1.9,reason:"경쟁 재고가 많은 편이라 큰 폭의 인상보다는 최저가 인근에서 판매속도를 확보하는 편이 유리합니다.",reasonTitle:"경쟁 재고 많음"},
-      {name:"설탕",recommended:17600,lowest:17400,average:19330,previousLowest:17000,previousAverage:18800,cost:13100,stock:2450,sellers:4,lowStock:180,nextPrice:17900,score:67,change:2.1,reason:"저가 재고는 적지만 원가 대비 절대 마진이 다른 상위 품목보다 낮아 우선순위는 보통입니다.",reasonTitle:"판매 가능, 우선순위 보통"}
-    ]
-  };
-
-  let data=sample;
-  let mode="recommended";
-  let historyMode="lowest";
-  let focusIndex=0;
-
-  async function adminCall(path,body,token){
-    const r=await fetch(ADMIN_API+"/"+path,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})},body:JSON.stringify(body||{})});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok){const e=new Error(j.error||("HTTP "+r.status));e.data=j;e.status=r.status;throw e}
-    return j;
-  }
-
-  function showLogin(message=""){
-    $("#appView").classList.add("hidden");$("#loginView").classList.remove("hidden");$("#loginMsg").textContent=message;$("#pw").value="";$("#pw").focus();
-  }
-  function showApp(){ $("#loginView").classList.add("hidden");$("#appView").classList.remove("hidden"); }
-
-  function updateScanAge(){
-    const mins=Math.max(0,Math.floor((Date.now()-Number(data.scannedAt||0))/60000));
-    const stale=mins>=30;
-    $("#scanAge").textContent=mins<1?"방금 스캔":mins+"분 전";
-    $("#scanAge").classList.toggle("stale",stale);
-    $("#scanDot").classList.toggle("stale",stale);
-    $("#scanTitle").textContent=stale?"시장 데이터 갱신을 권장합니다":"시장 데이터가 아직 최신입니다";
-    $("#scanCopy").innerHTML=stale
-      ? "마지막 스캔 후 "+mins+"분이 지났습니다. 경쟁 가격이 바뀌었을 수 있으니 Minecraft에서 <b>/스캔</b> 실행을 권장합니다."
-      : "마지막 스캔 후 "+mins+"분 경과 · 30분이 지나면 정확한 추천 가격을 위해 <b>/스캔</b>을 권장합니다.";
-  }
-
-  function renderMetrics(){
-    const s=data.sales||{};
-    const revenue=Number(s.revenue||0),cost=Number(s.cost||0),profit=revenue-cost,qty=Number(s.soldQty||0);
-    const roi=cost>0?profit/cost*100:0;
-    const unit=qty>0?revenue/qty:0;
-    $("#metricRevenue").textContent=gold(revenue);
-    $("#metricCost").textContent=gold(cost);
-    $("#metricProfit").textContent=gold(profit);
-    $("#metricQty").textContent=fmt(qty)+"개";
-    $("#metricKinds").textContent=fmt(s.kinds||0)+"종";
-    $("#metricRoi").textContent=pct(roi);
-    $("#metricUnitAvg").textContent=gold(unit);
-    $("#metricStackAvg").textContent="64개 기준 "+gold(unit*64);
-  }
-
-  function modeLabel(){
-    return mode==="recommended"?"추천 판매가":mode==="lowest"?"현재 최저가":"시장 평균가";
-  }
-  function modePrice(row){return Number(row?.[mode]||0)}
-
-  function renderMarket(){
-    const rows=[...(data.market||[])].sort((a,b)=>Number(b.score||0)-Number(a.score||0));
-    $("#priceHead").textContent=modeLabel();
-    $("#marketRows").innerHTML=rows.map((r,i)=>{
-      const p=modePrice(r),unit=p/64,profit=Number(r.recommended||0)-Number(r.cost||0);
-      return '<tr data-index="'+i+'">'+
-        '<td><span class="rank '+(i<2?'top':'')+'">'+(i+1)+'</span></td>'+
-        '<td><span class="item">'+r.name+'<small>최근 시장 '+(r.change>=0?'+':'')+r.change.toFixed(1)+'%</small></span></td>'+
-        '<td><span class="price">'+gold(p)+'<small>/ 64개</small></span></td>'+
-        '<td><span class="price">'+gold(unit)+'<small>/ 개</small></span></td>'+
-        '<td>'+gold(r.cost)+'</td>'+
-        '<td><span class="delta '+(profit>=0?'up':'down')+'">'+(profit>=0?'+':'')+gold(profit)+'</span></td>'+
-        '<td>'+fmt(r.stock)+'개<small style="display:block;color:#969c98;margin-top:3px">'+fmt(r.sellers)+'명 판매</small></td>'+
-        '<td><span class="score '+(r.score<75?'medium':'')+'">'+r.score+'점</span></td>'+
-      '</tr>';
-    }).join("");
-    [...$("#marketRows").querySelectorAll("tr")].forEach(tr=>tr.addEventListener("click",()=>{focusIndex=Number(tr.dataset.index||0);renderFocus(rows[focusIndex])}));
-    renderFocus(rows[Math.min(focusIndex,rows.length-1)]||null);
-  }
-
-  function renderFocus(r){
-    if(!r)return;
-    const p=modePrice(r);
-    $("#focusName").textContent=r.name+" 가격 판단";
-    $("#focusPriceLabel").textContent=modeLabel();
-    $("#focusPrice").textContent=gold(p)+" / 64개";
-    $("#focusUnit").textContent="개당 약 "+gold(p/64);
-    $("#focusCompetition").textContent="최저가 "+gold(r.lowest)+" · 판매자 "+r.sellers+"명";
-    $("#focusCompetitionCopy").textContent="최저가 구간 재고 "+fmt(r.lowStock)+"개 · 다음 가격대 "+gold(r.nextPrice)+" · 전체 경쟁 재고 "+fmt(r.stock)+"개";
-    $("#focusReason").textContent=r.reasonTitle;
-    $("#focusReasonCopy").textContent=r.reason;
-  }
-
-
-  function renderMyListings(){
-    const rows=data.myListings||[];
-    $("#myListingRows").innerHTML=rows.map(r=>{
-      const sold=Math.max(0,Number(r.listedQty||0)-Number(r.remainingQty||0));
-      const gap=Number(r.price||0)-Number(r.marketLowest||0);
-      const status=Math.abs(gap)<=500?"경쟁 가능":gap>0?"시장보다 높음":"시장보다 낮음";
-      const cls=Math.abs(gap)<=500?"":"warn";
-      return '<article class="listing">'+
-        '<div class="listing-top"><div><div class="listing-name">'+r.name+'</div><div class="metric-foot">등록 '+fmt(r.listedQty)+'개 · 현재 '+fmt(r.remainingQty)+'개 남음</div></div><span class="listing-status '+cls+'">'+status+'</span></div>'+
-        '<div class="listing-price">'+gold(r.price)+'<small>/ 64개</small></div>'+
-        '<div class="listing-meta">'+
-          '<div><span>현재 최저가</span><b>'+gold(r.marketLowest)+'</b></div>'+
-          '<div><span>추천 판매가</span><b>'+gold(r.recommended)+'</b></div>'+
-          '<div><span>등록 후 감소</span><b>'+fmt(sold)+'개</b></div>'+
-        '</div>'+
-      '</article>';
-    }).join("")||'<div class="empty"><b>등록 매물이 없습니다</b>모드 연결 후 내 플리마켓 등록 목록을 이곳에 표시합니다.</div>';
-  }
-
-  function historyValue(row,which){
-    const key=historyMode==="average"?(which==="current"?"average":"previousAverage"):(which==="current"?"lowest":"previousLowest");
-    return Number(row?.[key]||0);
-  }
-
-  function renderHistory(){
-    const rows=(data.market||[]).map(r=>{
-      const previous=historyValue(r,"previous"),current=historyValue(r,"current");
-      const amount=current-previous;
-      const rate=previous>0?amount/previous*100:0;
-      return {...r,previous,current,amount,rate};
-    }).sort((a,b)=>Math.abs(b.rate)-Math.abs(a.rate));
-    $("#historyRows").innerHTML=
-      '<div class="history-row head"><span>재료</span><span>이전 스캔</span><span>현재 스캔</span><span>금액 변화</span><span>변동률</span></div>'+
-      rows.map(r=>{
-        const cls=r.amount>0?"up":r.amount<0?"down":"flat";
-        return '<div class="history-row">'+
-          '<div class="history-name">'+r.name+'</div>'+
-          '<div class="history-value">'+gold(r.previous)+'</div>'+
-          '<div class="history-value">'+gold(r.current)+'</div>'+
-          '<div class="history-value '+(r.amount>=0?"delta up":"delta down")+'">'+(r.amount>=0?"+":"")+gold(r.amount)+'</div>'+
-          '<div><span class="change-pill '+cls+'">'+pct(r.rate)+'</span></div>'+
-        '</div>';
-      }).join("");
-    const up=[...rows].sort((a,b)=>b.rate-a.rate)[0];
-    const down=[...rows].sort((a,b)=>a.rate-b.rate)[0];
-    $("#historyTopUp").textContent=up?up.name+" · "+pct(up.rate):"—";
-    $("#historyTopDown").textContent=down?down.name+" · "+pct(down.rate):"—";
-    $("#historyCompareTime").textContent="이전 스캔 ↔ 현재 스캔";
-  }
-
-  function renderDemandSignals(){
-    const signals=data.foodSignals||[];
-    $("#demandSignals").innerHTML=signals.map(s=>{
-      const diff=Number(s.current||0)-Number(s.previous||0);
-      const rate=Number(s.previous||0)>0?diff/Number(s.previous)*100:0;
-      return '<article class="panel signal">'+
-        '<div class="signal-top"><div><p class="eyebrow">FOOD SIGNAL</p><h3>'+s.food+'</h3><div class="signal-price">'+gold(s.previous)+' → '+gold(s.current)+'</div></div><div class="signal-food-change">'+pct(rate)+'</div></div>'+
-        '<p class="signal-copy">'+s.copy+'</p>'+
-        '<div class="ingredient-tags">'+s.ingredients.map(x=>'<span class="ingredient-tag">'+x[0]+' <strong>'+pct(x[1])+'</strong></span>').join("")+'</div>'+
-        '<div class="signal-foot"><span>원재료 가격 변화</span><span class="confidence">신뢰도 '+s.confidence+'%</span></div>'+
-      '</article>';
-    }).join("");
-  }
-
-  function renderSales(){
-    const recent=data.sales?.recent||[];
-    $("#salesRows").innerHTML=recent.map(r=>{
-      const unit=Number(r.qty)>0?Number(r.revenue)/Number(r.qty):0;
-      return '<div class="sales-row"><span><b style="color:#202522">'+r.name+'</b><br>'+fmt(r.qty)+'개 판매 · 개당 평균 '+gold(unit)+'</span><b>'+gold(r.revenue)+'</b></div>';
-    }).join("")||'<div class="empty"><b>판매 기록이 없습니다</b>모드 연결 후 실제 구매 완료 알림이 여기에 쌓입니다.</div>';
-  }
-
-  function render(){
-    updateScanAge();renderMetrics();renderMarket();renderMyListings();renderHistory();renderDemandSignals();renderSales();
-  }
-
-  $("#priceMode").addEventListener("click",e=>{
-    const btn=e.target.closest("button[data-mode]");if(!btn)return;
-    mode=btn.dataset.mode;
-    [...$("#priceMode").querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===btn));
-    renderMarket();
-  });
-
-
-  $("#historyMode").addEventListener("click",e=>{
-    const btn=e.target.closest("button[data-history-mode]");if(!btn)return;
-    historyMode=btn.dataset.historyMode;
-    [...$("#historyMode").querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===btn));
-    renderHistory();
-  });
-
-  $("#loginForm").addEventListener("submit",async e=>{
-    e.preventDefault();$("#loginMsg").textContent="확인 중이에요...";
-    try{
-      const r=await adminCall("login",{password:$("#pw").value});
-      sessionStorage.setItem(tokenKey,r.token);
-      showApp();render();
-    }catch(err){
-      if(err.data?.error==="blocked"){
-        const until=err.data.blocked_until?new Date(err.data.blocked_until).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}):"";
-        $("#loginMsg").textContent="비밀번호를 여러 번 틀렸어요. "+(until?until+" 이후에 다시 시도해 주세요.":"잠시 뒤 다시 시도해 주세요.");
-      }else $("#loginMsg").textContent="비밀번호가 맞지 않아요."+(err.data?.remaining!=null?" 남은 시도 "+err.data.remaining+"회":"");
-    }
-  });
-
-  $("#logoutBtn").addEventListener("click",()=>{sessionStorage.removeItem(tokenKey);showLogin("로그아웃했어요.")});
-
-  async function boot(){
-    const token=sessionStorage.getItem(tokenKey);
-    if(!token){showLogin();return}
-    try{await adminCall("stats",{},token);showApp();render()}
-    catch(err){sessionStorage.removeItem(tokenKey);showLogin("로그인 시간이 끝났어요. 다시 로그인해 주세요.")}
-  }
-  setInterval(updateScanAge,30000);
-  boot();
-})();
-</script>
+  <script src="admin-market-core.js?v=0.2.0"></script>
+  <script>
+  const scannedAt=Date.now()-18*60*1000;
+  function render(){MarketAdmin.updateScanAge(scannedAt)}
+  MarketAdmin.boot(render);
+  setInterval(()=>MarketAdmin.updateScanAge(scannedAt),30000);
+  </script>
 </body>
 </html>
