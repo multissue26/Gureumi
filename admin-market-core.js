@@ -1,5 +1,6 @@
 (()=>{"use strict";
   const ADMIN_API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-admin-v2";
+  const MARKET_API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-market-api";
   const tokenKey="ddingfarmAdminStatsToken";
   const $=s=>document.querySelector(s);
   const fmt=n=>Math.round(Number(n||0)).toLocaleString("ko-KR");
@@ -24,6 +25,29 @@
       }
       throw err;
     }
+  }
+  async function marketOffers(){
+    const token=sessionStorage.getItem(tokenKey);
+    if(!token) throw new Error("unauthorized");
+    const r=await fetch(MARKET_API,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:"{}"});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){
+      if(r.status===401){sessionStorage.removeItem(tokenKey);showLogin("로그인 시간이 끝났어요. 다시 로그인해 주세요.")}
+      const e=new Error(j.error||("HTTP "+r.status));e.data=j;e.status=r.status;throw e;
+    }
+    return j;
+  }
+  function offerUnit(o){
+    const q=Number(o?.quantity||0),p=Number(o?.listing_price);
+    return q>0&&Number.isFinite(p)?p/q:null;
+  }
+  function offerText(o){
+    if(!o)return "—";
+    return gold(o.listing_price)+" / "+fmt(o.quantity)+"개";
+  }
+  function offerNormalizedText(o){
+    const u=offerUnit(o);
+    return Number.isFinite(u)?"개당 "+gold(u)+" · /64 "+gold(u*64):"—";
   }
 
   function showLogin(message=""){
@@ -105,5 +129,5 @@
     return '<div class="empty-state"><strong>데이터 조회 실패</strong><p>'+escapeHtml(message)+'</p></div>';
   }
 
-  window.MarketAdmin={boot,call,market,fmt,gold,pct,escapeHtml,updateScanAge,dateTime,errorState,tokenKey};
+  window.MarketAdmin={boot,call,market,marketOffers,fmt,gold,pct,offerUnit,offerText,offerNormalizedText,escapeHtml,updateScanAge,dateTime,errorState,tokenKey};
 })();
