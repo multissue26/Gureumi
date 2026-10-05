@@ -6,61 +6,81 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>내 등록 매물 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.5.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
-  
 </head>
 <body>
   <main id="loginView" class="login">
-    <p class="eyebrow">PRIVATE MARKET CONSOLE</p>
-    <h2>관리자 확인</h2>
+    <p class="eyebrow">PRIVATE MARKET CONSOLE</p><h2>관리자 확인</h2>
     <p>플리마켓 운영 데이터는 관리자만 볼 수 있어요. 기존 띵팜 관리자 비밀번호로 로그인해 주세요.</p>
-    <form id="loginForm" class="login-form">
-      <input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required>
-      <button class="btn primary" type="submit">로그인</button>
-    </form>
+    <form id="loginForm" class="login-form"><input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required><button class="btn primary" type="submit">로그인</button></form>
     <div id="loginMsg" class="login-msg"></div>
   </main>
 
   <main id="appView" class="shell hidden">
     <div class="brandbar">
-      <a class="brand" href="admin-market.html">
-        <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
-        <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
-      </a>
-      <div class="top-actions">
-        <span class="status-note">Supabase 실데이터 연결</span>
-        <button id="logoutBtn" class="btn">로그아웃</button>
-      </div>
+      <a class="brand" href="admin-market.html"><img src="assets/brand/ddingfarm-logo.png" alt="띵팜"><span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span></a>
+      <div class="top-actions"><span class="status-note">Supabase 실데이터 연결</span><button id="logoutBtn" class="btn">로그아웃</button></div>
     </div>
-    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="active">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-    <header class="topbar"><div><p class="eyebrow">MY LISTINGS</p><h1>내 등록 매물</h1><p class="subtitle">실제로 캡처된 내 플리마켓 매물을 마지막 시장 스캔과 비교합니다.</p></div></header>
-    
+    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html">홈</a><a href="admin-market-recommend.html">음식 원재료 추천</a><a href="admin-market-crafting.html">제작품 수익</a><a href="admin-market-listings.html" class="active">내 등록 매물</a><a href="admin-market-history.html">가격 변동</a><a href="admin-market-sales.html">판매 장부</a></nav>
+    <header class="topbar"><div><p class="eyebrow">MY LISTINGS</p><h1>내 등록 매물</h1><p class="subtitle">내 등록 가격도 서버에 표시된 원래 묶음 단위 그대로 보여주고, 시장 비교만 개당 단가로 정규화합니다.</p></div></header>
+
+    <div id="ownWarning"></div>
     <section class="panel table-wrap"><table>
-      <thead><tr><th>상품</th><th>내 등록가 /64 환산</th><th>시장 최저가 /64</th><th>등록 수량</th><th>남은 수량</th><th>시장 대비</th></tr></thead>
+      <thead><tr><th>상품</th><th>내 등록가</th><th>현재 시장 최저 판매가</th><th>등록/남은 수량</th><th>개당 가격 비교</th><th>판단</th></tr></thead>
       <tbody id="listingRows"></tbody>
     </table></section>
   </main>
-  
-  <script src="admin-market-core.js?v=0.4.0"></script>
+
+  <script src="admin-market-core.js?v=0.5.0"></script>
   <script>
-  async function render(){
-    const F=MarketAdmin,t=document.querySelector("#listingRows");
-    try{
-      const [own,market]=await Promise.all([F.market("market-own-listings"),F.market("market-latest")]);
-      const mm=new Map((market.items||[]).map(x=>[x.item_name,x]));
-      const rows=own.listings||[];
-      t.innerHTML=rows.length?rows.map(r=>{
-        const own64=Number(r.listed_quantity)>0?Number(r.listing_price)/Number(r.listed_quantity)*64:null;
-        const m=mm.get(r.item_name),low=m?.lowest_stack64_price;
-        const gap=(Number.isFinite(own64)&&Number.isFinite(Number(low))&&Number(low)>0)?(own64-Number(low))/Number(low)*100:null;
-        const cls=gap==null?"flat":Math.abs(gap)<=2?"up":gap>0?"down":"up";
-        const label=gap==null?"비교 불가":Math.abs(gap)<=2?"경쟁 구간":gap>0?"시장보다 높음":"시장보다 낮음";
-        return '<tr><td class="item-name">'+F.escapeHtml(r.item_name)+'</td><td class="price">'+F.gold(own64)+'</td><td class="price">'+(m?F.gold(low):"미확인")+'</td><td>'+F.fmt(r.listed_quantity)+'개</td><td>'+(r.remaining_quantity==null?"—":F.fmt(r.remaining_quantity)+"개")+'</td><td class="'+cls+'"><b>'+label+(gap==null?"":" · "+F.pct(gap))+'</b></td></tr>';
-      }).join(""):'<tr><td colspan="6"><div class="empty-state"><strong>내 등록 매물 데이터 없음</strong><p>모드가 실제 내 매물 화면을 캡처해 업로드하면 이곳에 표시됩니다.</p></div></td></tr>';
-    }catch(e){t.innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
-  }
-  MarketAdmin.boot(render);
+  (()=>{"use strict";
+    const F=MarketAdmin;
+    const median=a=>{const v=a.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2};
+    const unit=o=>F.offerUnit(o);
+    function highOutlier(o,g){
+      const v=g.map(unit).filter(Number.isFinite);if(v.length<3)return false;
+      const med=median(v);if(!(med>0))return false;const mad=median(v.map(x=>Math.abs(x-med)))||0,u=unit(o);
+      return u>med*5&&(mad===0||(u-med)/(1.4826*mad)>6);
+    }
+    function bestSale(offers,name){
+      const g=offers.filter(o=>o.trade_type==="sale"&&o.item_name===name);
+      const normal=g.filter(o=>!highOutlier(o,g)),pool=normal.length?normal:g;
+      return pool.slice().sort((a,b)=>unit(a)-unit(b))[0]||null;
+    }
+    function versionAtLeast(v,target){
+      const a=String(v||"0").split(".").map(Number),b=target.split(".").map(Number);
+      for(let i=0;i<3;i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x>y}return true;
+    }
+    async function render(){
+      const t=document.querySelector("#listingRows"),w=document.querySelector("#ownWarning");
+      try{
+        const [own,market]=await Promise.all([F.market("market-own-listings"),F.marketOffers()]);
+        const sourceVersion=market.latest_scan?.source_version||"";
+        if(!versionAtLeast(sourceVersion,"0.8.1")){
+          w.innerHTML='<div class="notice"><strong>재스캔 필요</strong>현재 '+F.escapeHtml(sourceVersion||"이전 버전")+' 스캔의 내 매물 데이터는 화면 전환 시점 오류로 신뢰할 수 없어 숨겼습니다. 수정된 모드로 /스캔을 다시 실행한 뒤 표시합니다.</div>';
+          t.innerHTML='<tr><td colspan="6"><div class="empty-state"><strong>기존 내 매물 데이터 표시 중지</strong><p>잘못 읽힌 일반 시장 마지막 페이지를 내 매물로 보여주지 않도록 막았습니다.</p></div></td></tr>';
+          return;
+        }
+        w.innerHTML="";
+        const rows=own.listings||[],offers=market.offers||[];
+        t.innerHTML=rows.length?rows.map(r=>{
+          const mine={listing_price:r.listing_price,quantity:r.listed_quantity},m=bestSale(offers,r.item_name);
+          const myUnit=unit(mine),marketUnit=unit(m);
+          const gap=(Number.isFinite(myUnit)&&Number.isFinite(marketUnit)&&marketUnit>0)?(myUnit-marketUnit)/marketUnit*100:null;
+          const cls=gap==null?"flat":Math.abs(gap)<=2?"up":gap>0?"down":"up";
+          const label=gap==null?"비교 불가":Math.abs(gap)<=2?"경쟁 구간":gap>0?"시장보다 높음":"시장보다 낮음";
+          return '<tr><td class="item-name">'+F.escapeHtml(r.item_name)+'</td>'+
+            '<td><span class="offer-main">'+F.gold(r.listing_price)+' / '+F.fmt(r.listed_quantity)+'개</span><span class="offer-sub">'+F.gold(myUnit)+' / 1개 · 원본 등록 단위</span></td>'+
+            '<td><span class="offer-main">'+(m?F.offerText(m):"미확인")+'</span><span class="offer-sub">'+(m?F.offerNormalizedText(m):"판매 매물 없음")+'</span></td>'+
+            '<td>'+F.fmt(r.listed_quantity)+'개 등록<span class="offer-sub">'+(r.remaining_quantity==null?"남은 수량 미확인":F.fmt(r.remaining_quantity)+"개 남음")+'</span></td>'+
+            '<td class="'+cls+'"><b>'+(gap==null?"—":F.pct(gap))+'</b><span class="offer-sub">묶음 크기가 달라도 개당 가격으로 비교</span></td>'+
+            '<td class="'+cls+'"><b>'+label+'</b></td></tr>';
+        }).join(""):'<tr><td colspan="6"><div class="empty-state"><strong>내 등록 매물 데이터 없음</strong><p>실제 내 플리마켓 목록이 수집되면 이곳에 표시됩니다.</p></div></td></tr>';
+      }catch(e){t.innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
+    }
+    MarketAdmin.boot(render);
+  })();
   </script>
 </body>
 </html>
