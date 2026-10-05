@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>제작품 수익 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.5.1">
+  <link rel="stylesheet" href="admin-market.css?v=0.6.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
 </head>
 <body>
@@ -32,21 +32,75 @@
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html">홈</a><a href="admin-market-recommend.html">음식 원재료 추천</a><a href="admin-market-crafting.html" class="active">제작품 수익</a><a href="admin-market-listings.html">내 등록 매물</a><a href="admin-market-history.html">가격 변동</a><a href="admin-market-sales.html">판매 장부</a></nav>
+
+    <nav class="navbar" aria-label="플리마켓 메뉴">
+      <a href="admin-market.html">홈</a>
+      <a href="admin-market-recommend.html">음식 원재료 추천</a>
+      <a href="admin-market-crafting.html" class="active">제작품 수익</a>
+      <a href="admin-market-listings.html">내 등록 매물</a>
+      <a href="admin-market-history.html">가격 변동</a>
+      <a href="admin-market-sales.html">판매 장부</a>
+    </nav>
+
     <header class="topbar">
-      <div><p class="eyebrow">CRAFTING PROFIT · FULL MARKET</p><h1>제작품 수익</h1><p class="subtitle">플리마켓 원본 등록 가격을 그대로 보여주고, 개당·64개 환산값은 비교용 보조 정보로만 사용합니다.</p></div>
+      <div>
+        <p class="eyebrow">SELLING STRATEGY · FULL MARKET</p>
+        <h1>제작품 수익</h1>
+        <p class="subtitle">현재 경쟁 매물을 기준으로 내가 올릴 묶음과 판매가를 빠르게 결정합니다. 원가가 검증되기 전까지 수익·ROI는 표시하지 않습니다.</p>
+      </div>
     </header>
 
     <section class="metrics">
       <article class="metric"><div class="metric-head">전체 품목</div><div id="mAll" class="metric-value pending">—</div><div class="metric-foot">마지막 완전 스캔의 고유 아이템</div></article>
       <article class="metric"><div class="metric-head">판매 품목</div><div id="mSale" class="metric-value pending">—</div><div class="metric-foot">다른 유저가 올린 판매 가격</div></article>
       <article class="metric"><div class="metric-head">매입 품목</div><div id="mBuy" class="metric-value pending">—</div><div class="metric-foot">다른 유저가 제시한 매입 가격</div></article>
-      <article class="metric"><div class="metric-head">이상치 감지</div><div id="mOutlier" class="metric-value pending">—</div><div class="metric-foot">원본은 보존하고 정상 시세 계산에서 제외</div></article>
+      <article class="metric"><div class="metric-head">이상치 감지</div><div id="mOutlier" class="metric-value pending">—</div><div class="metric-foot">원본 보존 · 정상 시세 계산에서는 제외</div></article>
     </section>
 
     <section class="section">
       <div class="section-head">
-        <div><h2>현재 시장 데이터</h2><p>판매 시장은 내가 올릴 가격을 정하기 위한 경쟁 매물 비교입니다. <b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p></div>
+        <div>
+          <h2>추천 판매품목</h2>
+          <p>현재 시장의 판매자 수·경쟁 재고·가격 간격을 기준으로 공급이 상대적으로 얇은 품목을 먼저 보여줍니다. 아직 원가와 실제 판매속도는 반영하지 않습니다.</p>
+        </div>
+      </div>
+      <div id="strategyCards" class="strategy-grid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>판매 수량 계산기</h2>
+          <p>64개를 1세트로 계산합니다. 품목을 선택하면 현재 시장 기준 추천 묶음과 추천 판매가를 같이 보여줍니다.</p>
+        </div>
+      </div>
+      <div class="panel calculator-panel">
+        <div class="calc-grid">
+          <div class="calc-field">
+            <label for="calcItem">아이템</label>
+            <input id="calcItem" list="calcItems" placeholder="아이템명 입력">
+            <datalist id="calcItems"></datalist>
+          </div>
+          <div class="calc-field">
+            <label for="calcCount">보유 개수</label>
+            <input id="calcCount" type="number" min="0" step="1" value="64">
+          </div>
+          <div class="calc-field">
+            <label for="calcSets">세트 · 64개</label>
+            <input id="calcSets" type="number" min="0" step="0.01" value="1">
+          </div>
+          <div id="calcResult" class="calc-result"><strong>아이템을 선택해 주세요</strong><small>현재 시장의 묶음별 경쟁가를 기준으로 계산합니다.</small></div>
+        </div>
+        <div class="calc-foot">초기 등록량은 현재 경쟁자 수와 재고만 보는 보수적 가이드입니다. 여러 번의 스캔과 실제 판매 기록이 쌓이면 판매속도를 반영해 더 정교하게 조정할 수 있습니다.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>현재 시장 데이터</h2>
+          <p>판매 시장은 내가 올릴 가격을 정하기 위한 경쟁 매물 비교입니다. <b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p>
+        </div>
         <div class="market-search"><input id="marketSearch" type="search" placeholder="아이템 검색 · 예: 하얀색 양털, 엔드 막대기" autocomplete="off"></div>
       </div>
 
@@ -76,31 +130,37 @@
       </div>
       <div id="pagination" class="market-pagination"></div>
     </section>
-
-    <section class="section">
-      <div class="section-head"><div><h2>제작 원가 · 수익 분석</h2><p>제작식과 산출량이 검증된 품목부터 시장 재료비를 이용해 원가·예상 이익·ROI·추천 우선순위를 계산합니다.</p></div></div>
-      <div class="notice"><strong>현재는 시장 가격 비교만 활성화</strong>일반 제작품 전체의 정확한 제작식·산출량이 아직 검증되지 않아 원가와 ROI를 임의로 만들지 않습니다. 제작식 데이터가 확인되는 품목부터 이 영역에 실제 계산 결과를 추가합니다.</div>
-    </section>
   </main>
 
-  <script src="admin-market-core.js?v=0.5.1"></script>
+  <script src="admin-market-core.js?v=0.6.0"></script>
   <script>
   (()=>{"use strict";
     const F=MarketAdmin;
     const PAGE_SIZE=50;
-    let offers=[],mode="sale",query="",sort="best",page=1;
+    let offers=[],mode="sale",query="",sort="best",page=1,lastGroups=[];
 
     const median=a=>{const v=a.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2};
-    function unit(o){return F.offerUnit(o)}
+    const unit=o=>F.offerUnit(o);
+    const price=o=>Number(o?.listing_price||0);
+    const stock=o=>Math.max(0,Number(o?.stock_quantity??0));
+
+    function cleanOffers(rows){
+      return (rows||[]).filter(o=>{
+        const target=String(o?.raw_data?.searchTarget||"").trim();
+        if(!target)return true;
+        return String(o.item_name||"").trim()===target;
+      });
+    }
+
     function isHighOutlier(o,group){
       const values=group.map(unit).filter(Number.isFinite);
       if(values.length<3)return false;
-      const med=median(values); if(!(med>0))return false;
-      const dev=values.map(v=>Math.abs(v-med)),mad=median(dev)||0,u=unit(o);
+      const med=median(values);if(!(med>0))return false;
+      const mad=median(values.map(v=>Math.abs(v-med)))||0,u=unit(o);
       if(!(u>med*5))return false;
-      if(mad===0)return true;
-      return (u-med)/(1.4826*mad)>6;
+      return mad===0||((u-med)/(1.4826*mad)>6);
     }
+
     function summarize(){
       const itemGroups=new Map(),bundleGroups=new Map();
       for(const o of offers){
@@ -117,19 +177,119 @@
         const flagged=g.filter(o=>flaggedAll.includes(o));
         const normal=t==="sale"?g.filter(o=>!flagged.includes(o)):g;
         const pool=normal.length?normal:g;
-        const sorted=pool.slice().sort((a,b)=>t==="sale"?Number(a.listing_price)-Number(b.listing_price):Number(b.listing_price)-Number(a.listing_price));
-        const best=sorted[0]||null;
+        const sorted=pool.slice().sort((a,b)=>t==="sale"?price(a)-price(b):price(b)-price(a));
+        const best=sorted[0]||null,bestPrice=price(best);
+        const bestOffers=sorted.filter(o=>price(o)===bestPrice);
         const sellerCount=new Set(g.map(o=>o.seller_name).filter(Boolean)).size;
-        const totalStock=g.reduce((a,o)=>a+Math.max(0,Number(o.stock_quantity??0)),0);
-        const confidence=g.length===1?"단일 매물":normal.length<2?"시세 부족":"정상";
-        rows.push({mode:t,item_name:name,bundleQuantity,best,offers:g,normal,flagged,sellerCount,totalStock,confidence,bestFlagged:best?flagged.includes(best):false});
+        const bestSellerCount=new Set(bestOffers.map(o=>o.seller_name).filter(Boolean)).size;
+        const totalStock=g.reduce((a,o)=>a+stock(o),0);
+        rows.push({
+          mode:t,item_name:name,bundleQuantity,best,bestOffers,offers:g,normal,flagged,
+          sellerCount,bestSellerCount,totalStock,
+          confidence:g.length===1?"단일 매물":normal.length<2?"시세 부족":"정상",
+          bestFlagged:best?flagged.includes(best):false
+        });
       }
       return rows;
     }
+
+    function opportunityScore(g){
+      if(g.mode!=="sale"||g.normal.length<2||g.sellerCount<2||!g.best)return -Infinity;
+      const bundles=g.totalStock/Math.max(1,g.bundleQuantity);
+      const sellerScore=g.sellerCount<=3?35:g.sellerCount<=5?25:g.sellerCount<=8?15:5;
+      const stockScore=bundles<=20?30:bundles<=80?20:bundles<=200?10:3;
+      const offerScore=g.normal.length<=3?20:g.normal.length<=6?13:6;
+      const sorted=g.normal.slice().sort((a,b)=>price(a)-price(b));
+      const low=price(sorted[0]),next=sorted.find(o=>price(o)>low);
+      const spread=next&&low>0?Math.min(15,Math.max(0,(price(next)/low-1)*100)):0;
+      return sellerScore+stockScore+offerScore+spread;
+    }
+
+    function recommendPrice(g){
+      const pool=(g.normal.length?g.normal:g.offers).slice().sort((a,b)=>price(a)-price(b));
+      if(!pool.length)return null;
+      const p1=price(pool[0]),lowTier=pool.filter(o=>price(o)===p1),lowStock=lowTier.reduce((a,o)=>a+stock(o),0);
+      const p2=pool.find(o=>price(o)>p1);
+      if(p2&&lowStock<=g.bundleQuantity*2&&price(p2)<=p1*1.12)return price(p2);
+      return p1;
+    }
+
+    function recommendedGroups(){
+      const bestByItem=new Map();
+      for(const g of lastGroups.filter(x=>x.mode==="sale")){
+        const score=opportunityScore(g);if(!Number.isFinite(score))continue;
+        const prev=bestByItem.get(g.item_name);
+        if(!prev||score>prev.score)bestByItem.set(g.item_name,{g,score});
+      }
+      return [...bestByItem.values()].sort((a,b)=>b.score-a.score).slice(0,6);
+    }
+
+    function initialListings(g,available){
+      if(available<=0)return 0;
+      let n=g.sellerCount<=2?3:g.sellerCount<=5?2:1;
+      if(g.totalStock<g.bundleQuantity*10)n=Math.min(3,n+1);
+      return Math.min(available,n);
+    }
+
+    function sellerDetails(r){
+      const rows=r.bestOffers||[];
+      if(!rows.length)return "—";
+      if(rows.length===1){
+        const o=rows[0],shop=o?.raw_data?.shopName||"—";
+        return '<div class="shop-cell"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+' · 재고 '+F.fmt(stock(o))+'개</small></div>';
+      }
+      return '<details class="seller-details"><summary>최저가 매물 '+F.fmt(rows.length)+'개 · '+F.fmt(r.bestSellerCount)+'명</summary><div class="seller-list">'+rows.map(o=>{
+        const shop=o?.raw_data?.shopName||"—";
+        return '<div class="seller-row"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+' · 재고 '+F.fmt(stock(o))+'개</small></div>';
+      }).join("")+'</div></details>';
+    }
+
+    function badge(r){
+      if(mode==="sale"&&r.flagged.length)return '<span class="market-badge warn">이상치 '+r.flagged.length+'건 제외</span>';
+      if(mode==="buy"&&r.bestFlagged)return '<span class="market-badge danger">이상치 가능 · 최고가 유지</span>';
+      if(r.confidence==="단일 매물")return '<span class="market-badge muted">단일 매물</span>';
+      if(r.confidence==="시세 부족")return '<span class="market-badge warn">시세 부족</span>';
+      return '<span class="market-badge ok">정상 범위</span>';
+    }
+
+    function renderRecommendations(){
+      const box=document.querySelector("#strategyCards"),recs=recommendedGroups();
+      box.innerHTML=recs.length?recs.map((x,i)=>{
+        const g=x.g,rp=recommendPrice(g),best=g.best;
+        return '<article class="panel strategy-card">'+
+          '<div class="strategy-rank">MARKET PICK '+String(i+1).padStart(2,"0")+'</div>'+
+          '<div class="strategy-title">'+F.escapeHtml(g.item_name)+'</div>'+
+          '<div class="strategy-main">'+
+            '<div class="strategy-kv"><span>현재 최저</span><strong>'+F.offerText(best)+'</strong></div>'+
+            '<div class="strategy-kv"><span>추천 판매가</span><strong>'+F.gold(rp)+' / '+F.fmt(g.bundleQuantity)+'개</strong></div>'+
+            '<div class="strategy-kv"><span>추천 묶음</span><strong>'+F.fmt(g.bundleQuantity)+'개</strong></div>'+
+            '<div class="strategy-kv"><span>경쟁</span><strong>'+F.fmt(g.sellerCount)+'명 · '+F.fmt(g.totalStock)+'개</strong></div>'+
+          '</div>'+
+          '<div class="strategy-meta"><span class="market-badge ok">시장 공급 기준</span><span>원가·판매속도 미반영</span></div>'+
+          '<button class="strategy-action" data-calc-item="'+F.escapeHtml(g.item_name)+'">계산기에 넣기</button>'+
+        '</article>';
+      }).join(""):'<div class="panel empty-state"><strong>추천 후보가 부족합니다</strong><p>판매자가 2명 이상인 정상 범위 매물이 더 쌓이면 시장 공급 기준 추천을 표시합니다.</p></div>';
+    }
+
+    function renderCalculator(){
+      const name=document.querySelector("#calcItem").value.trim(),count=Math.max(0,Math.floor(Number(document.querySelector("#calcCount").value)||0));
+      const groups=lastGroups.filter(g=>g.mode==="sale"&&g.item_name===name);
+      const result=document.querySelector("#calcResult");
+      if(!name){result.innerHTML='<strong>아이템을 선택해 주세요</strong><small>현재 시장의 묶음별 경쟁가를 기준으로 계산합니다.</small>';return}
+      if(!groups.length){result.innerHTML='<strong>현재 판매 매물 없음</strong><small>해당 아이템은 마지막 완전 스캔에서 판매 매물을 찾지 못했습니다.</small>';return}
+      const g=groups.slice().sort((a,b)=>opportunityScore(b)-opportunityScore(a))[0];
+      const rp=recommendPrice(g),available=Math.floor(count/Math.max(1,g.bundleQuantity)),initial=initialListings(g,available),qty=initial*g.bundleQuantity;
+      result.innerHTML='<strong>추천 '+F.fmt(g.bundleQuantity)+'개 묶음 · '+F.gold(rp)+'</strong><small>보유 '+F.fmt(count)+'개 → '+F.fmt(available)+'묶음 가능 · 초기 권장 '+F.fmt(initial)+'묶음 ('+F.fmt(qty)+'개)</small>';
+    }
+
+    function renderDatalist(){
+      const names=[...new Set(lastGroups.filter(g=>g.mode==="sale").map(g=>g.item_name))].sort((a,b)=>a.localeCompare(b,"ko"));
+      document.querySelector("#calcItems").innerHTML=names.map(x=>'<option value="'+F.escapeHtml(x)+'"></option>').join("");
+    }
+
     function currentRows(){
-      let rows=summarize().filter(r=>r.mode===mode);
-      const q=query.trim().toLowerCase();
-      if(q)rows=rows.filter(r=>r.item_name.toLowerCase().includes(q));
+      let rows=lastGroups.filter(r=>r.mode===mode);
+      const q=query.trim().toLowerCase();if(q)rows=rows.filter(r=>r.item_name.toLowerCase().includes(q));
       rows.sort((a,b)=>{
         if(sort==="name")return a.item_name.localeCompare(b.item_name,"ko")||a.bundleQuantity-b.bundleQuantity;
         if(sort==="stock")return b.totalStock-a.totalStock||a.item_name.localeCompare(b.item_name,"ko");
@@ -139,6 +299,7 @@
       });
       return rows;
     }
+
     function updateSortOptions(){
       const s=document.querySelector("#marketSort");
       s.innerHTML=mode==="sale"
@@ -146,37 +307,32 @@
         :'<option value="best">최고 매입가 높은 순</option><option value="stock">납품 가능 많은 순</option><option value="offers">매입처 많은 순</option><option value="name">이름 순</option>';
       s.value=sort;
     }
-    function badge(r){
-      if(mode==="sale"&&r.flagged.length)return '<span class="market-badge warn">이상치 '+r.flagged.length+'건 제외</span>';
-      if(mode==="buy"&&r.bestFlagged)return '<span class="market-badge danger">이상치 가능 · 최고가 유지</span>';
-      if(r.confidence==="단일 매물")return '<span class="market-badge muted">단일 매물</span>';
-      if(r.confidence==="시세 부족")return '<span class="market-badge warn">시세 부족</span>';
-      return '<span class="market-badge ok">정상 범위</span>';
-    }
-    function render(){
-      const all=summarize(),sale=new Set(all.filter(x=>x.mode==="sale").map(x=>x.item_name)),buy=new Set(all.filter(x=>x.mode==="buy").map(x=>x.item_name)),names=new Set([...sale,...buy]);
+
+    function renderMarket(){
+      const sale=new Set(lastGroups.filter(x=>x.mode==="sale").map(x=>x.item_name)),buy=new Set(lastGroups.filter(x=>x.mode==="buy").map(x=>x.item_name)),names=new Set([...sale,...buy]);
       document.querySelector("#mAll").textContent=F.fmt(names.size)+"종";
       document.querySelector("#mSale").textContent=F.fmt(sale.size)+"종";
       document.querySelector("#mBuy").textContent=F.fmt(buy.size)+"종";
-      document.querySelector("#mOutlier").textContent=F.fmt(all.reduce((a,x)=>a+x.flagged.length,0))+"건";
+      document.querySelector("#mOutlier").textContent=F.fmt(lastGroups.reduce((a,x)=>a+x.flagged.length,0))+"건";
       ["#mAll","#mSale","#mBuy","#mOutlier"].forEach(x=>document.querySelector(x).classList.remove("pending"));
 
       const rows=currentRows(),pages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));page=Math.min(page,pages);
       const shown=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
       document.querySelector("#resultCount").textContent=F.fmt(rows.length)+"개 묶음 · "+page+"/"+pages+"페이지";
       document.querySelector("#marketHead").innerHTML=mode==="sale"
-        ?'<th>아이템</th><th>묶음</th><th>묶음 최저 판매가</th><th>환산 정보</th><th>남은 재고</th><th>판매자 / 상점</th><th>시장 상태</th>'
-        :'<th>아이템</th><th>묶음</th><th>묶음 최고 매입가</th><th>환산 정보</th><th>납품 가능</th><th>매입자 / 상점</th><th>시장 상태</th>';
+        ?'<th>아이템</th><th>묶음</th><th>묶음 최저 판매가</th><th>환산 정보</th><th>남은 재고</th><th>최저가 판매자</th><th>시장 상태</th>'
+        :'<th>아이템</th><th>묶음</th><th>묶음 최고 매입가</th><th>환산 정보</th><th>납품 가능</th><th>최고가 매입자</th><th>시장 상태</th>';
+
       const body=document.querySelector("#marketRows");
       body.innerHTML=shown.length?shown.map(r=>{
-        const o=r.best,shop=o?.raw_data?.shopName||"—";
+        const o=r.best;
         return '<tr>'+
           '<td class="item-name">'+F.escapeHtml(r.item_name)+'<small>'+F.fmt(r.offers.length)+'개 경쟁 매물 · '+F.fmt(r.sellerCount)+'명</small></td>'+
           '<td><span class="market-badge muted">'+F.fmt(r.bundleQuantity)+'개 묶음</span></td>'+
           '<td><span class="offer-main">'+F.offerText(o)+'</span><span class="offer-sub">'+(mode==="sale"?"이 묶음에서 가장 싼 판매가":"이 묶음에서 가장 높은 매입가")+'</span></td>'+
           '<td><span class="offer-main">'+F.gold(unit(o))+' / 1개</span><span class="offer-sub">'+F.gold((unit(o)||0)*64)+' / 64개 · 다른 묶음 비교용</span></td>'+
-          '<td>'+F.fmt(o?.stock_quantity??0)+'개<span class="offer-sub">'+(mode==="sale"?"현재 판매 재고":"현재 납품 가능")+'</span></td>'+
-          '<td class="shop-cell"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+'</small></td>'+
+          '<td>'+F.fmt(stock(o))+'개<span class="offer-sub">'+(mode==="sale"?"대표 최저가 매물 재고":"대표 최고가 매입 가능")+'</span></td>'+
+          '<td>'+sellerDetails(r)+'</td>'+
           '<td>'+badge(r)+'</td></tr>';
       }).join(""):'<tr><td colspan="7"><div class="empty-state"><strong>검색 결과가 없습니다</strong><p>다른 아이템명으로 검색해 주세요.</p></div></td></tr>';
 
@@ -189,18 +345,45 @@
       buttons.push('<button data-page="'+(page+1)+'" '+(page>=pages?"disabled":"")+'>다음</button>');
       p.innerHTML=buttons.join("");
     }
+
+    function renderAll(){
+      renderRecommendations();renderDatalist();renderCalculator();renderMarket();
+    }
+
     async function load(){
       try{
-        const d=await F.marketOffers();offers=d.offers||[];render();
-      }catch(e){document.querySelector("#marketRows").innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
+        const d=await F.marketOffers();
+        offers=cleanOffers(d.offers||[]);
+        lastGroups=summarize();
+        renderAll();
+      }catch(e){
+        document.querySelector("#strategyCards").innerHTML='<div class="panel">'+F.errorState()+'</div>';
+        document.querySelector("#marketRows").innerHTML='<tr><td colspan="7">'+F.errorState()+'</td></tr>';
+      }
     }
-    document.querySelector("#marketSearch").addEventListener("input",e=>{query=e.target.value;page=1;render()});
+
+    document.querySelector("#marketSearch").addEventListener("input",e=>{query=e.target.value;page=1;renderMarket()});
     document.querySelector("#tradeTabs").addEventListener("click",e=>{
-      const b=e.target.closest("button[data-mode]");if(!b)return;mode=b.dataset.mode;page=1;sort="best";
-      [...e.currentTarget.querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===b));updateSortOptions();render();
+      const b=e.target.closest("button[data-mode]");if(!b)return;
+      mode=b.dataset.mode;page=1;sort="best";
+      [...e.currentTarget.querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===b));
+      updateSortOptions();renderMarket();
     });
-    document.querySelector("#marketSort").addEventListener("change",e=>{sort=e.target.value;page=1;render()});
-    document.querySelector("#pagination").addEventListener("click",e=>{const b=e.target.closest("button[data-page]");if(!b||b.disabled)return;page=Number(b.dataset.page)||1;render();document.querySelector(".section")?.scrollIntoView({behavior:"smooth",block:"start"})});
+    document.querySelector("#marketSort").addEventListener("change",e=>{sort=e.target.value;page=1;renderMarket()});
+    document.querySelector("#pagination").addEventListener("click",e=>{const b=e.target.closest("button[data-page]");if(!b||b.disabled)return;page=Number(b.dataset.page)||1;renderMarket();document.querySelector("#tradeTabs")?.scrollIntoView({behavior:"smooth",block:"center"})});
+    document.querySelector("#strategyCards").addEventListener("click",e=>{
+      const b=e.target.closest("button[data-calc-item]");if(!b)return;
+      document.querySelector("#calcItem").value=b.dataset.calcItem||"";
+      renderCalculator();document.querySelector("#calcItem").scrollIntoView({behavior:"smooth",block:"center"});
+    });
+    document.querySelector("#calcItem").addEventListener("input",renderCalculator);
+    document.querySelector("#calcCount").addEventListener("input",e=>{
+      const n=Math.max(0,Number(e.target.value)||0);document.querySelector("#calcSets").value=(n/64).toFixed(2).replace(/\.00$/,"");renderCalculator();
+    });
+    document.querySelector("#calcSets").addEventListener("input",e=>{
+      const n=Math.max(0,Number(e.target.value)||0);document.querySelector("#calcCount").value=String(Math.round(n*64));renderCalculator();
+    });
+
     MarketAdmin.boot(load);
   })();
   </script>
