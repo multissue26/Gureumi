@@ -6,9 +6,8 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>제작품 수익 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.5.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
-  
 </head>
 <body>
   <main id="loginView" class="login">
@@ -33,35 +32,176 @@
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="active">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-    <header class="topbar"><div><p class="eyebrow">CRAFTING PROFIT</p><h1>제작품 수익</h1><p class="subtitle">실제 플리마켓 스캔 데이터를 제작 원가 엔진에 연결할 준비 상태를 확인합니다.</p></div></header>
-    
+    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html">홈</a><a href="admin-market-recommend.html">음식 원재료 추천</a><a href="admin-market-crafting.html" class="active">제작품 수익</a><a href="admin-market-listings.html">내 등록 매물</a><a href="admin-market-history.html">가격 변동</a><a href="admin-market-sales.html">판매 장부</a></nav>
+    <header class="topbar">
+      <div><p class="eyebrow">CRAFTING PROFIT · FULL MARKET</p><h1>제작품 수익</h1><p class="subtitle">플리마켓 원본 등록 가격을 그대로 보여주고, 개당·64개 환산값은 비교용 보조 정보로만 사용합니다.</p></div>
+    </header>
+
     <section class="metrics">
-      <article class="metric"><div class="metric-head">마지막 스캔 품목</div><div id="cItems" class="metric-value pending">—</div><div class="metric-foot">시장에 확인된 고유 품목 수</div></article>
-      <article class="metric"><div class="metric-head">전체 경쟁 재고</div><div id="cStock" class="metric-value pending">—</div><div class="metric-foot">마지막 스캔 집계</div></article>
-      <article class="metric"><div class="metric-head">제작 원가 엔진</div><div class="metric-value" style="font-size:18px">연결 대기</div><div class="metric-foot">모드 완성본에서 레시피 트리 연결</div></article>
-      <article class="metric"><div class="metric-head">추천 제작품</div><div class="metric-value pending">—</div><div class="metric-foot">원가 계산 완료 후 표시</div></article>
+      <article class="metric"><div class="metric-head">전체 품목</div><div id="mAll" class="metric-value pending">—</div><div class="metric-foot">마지막 완전 스캔의 고유 품목</div></article>
+      <article class="metric"><div class="metric-head">판매 품목</div><div id="mSale" class="metric-value pending">—</div><div class="metric-foot">내가 살 수 있는 판매 매물</div></article>
+      <article class="metric"><div class="metric-head">매입 품목</div><div id="mBuy" class="metric-value pending">—</div><div class="metric-foot">내가 팔 수 있는 매입 매물</div></article>
+      <article class="metric"><div class="metric-head">이상치 감지</div><div id="mOutlier" class="metric-value pending">—</div><div class="metric-foot">원본은 보존하고 정상 시세 계산에서 제외</div></article>
     </section>
-    <section class="section"><div class="section-head"><div><h2>현재 시장 데이터</h2><p>가짜 제작 수익은 표시하지 않고 실제 스캔된 품목만 확인합니다.</p></div></div>
-      <div class="panel table-wrap"><table><thead><tr><th>아이템</th><th>최저가 /64</th><th>평균가 /64</th><th>경쟁 재고</th><th>판매자</th></tr></thead><tbody id="craftRows"></tbody></table></div>
+
+    <section class="section">
+      <div class="section-head">
+        <div><h2>현재 시장 데이터</h2><p><b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p></div>
+        <div class="market-search"><input id="marketSearch" type="search" placeholder="아이템 검색 · 예: 하얀색 양털, 엔드 막대기" autocomplete="off"></div>
+      </div>
+
+      <div class="market-toolbar">
+        <div class="market-toolbar-left">
+          <div id="tradeTabs" class="segmented">
+            <button class="active" data-mode="sale">판매 · 내가 사기</button>
+            <button data-mode="buy">매입 · 내가 팔기</button>
+          </div>
+          <span id="resultCount" class="market-count">—</span>
+        </div>
+        <div class="market-toolbar-right">
+          <select id="marketSort" class="market-sort" aria-label="정렬">
+            <option value="best">최저 판매가 낮은 순</option>
+            <option value="stock">재고 많은 순</option>
+            <option value="offers">매물 많은 순</option>
+            <option value="name">이름 순</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel table-wrap">
+        <table>
+          <thead><tr id="marketHead"></tr></thead>
+          <tbody id="marketRows"><tr><td><div class="empty-state"><strong>시장 데이터 확인 중</strong><p>마지막 완전 스캔을 불러오고 있습니다.</p></div></td></tr></tbody>
+        </table>
+      </div>
+      <div id="pagination" class="market-pagination"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><h2>제작 원가 · 수익 분석</h2><p>제작식이 검증된 품목부터 실제 재료 매입 원가로 ROI와 추천 우선순위를 계산합니다.</p></div></div>
+      <div class="segmented">
+        <button disabled>추천 우선순위</button><button disabled>ROI 높은 순</button><button disabled>예상 이익 높은 순</button>
+      </div>
+      <div class="notice"><strong>아직 비활성화된 이유</strong>시장 가격은 실제 데이터로 연결됐지만 일반 제작품 전체의 정확한 제작식·산출량이 아직 검증되지 않았습니다. 제작식이 확인된 품목부터 이 정렬을 활성화합니다.</div>
     </section>
   </main>
-  
-  <script src="admin-market-core.js?v=0.4.0"></script>
+
+  <script src="admin-market-core.js?v=0.5.0"></script>
   <script>
-  async function render(){
-    const F=MarketAdmin,t=document.querySelector("#craftRows");
-    try{
-      const d=await F.market("market-latest"),items=d.items||[];
-      document.querySelector("#cItems").textContent=F.fmt(items.length)+"종";
-      document.querySelector("#cStock").textContent=F.fmt(items.reduce((a,x)=>a+Number(x.total_stock||0),0))+"개";
-      document.querySelector("#cItems").classList.remove("pending");document.querySelector("#cStock").classList.remove("pending");
-      t.innerHTML=items.length?items.slice().sort((a,b)=>(b.average_stack64_price||0)-(a.average_stack64_price||0)).slice(0,100).map(x=>
-        '<tr><td class="item-name">'+F.escapeHtml(x.item_name)+'</td><td class="price">'+F.gold(x.lowest_stack64_price)+'</td><td class="price">'+F.gold(x.average_stack64_price)+'</td><td>'+F.fmt(x.total_stock)+'개</td><td>'+F.fmt(x.seller_count)+'명</td></tr>'
-      ).join(""):'<tr><td colspan="5"><div class="empty-state"><strong>시장 스캔 데이터 없음</strong><p>첫 /스캔 업로드를 기다리고 있습니다.</p></div></td></tr>';
-    }catch(e){t.innerHTML='<tr><td colspan="5">'+F.errorState()+'</td></tr>'}
-  }
-  MarketAdmin.boot(render);
+  (()=>{"use strict";
+    const F=MarketAdmin;
+    const PAGE_SIZE=50;
+    let offers=[],mode="sale",query="",sort="best",page=1;
+
+    const median=a=>{const v=a.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2};
+    function unit(o){return F.offerUnit(o)}
+    function isHighOutlier(o,group){
+      const values=group.map(unit).filter(Number.isFinite);
+      if(values.length<3)return false;
+      const med=median(values); if(!(med>0))return false;
+      const dev=values.map(v=>Math.abs(v-med)),mad=median(dev)||0,u=unit(o);
+      if(!(u>med*5))return false;
+      if(mad===0)return true;
+      return (u-med)/(1.4826*mad)>6;
+    }
+    function summarize(){
+      const grouped=new Map();
+      for(const o of offers){
+        const t=o.trade_type==="buy"?"buy":"sale",name=String(o.item_name||"").trim();
+        if(!name)continue;
+        const k=t+"\u0000"+name,a=grouped.get(k)||[];a.push(o);grouped.set(k,a);
+      }
+      const rows=[];
+      for(const [k,g] of grouped){
+        const t=k.startsWith("buy\u0000")?"buy":"sale",name=k.slice(k.indexOf("\u0000")+1);
+        const flagged=g.filter(o=>isHighOutlier(o,g));
+        const normal=t==="sale"?g.filter(o=>!flagged.includes(o)):g;
+        const pool=normal.length?normal:g;
+        const sorted=pool.slice().sort((a,b)=>t==="sale"?unit(a)-unit(b):unit(b)-unit(a));
+        const best=sorted[0]||null;
+        const sellerCount=new Set(g.map(o=>o.seller_name).filter(Boolean)).size;
+        const totalStock=g.reduce((a,o)=>a+Math.max(0,Number(o.stock_quantity??0)),0);
+        const confidence=g.length===1?"단일 매물":normal.length<2?"시세 부족":"정상";
+        rows.push({mode:t,item_name:name,best,offers:g,normal,flagged,sellerCount,totalStock,confidence,bestFlagged:best?flagged.includes(best):false});
+      }
+      return rows;
+    }
+    function currentRows(){
+      let rows=summarize().filter(r=>r.mode===mode);
+      const q=query.trim().toLowerCase();
+      if(q)rows=rows.filter(r=>r.item_name.toLowerCase().includes(q));
+      rows.sort((a,b)=>{
+        if(sort==="name")return a.item_name.localeCompare(b.item_name,"ko");
+        if(sort==="stock")return b.totalStock-a.totalStock||a.item_name.localeCompare(b.item_name,"ko");
+        if(sort==="offers")return b.offers.length-a.offers.length||a.item_name.localeCompare(b.item_name,"ko");
+        const au=unit(a.best)??(mode==="sale"?Infinity:-Infinity),bu=unit(b.best)??(mode==="sale"?Infinity:-Infinity);
+        return mode==="sale"?(au-bu):(bu-au);
+      });
+      return rows;
+    }
+    function updateSortOptions(){
+      const s=document.querySelector("#marketSort");
+      s.innerHTML=mode==="sale"
+        ?'<option value="best">최저 판매가 낮은 순</option><option value="stock">재고 많은 순</option><option value="offers">매물 많은 순</option><option value="name">이름 순</option>'
+        :'<option value="best">최고 매입가 높은 순</option><option value="stock">납품 가능 많은 순</option><option value="offers">매입처 많은 순</option><option value="name">이름 순</option>';
+      s.value=sort;
+    }
+    function badge(r){
+      if(mode==="sale"&&r.flagged.length)return '<span class="market-badge warn">이상치 '+r.flagged.length+'건 제외</span>';
+      if(mode==="buy"&&r.bestFlagged)return '<span class="market-badge danger">이상치 가능 · 최고가 유지</span>';
+      if(r.confidence==="단일 매물")return '<span class="market-badge muted">단일 매물</span>';
+      if(r.confidence==="시세 부족")return '<span class="market-badge warn">시세 부족</span>';
+      return '<span class="market-badge ok">정상 범위</span>';
+    }
+    function render(){
+      const all=summarize(),sale=new Set(all.filter(x=>x.mode==="sale").map(x=>x.item_name)),buy=new Set(all.filter(x=>x.mode==="buy").map(x=>x.item_name)),names=new Set([...sale,...buy]);
+      document.querySelector("#mAll").textContent=F.fmt(names.size)+"종";
+      document.querySelector("#mSale").textContent=F.fmt(sale.size)+"종";
+      document.querySelector("#mBuy").textContent=F.fmt(buy.size)+"종";
+      document.querySelector("#mOutlier").textContent=F.fmt(all.reduce((a,x)=>a+x.flagged.length,0))+"건";
+      ["#mAll","#mSale","#mBuy","#mOutlier"].forEach(x=>document.querySelector(x).classList.remove("pending"));
+
+      const rows=currentRows(),pages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));page=Math.min(page,pages);
+      const shown=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
+      document.querySelector("#resultCount").textContent=F.fmt(rows.length)+"종 · "+page+"/"+pages+"페이지";
+      document.querySelector("#marketHead").innerHTML=mode==="sale"
+        ?'<th>아이템</th><th>최저 판매가</th><th>환산 정보</th><th>남은 재고</th><th>판매자 / 상점</th><th>시장 상태</th>'
+        :'<th>아이템</th><th>최고 매입가</th><th>환산 정보</th><th>납품 가능</th><th>매입자 / 상점</th><th>시장 상태</th>';
+      const body=document.querySelector("#marketRows");
+      body.innerHTML=shown.length?shown.map(r=>{
+        const o=r.best,shop=o?.raw_data?.shopName||"—";
+        return '<tr>'+
+          '<td class="item-name">'+F.escapeHtml(r.item_name)+'<small>'+F.fmt(r.offers.length)+'개 매물 · '+F.fmt(r.sellerCount)+'명</small></td>'+
+          '<td><span class="offer-main">'+F.offerText(o)+'</span><span class="offer-sub">원본 등록 단위</span></td>'+
+          '<td><span class="offer-main">'+F.gold(unit(o))+' / 1개</span><span class="offer-sub">'+F.gold((unit(o)||0)*64)+' / 64개 · 비교용</span></td>'+
+          '<td>'+F.fmt(o?.stock_quantity??0)+'개<span class="offer-sub">'+(mode==="sale"?"현재 판매 재고":"현재 납품 가능")+'</span></td>'+
+          '<td class="shop-cell"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+'</small></td>'+
+          '<td>'+badge(r)+'</td></tr>';
+      }).join(""):'<tr><td colspan="6"><div class="empty-state"><strong>검색 결과가 없습니다</strong><p>다른 아이템명으로 검색해 주세요.</p></div></td></tr>';
+
+      const p=document.querySelector("#pagination"),buttons=[];
+      buttons.push('<button data-page="'+(page-1)+'" '+(page<=1?"disabled":"")+'>이전</button>');
+      const start=Math.max(1,page-3),end=Math.min(pages,page+3);
+      if(start>1)buttons.push('<button data-page="1">1</button>'+(start>2?'<span>…</span>':''));
+      for(let i=start;i<=end;i++)buttons.push('<button data-page="'+i+'" class="'+(i===page?"active":"")+'">'+i+'</button>');
+      if(end<pages)buttons.push((end<pages-1?'<span>…</span>':'')+'<button data-page="'+pages+'">'+pages+'</button>');
+      buttons.push('<button data-page="'+(page+1)+'" '+(page>=pages?"disabled":"")+'>다음</button>');
+      p.innerHTML=buttons.join("");
+    }
+    async function load(){
+      try{
+        const d=await F.marketOffers();offers=d.offers||[];render();
+      }catch(e){document.querySelector("#marketRows").innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
+    }
+    document.querySelector("#marketSearch").addEventListener("input",e=>{query=e.target.value;page=1;render()});
+    document.querySelector("#tradeTabs").addEventListener("click",e=>{
+      const b=e.target.closest("button[data-mode]");if(!b)return;mode=b.dataset.mode;page=1;sort="best";
+      [...e.currentTarget.querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===b));updateSortOptions();render();
+    });
+    document.querySelector("#marketSort").addEventListener("change",e=>{sort=e.target.value;page=1;render()});
+    document.querySelector("#pagination").addEventListener("click",e=>{const b=e.target.closest("button[data-page]");if(!b||b.disabled)return;page=Number(b.dataset.page)||1;render();document.querySelector(".section")?.scrollIntoView({behavior:"smooth",block:"start"})});
+    MarketAdmin.boot(load);
+  })();
   </script>
 </body>
 </html>
