@@ -238,7 +238,8 @@
         const o=rows[0],shop=o?.raw_data?.shopName||"—";
         return '<div class="shop-cell"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+' · 재고 '+F.fmt(stock(o))+'개</small></div>';
       }
-      return '<details class="seller-details"><summary>최저가 매물 '+F.fmt(rows.length)+'개 · '+F.fmt(r.bestSellerCount)+'명</summary><div class="seller-list">'+rows.map(o=>{
+      const label=mode==="sale"?"최저가 매물":"최고가 매입";
+      return '<details class="seller-details"><summary>'+label+' '+F.fmt(rows.length)+'개 · '+F.fmt(r.bestSellerCount)+'명</summary><div class="seller-list">'+rows.map(o=>{
         const shop=o?.raw_data?.shopName||"—";
         return '<div class="seller-row"><strong>'+F.escapeHtml(o?.seller_name||"—")+'</strong><small>'+F.escapeHtml(shop)+' · 재고 '+F.fmt(stock(o))+'개</small></div>';
       }).join("")+'</div></details>';
