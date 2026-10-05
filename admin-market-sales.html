@@ -1,37 +1,67 @@
 <!doctype html>
-<html lang="ko"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="light">
-<title>판매 장부 | 띵팜</title><link rel="stylesheet" href="admin-market.css?v=0.2.0">
-<link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png"></head>
-<body>
-<main id="loginView" class="login">
-<p class="eyebrow">PRIVATE MARKET CONSOLE</p><h2>관리자 확인</h2>
-<p>플리마켓 운영 데이터는 관리자만 볼 수 있어요. 기존 띵팜 관리자 비밀번호로 로그인해 주세요.</p>
-<form id="loginForm" class="login-form"><input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required><button class="btn primary" type="submit">로그인</button></form>
-<div id="loginMsg" class="login-msg"></div>
-</main>
-<main id="appView" class="shell hidden">
-<div class="brandbar">
-<a class="brand" href="admin-market.html"><img src="assets/brand/ddingfarm-logo.png" alt="띵팜"><span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span></a>
-<div class="top-actions"><span class="preview-badge">웹 UI 미리보기</span><button id="logoutBtn" class="btn">로그아웃</button></div>
-</div>
-<nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="active">판매 장부</a></nav>
-<header class="topbar"><div><p class="eyebrow">SALES LEDGER</p><h1>판매 장부</h1><p class="subtitle">실제 구매 완료 기록을 기준으로 매출·원가·이익과 평균 판매가를 정리합니다.</p></div></header>
-
-  <section class="metrics">
-    <article class="metric"><div class="metric-head">총 매출</div><div class="metric-value">182,400 G</div><div class="metric-foot">판매 완료 금액 합계</div></article>
-    <article class="metric"><div class="metric-head">총 원가</div><div class="metric-value">91,200 G</div><div class="metric-foot">시장 매입 원가 기준</div></article>
-    <article class="metric"><div class="metric-head">예상 순이익</div><div class="metric-value up">91,200 G</div><div class="metric-foot">매출 − 원가</div></article>
-    <article class="metric"><div class="metric-head">전체 ROI</div><div class="metric-value up">+100%</div><div class="metric-foot">순이익 ÷ 원가 × 100</div></article>
-  </section>
-  <section class="section"><div class="section-head"><div><h2>최근 판매</h2><p>개당 평균 판매가와 64개 환산 가격을 함께 보여줍니다.</p></div></div>
-  <div class="panel table-wrap"><table><thead><tr><th>상품</th><th>판매량</th><th>매출</th><th>개당 평균</th><th>64개 환산</th></tr></thead><tbody>
-  <tr><td class="item-name">비트 묶음</td><td>192개</td><td>104,997 G</td><td>547 G</td><td>34,999 G</td></tr>
-  <tr><td class="item-name">당근 묶음</td><td>128개</td><td>46,080 G</td><td>360 G</td><td>23,040 G</td></tr>
-  <tr><td class="item-name">밀</td><td>116개</td><td>31,323 G</td><td>270 G</td><td>17,282 G</td></tr>
-  </tbody></table></div></section>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="color-scheme" content="light">
+  <title>판매 장부 | 띵팜</title>
+  <link rel="stylesheet" href="admin-market.css?v=0.3.0">
+  <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   
-</main>
-<script src="admin-market-core.js?v=0.2.0"></script><script>MarketAdmin.boot(()=>{});</script>
-</body></html>
+</head>
+<body>
+  <main id="loginView" class="login">
+    <p class="eyebrow">PRIVATE MARKET CONSOLE</p>
+    <h2>관리자 확인</h2>
+    <p>플리마켓 운영 데이터는 관리자만 볼 수 있어요. 기존 띵팜 관리자 비밀번호로 로그인해 주세요.</p>
+    <form id="loginForm" class="login-form">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required>
+      <button class="btn primary" type="submit">로그인</button>
+    </form>
+    <div id="loginMsg" class="login-msg"></div>
+  </main>
+
+  <main id="appView" class="shell hidden">
+    <div class="brandbar">
+      <a class="brand" href="admin-market.html">
+        <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
+        <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
+      </a>
+      <div class="top-actions">
+        <span class="status-note">실제 데이터만 표시</span>
+        <button id="logoutBtn" class="btn">로그아웃</button>
+      </div>
+    </div>
+
+    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="active">판매 장부</a></nav>
+
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">SALES LEDGER</p>
+        <h1>판매 장부</h1>
+        <p class="subtitle">실제 구매 완료 채팅을 기준으로 매출·시장 매입 원가·이익과 평균 판매가를 정리합니다.</p>
+      </div>
+    </header>
+    
+    <section class="metrics">
+      <article class="metric"><div class="metric-head">총 매출</div><div class="metric-value pending">—</div><div class="metric-foot">판매 완료 금액 합계</div></article>
+      <article class="metric"><div class="metric-head">총 원가</div><div class="metric-value pending">—</div><div class="metric-foot">판매된 수량의 시장 매입 원가</div></article>
+      <article class="metric"><div class="metric-head">예상 순이익</div><div class="metric-value pending">—</div><div class="metric-foot">매출 − 원가</div></article>
+      <article class="metric"><div class="metric-head">전체 ROI</div><div class="metric-value pending">—</div><div class="metric-foot">순이익 ÷ 원가 × 100</div></article>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><h2>최근 판매</h2><p>실제 판매량을 기준으로 개당 평균 판매가와 64개 환산 값을 계산합니다.</p></div></div>
+      <div class="panel table-wrap">
+        <table><thead><tr><th>상품</th><th>판매량</th><th>매출</th><th>개당 평균</th><th>64개 환산</th></tr></thead>
+        <tbody><tr><td colspan="5"><div class="empty-state"><strong>판매 기록이 없습니다</strong><p>모드가 실제 플리마켓 구매 완료 메시지를 수집하면 이곳에 판매 기록이 쌓입니다.</p></div></td></tr></tbody></table>
+      </div>
+    </section>
+  
+  </main>
+
+  <script src="admin-market-core.js?v=0.3.0"></script>
+  <script>MarketAdmin.boot(()=>{});</script>
+</body>
+</html>
