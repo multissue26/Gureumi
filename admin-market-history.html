@@ -6,26 +6,18 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>가격 변동 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.3.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   <style>
-    .history-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
-    .history-toolbar select{height:38px;border:1px solid var(--line2);background:#fff;border-radius:9px;padding:0 12px;font-size:11px;font-weight:750}
-    .chart-panel{overflow:hidden}
-    .chart-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 20px 0}
-    .chart-price{font-size:31px;font-weight:850;letter-spacing:-.045em;color:#a0a6a1}
-    .chart-change{margin-top:6px;font-size:12px;font-weight:800;color:var(--muted2)}
-    .chart-meta{text-align:right;color:var(--muted);font-size:10px;line-height:1.7}
-    .chart-wrap{height:360px;display:grid;place-items:center;border-top:1px solid transparent}
-    .chart-empty{max-width:560px;padding:30px;text-align:center;color:var(--muted)}
-    .chart-empty strong{display:block;color:var(--ink2);font-size:15px;margin-bottom:7px}
-    .chart-empty p{margin:0;font-size:11px;line-height:1.65}
-    .chart-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
-    .chart-stat{padding:14px 18px;border-right:1px solid var(--line)}
-    .chart-stat:last-child{border-right:0}
-    .chart-stat span{display:block;color:var(--muted2);font-size:9px;font-weight:800}
-    .chart-stat b{display:block;margin-top:5px;font-size:14px;color:#a0a6a1}
-    @media(max-width:760px){.chart-wrap{height:300px}.chart-stats{grid-template-columns:1fr 1fr}.chart-stat:nth-child(2){border-right:0}.chart-stat:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+  .history-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .history-toolbar select{height:38px;border:1px solid var(--line2);background:#fff;border-radius:9px;padding:0 12px;font-size:11px;font-weight:750}
+  .chart-panel{overflow:hidden}.chart-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 20px 0}
+  .chart-price{font-size:31px;font-weight:850;letter-spacing:-.045em}.chart-change{margin-top:6px;font-size:12px;font-weight:800}
+  .chart-meta{text-align:right;color:var(--muted);font-size:10px;line-height:1.7}.chart-wrap{position:relative;height:360px}
+  #priceChart{width:100%;height:100%;display:block}.chart-grid{stroke:#e3e5df;stroke-width:1}.chart-line{fill:none;stroke:#28694d;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart-dot{fill:#fff;stroke:#28694d;stroke-width:2}.chart-area{fill:url(#areaFill)}.axis-label{fill:#929993;font-size:10px;font-family:var(--font)}
+  .chart-empty{height:100%;display:grid;place-items:center;padding:30px;text-align:center;color:var(--muted)}.chart-empty strong{display:block;color:var(--ink2);font-size:15px;margin-bottom:7px}
+  .chart-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}.chart-stat{padding:14px 18px;border-right:1px solid var(--line)}.chart-stat:last-child{border-right:0}.chart-stat span{display:block;color:var(--muted2);font-size:9px;font-weight:800}.chart-stat b{display:block;margin-top:5px;font-size:14px}
+  @media(max-width:760px){.chart-wrap{height:300px}.chart-stats{grid-template-columns:1fr 1fr}.chart-stat:nth-child(2){border-right:0}.chart-stat:nth-child(-n+2){border-bottom:1px solid var(--line)}}
   </style>
 </head>
 <body>
@@ -47,54 +39,72 @@
         <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
       </a>
       <div class="top-actions">
-        <span class="status-note">실제 데이터만 표시</span>
+        <span class="status-note">Supabase 실데이터 연결</span>
         <button id="logoutBtn" class="btn">로그아웃</button>
       </div>
     </div>
-
     <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="active">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">PRICE HISTORY</p>
-        <h1>가격 변동</h1>
-        <p class="subtitle">실제 /스캔 시점마다 저장된 가격 스냅샷을 주식 차트처럼 확인합니다.</p>
-      </div>
-    </header>
+    <header class="topbar"><div><p class="eyebrow">PRICE HISTORY</p><h1>가격 변동</h1><p class="subtitle">실제 /스캔 시점별 최저가와 수량 가중 평균가를 차트로 확인합니다.</p></div></header>
     
     <section class="history-toolbar">
-      <select disabled aria-label="아이템 선택"><option>스캔 데이터 없음</option></select>
+      <select id="itemSelect" aria-label="아이템 선택"><option value="">불러오는 중</option></select>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <div class="segmented"><button disabled>최저가</button><button disabled>평균가</button></div>
-        <div class="segmented"><button disabled>24시간</button><button disabled>7일</button><button disabled>30일</button></div>
+        <div id="priceMode" class="segmented"><button class="active" data-mode="lowest">최저가</button><button data-mode="average">평균가</button></div>
+        <div id="rangeMode" class="segmented"><button data-days="1">24시간</button><button class="active" data-days="7">7일</button><button data-days="30">30일</button></div>
       </div>
     </section>
-
     <section class="panel chart-panel">
-      <div class="chart-head">
-        <div><p class="eyebrow">PRICE SERIES</p><div class="chart-price">—</div><div class="chart-change">스캔 기록 대기 중</div></div>
-        <div class="chart-meta"><div>마지막 스캔 <b>—</b></div><div>선택 기간 스캔 <b>0회</b></div><div>단위 <b>실제 등록 단위 기준</b></div></div>
-      </div>
-      <div class="chart-wrap"><div class="chart-empty"><strong>가격 차트를 그릴 데이터가 없습니다</strong><p>/스캔을 2회 이상 실행하면 이전 스캔과 현재 스캔을 비교할 수 있고, 기록이 누적될수록 24시간·7일·30일 시세 흐름이 채워집니다.</p></div></div>
-      <div class="chart-stats">
-        <div class="chart-stat"><span>기간 시작가</span><b>—</b></div>
-        <div class="chart-stat"><span>기간 최고가</span><b>—</b></div>
-        <div class="chart-stat"><span>기간 최저가</span><b>—</b></div>
-        <div class="chart-stat"><span>현재 경쟁 재고</span><b>—</b></div>
-      </div>
+      <div class="chart-head"><div><p id="chartLabel" class="eyebrow">PRICE SERIES</p><div id="chartCurrent" class="chart-price">—</div><div id="chartChange" class="chart-change flat">스캔 기록 대기 중</div></div>
+      <div class="chart-meta"><div>마지막 시점 <b id="lastTime">—</b></div><div>선택 기간 스캔 <b id="pointCount">0회</b></div><div>기준 <b id="modeText">최저가 /64</b></div></div></div>
+      <div id="chartWrap" class="chart-wrap"><div class="chart-empty"><div><strong>가격 데이터 확인 중</strong><p>실제 스캔 기록을 불러오고 있습니다.</p></div></div></div>
+      <div class="chart-stats"><div class="chart-stat"><span>기간 시작가</span><b id="sOpen">—</b></div><div class="chart-stat"><span>기간 최고가</span><b id="sHigh">—</b></div><div class="chart-stat"><span>기간 최저가</span><b id="sLow">—</b></div><div class="chart-stat"><span>현재 경쟁 재고</span><b id="sStock">—</b></div></div>
     </section>
-
-    <section class="section">
-      <div class="section-head"><div><h2>아이템별 상세 변동</h2><p>실제 스캔 기록이 2회 이상 쌓인 아이템부터 비교됩니다.</p></div></div>
-      <div class="panel table-wrap">
-        <table><thead><tr><th>아이템</th><th>이전 스캔</th><th>현재 스캔</th><th>금액 변화</th><th>변동률</th><th>경쟁 재고</th><th>판매자</th></tr></thead>
-        <tbody><tr><td colspan="7"><div class="empty-state"><strong>가격 변동 데이터 없음</strong><p>가상 급등·급락 데이터는 제거했습니다. 실제 스캔이 누적되면 여기서 자동 비교합니다.</p></div></td></tr></tbody></table>
-      </div>
+    <section class="section"><div class="section-head"><div><h2>아이템별 상세 변동</h2><p>선택 기간의 마지막 두 스캔을 비교합니다.</p></div></div>
+      <div class="panel table-wrap"><table><thead><tr><th>아이템</th><th>이전 스캔</th><th>현재 스캔</th><th>금액 변화</th><th>변동률</th><th>현재 재고</th></tr></thead><tbody id="detailRows"></tbody></table></div>
     </section>
-  
   </main>
-
-  <script src="admin-market-core.js?v=0.3.0"></script>
-  <script>MarketAdmin.boot(()=>{});</script>
+  
+  <script src="admin-market-core.js?v=0.4.0"></script>
+  <script>
+  (()=>{"use strict";
+    const F=MarketAdmin; let days=7,mode="lowest",selected="",payload={series:[],items:[]};
+    const key=()=>mode==="lowest"?"lowest_stack64_price":"average_stack64_price";
+    function groups(){const m=new Map();for(const p of payload.series||[]){const a=m.get(p.item_name)||[];a.push(p);m.set(p.item_name,a)}for(const a of m.values())a.sort((x,y)=>new Date(x.completed_at)-new Date(y.completed_at));return m}
+    function drawChart(){
+      const a=groups().get(selected)||[], vals=a.map(x=>Number(x[key()])).filter(Number.isFinite),wrap=document.querySelector("#chartWrap");
+      document.querySelector("#modeText").textContent=(mode==="lowest"?"최저가":"평균가")+" /64";
+      document.querySelector("#chartLabel").textContent=(selected||"PRICE SERIES")+" · "+(mode==="lowest"?"최저가":"평균가");
+      if(!selected||vals.length===0){wrap.innerHTML='<div class="chart-empty"><div><strong>차트를 그릴 스캔 기록이 없습니다</strong><p>/스캔 기록이 누적되면 자동으로 표시됩니다.</p></div></div>';["#chartCurrent","#sOpen","#sHigh","#sLow","#sStock","#lastTime"].forEach(s=>document.querySelector(s).textContent="—");document.querySelector("#pointCount").textContent="0회";document.querySelector("#chartChange").textContent="스캔 기록 대기 중";return}
+      const data=a.filter(x=>Number.isFinite(Number(x[key()]))),values=data.map(x=>Number(x[key()])); const W=1000,H=340,L=60,R=28,T=24,B=44,min=Math.min(...values),max=Math.max(...values),pad=Math.max(1,(max-min)*.15),lo=Math.max(0,min-pad),hi=max+pad;
+      const x=i=>L+(W-L-R)*(data.length===1?0:i/(data.length-1)),y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo||1));
+      const pts=values.map((v,i)=>[x(i),y(v)]),line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" "),area=line+" L "+pts.at(-1)[0]+" "+(H-B)+" L "+pts[0][0]+" "+(H-B)+" Z";
+      const grid=[0,.25,.5,.75,1].map(t=>{const yy=T+(H-T-B)*t,val=hi-(hi-lo)*t;return '<line class="chart-grid" x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'"/><text class="axis-label" x="8" y="'+(yy+4)+'">'+Math.round(val).toLocaleString("ko-KR")+'</text>'}).join("");
+      const labels=data.map((p,i)=>{if(data.length>8&&i%Math.ceil(data.length/6)!==0&&i!==data.length-1)return "";return '<text class="axis-label" text-anchor="middle" x="'+x(i)+'" y="'+(H-13)+'">'+F.dateTime(p.completed_at)+'</text>'}).join("");
+      wrap.innerHTML='<svg id="priceChart" viewBox="0 0 1000 340" preserveAspectRatio="none"><defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2b7655" stop-opacity=".22"/><stop offset="100%" stop-color="#2b7655" stop-opacity="0"/></linearGradient></defs>'+grid+'<path class="chart-area" d="'+area+'"/><path class="chart-line" d="'+line+'"/>'+pts.map((p,i)=>'<circle class="chart-dot" cx="'+p[0]+'" cy="'+p[1]+'" r="'+(i===pts.length-1?5:3.2)+'"/>').join("")+labels+'</svg>';
+      const first=values[0],current=values.at(-1),diff=current-first,rate=first?diff/first*100:0,ch=document.querySelector("#chartChange");
+      document.querySelector("#chartCurrent").textContent=F.gold(current);ch.textContent=(diff>=0?"+":"")+F.gold(diff)+" · "+F.pct(rate);ch.className="chart-change "+(diff>0?"up":diff<0?"down":"flat");
+      document.querySelector("#sOpen").textContent=F.gold(first);document.querySelector("#sHigh").textContent=F.gold(max);document.querySelector("#sLow").textContent=F.gold(min);document.querySelector("#sStock").textContent=F.fmt(data.at(-1).total_stock)+"개";document.querySelector("#lastTime").textContent=F.dateTime(data.at(-1).completed_at);document.querySelector("#pointCount").textContent=data.length+"회";
+    }
+    function renderRows(){
+      const t=document.querySelector("#detailRows"),g=groups(),rows=[];
+      for(const [name,a] of g){if(a.length<2)continue;const p=a.at(-2),c=a.at(-1),pv=Number(p[key()]),cv=Number(c[key()]);if(!Number.isFinite(pv)||!Number.isFinite(cv))continue;const diff=cv-pv,rate=pv?diff/pv*100:0;rows.push({name,pv,cv,diff,rate,stock:c.total_stock})}
+      rows.sort((a,b)=>Math.abs(b.rate)-Math.abs(a.rate));
+      t.innerHTML=rows.length?rows.map(r=>'<tr data-name="'+F.escapeHtml(r.name)+'" style="cursor:pointer"><td class="item-name">'+F.escapeHtml(r.name)+'</td><td class="price">'+F.gold(r.pv)+'</td><td class="price">'+F.gold(r.cv)+'</td><td class="'+(r.diff>0?"up":r.diff<0?"down":"flat")+'"><b>'+(r.diff>=0?"+":"")+F.gold(r.diff)+'</b></td><td class="'+(r.rate>0?"up":r.rate<0?"down":"flat")+'"><b>'+F.pct(r.rate)+'</b></td><td>'+F.fmt(r.stock)+'개</td></tr>').join(""):'<tr><td colspan="6"><div class="empty-state"><strong>비교 가능한 기록이 없습니다</strong><p>같은 아이템이 두 번 이상 스캔되면 변화가 표시됩니다.</p></div></td></tr>';
+      [...t.querySelectorAll("tr[data-name]")].forEach(tr=>tr.addEventListener("click",()=>{selected=tr.dataset.name;document.querySelector("#itemSelect").value=selected;drawChart()}));
+    }
+    async function load(){
+      try{
+        payload=await F.market("market-history",{days});const sel=document.querySelector("#itemSelect"),items=payload.items||[];
+        const old=selected;selected=items.includes(old)?old:(items[0]||"");
+        sel.innerHTML=items.length?items.map(x=>'<option value="'+F.escapeHtml(x)+'">'+F.escapeHtml(x)+'</option>').join(""):'<option value="">스캔 데이터 없음</option>';
+        sel.value=selected;drawChart();renderRows();
+      }catch(e){document.querySelector("#chartWrap").innerHTML=F.errorState();document.querySelector("#detailRows").innerHTML='<tr><td colspan="6">'+F.errorState()+'</td></tr>'}
+    }
+    document.querySelector("#itemSelect").addEventListener("change",e=>{selected=e.target.value;drawChart()});
+    document.querySelector("#priceMode").addEventListener("click",e=>{const b=e.target.closest("button[data-mode]");if(!b)return;mode=b.dataset.mode;[...e.currentTarget.querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===b));drawChart();renderRows()});
+    document.querySelector("#rangeMode").addEventListener("click",async e=>{const b=e.target.closest("button[data-days]");if(!b)return;days=Number(b.dataset.days);[...e.currentTarget.querySelectorAll("button")].forEach(x=>x.classList.toggle("active",x===b));await load()});
+    MarketAdmin.boot(load);
+  })();
+  </script>
 </body>
 </html>
