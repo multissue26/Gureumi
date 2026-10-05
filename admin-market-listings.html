@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="color-scheme" content="light">
+<title>내 등록 매물 | 띵팜</title><link rel="stylesheet" href="admin-market.css?v=0.2.0">
+<link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png"></head>
+<body>
+<main id="loginView" class="login">
+<p class="eyebrow">PRIVATE MARKET CONSOLE</p><h2>관리자 확인</h2>
+<p>플리마켓 운영 데이터는 관리자만 볼 수 있어요. 기존 띵팜 관리자 비밀번호로 로그인해 주세요.</p>
+<form id="loginForm" class="login-form"><input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required><button class="btn primary" type="submit">로그인</button></form>
+<div id="loginMsg" class="login-msg"></div>
+</main>
+<main id="appView" class="shell hidden">
+<div class="brandbar">
+<a class="brand" href="admin-market.html"><img src="assets/brand/ddingfarm-logo.png" alt="띵팜"><span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span></a>
+<div class="top-actions"><span class="preview-badge">웹 UI 미리보기</span><button id="logoutBtn" class="btn">로그아웃</button></div>
+</div>
+<nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="active">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
+<header class="topbar"><div><p class="eyebrow">MY LISTINGS</p><h1>내 등록 매물</h1><p class="subtitle">내가 올린 가격이 현재 경쟁 시장에서 어느 위치인지 바로 확인합니다.</p></div></header>
+
+  <section class="panel table-wrap"><table><thead><tr><th>상품</th><th>내 등록가</th><th>시장 최저가</th><th>추천 판매가</th><th>등록 수량</th><th>남은 수량</th><th>판단</th></tr></thead><tbody>
+  <tr><td><div class="item-cell"><img src="assets/ingredient/beet-bundle.png"><div class="item-name">비트 묶음</div></div></td><td>36,999 G</td><td>34,999 G</td><td>35,400 G</td><td>640개</td><td>256개</td><td class="down"><b>조정 권장</b></td></tr>
+  <tr><td><div class="item-cell"><img src="assets/ingredient/carrot-bundle.png"><div class="item-name">당근 묶음</div></div></td><td>42,000 G</td><td>41,900 G</td><td>42,100 G</td><td>320개</td><td>64개</td><td class="up"><b>경쟁 가능</b></td></tr>
+  <tr><td><div class="item-cell"><img src="https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/item/wheat.png"><div class="item-name">밀</div></div></td><td>29,500 G</td><td>28,500 G</td><td>28,700 G</td><td>512개</td><td>448개</td><td class="down"><b>가격 높음</b></td></tr>
+  </tbody></table></section>
+  <div class="notice"><strong>실제 연결 후</strong>모드에서 내 매물 목록과 남은 재고를 읽어 이 페이지를 갱신하고, 판매 완료 채팅과 비교해 실제 판매량도 함께 추적합니다.</div>
+  
+</main>
+<script src="admin-market-core.js?v=0.2.0"></script><script>MarketAdmin.boot(()=>{});</script>
+</body></html>
