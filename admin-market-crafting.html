@@ -283,7 +283,7 @@
     }
 
     function currentRows(){
-      let rows=lastGroups.filter(r=>r.mode===mode);
+      let rows=lastGroups.filter(r=>r.mode===mode&&!(mode==="sale"&&r.flagged.length===r.offers.length&&r.flagged.length>0));
       const q=query.trim().toLowerCase();if(q)rows=rows.filter(r=>r.item_name.toLowerCase().includes(q));
       rows.sort((a,b)=>{
         if(sort==="name")return a.item_name.localeCompare(b.item_name,"ko")||a.bundleQuantity-b.bundleQuantity;
