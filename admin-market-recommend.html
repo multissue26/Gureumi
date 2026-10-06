@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>음식 원재료 추천 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=0.4.0">
+  <link rel="stylesheet" href="admin-market.css?v=0.7.0">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
   
 </head>
@@ -34,7 +34,7 @@
       </div>
     </div>
     <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="active">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
-    <header class="topbar"><div><p class="eyebrow">FOOD MATERIAL OPPORTUNITY</p><h1>음식 원재료 추천</h1><p class="subtitle">마지막 실제 시장 스캔과 현재 1위 음식 정보를 결합해 원재료 시장을 확인합니다.</p></div></header>
+    <header class="topbar"><div><p class="eyebrow">FOOD MATERIAL OPPORTUNITY</p><h1>음식 원재료 추천</h1><p class="subtitle">띵팜의 최신 확정 음식 가격과 마지막 플리마켓 스캔을 직접 결합해 원재료 시장을 확인합니다.</p></div></header>
     
     <section id="foodCard" class="panel"><div class="empty-state"><strong>불러오는 중</strong><p>마지막 스캔과 음식 정보를 확인하고 있습니다.</p></div></section>
     <section class="section">
@@ -46,34 +46,97 @@
     </section>
     <div class="notice"><strong>추천가 계산</strong>추천 판매가는 제작 원가·재고 깊이·이전 스캔 변화까지 연결된 뒤 표시합니다. 현재는 검증된 실제 시장값만 보여줍니다.</div>
   </main>
-  <script src="data.js?v=0.14.0"></script>
-  <script src="admin-market-core.js?v=0.4.0"></script>
+  <script src="data.js?v=0.14.1"></script>
+  <script src="admin-market-core.js?v=0.7.0"></script>
   <script>
-  function resolveFood(latest){
-    const foods=window.DDING_DATA?.foods||[];
-    const name=latest?.top_food_name||"", key=latest?.top_food_key||"";
-    return foods.find(f=>f.slug===key||f.name===name||f.gold?.name===name)||null;
+  const PRICE_API="https://dding-price-api.hansuyeon191-6fe.workers.dev";
+
+  function num(v){
+    if(v==null||v==="") return null;
+    const n=Number(String(v).replace(/,/g,""));
+    return Number.isFinite(n)?n:null;
   }
+
+  async function priceApi(path){
+    const r=await fetch(PRICE_API+path,{cache:"no-store",headers:{"Content-Type":"application/json"}});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j?.error||("HTTP "+r.status));
+    return j;
+  }
+
+  async function loadPublishedPriceSnapshot(){
+    try{
+      const d=await priceApi("/dashboard");
+      if(d?.prices) return d.prices;
+    }catch(_){}
+    const d=await priceApi("/prices");
+    if(!d?.prices) throw new Error("published prices unavailable");
+    return d.prices;
+  }
+
+  function priceMap(snapshot){
+    return snapshot?.prices||snapshot||{};
+  }
+
+  function readFoodPrice(value){
+    if(typeof value==="number") return Number.isFinite(value)?value:null;
+    if(!value||typeof value!=="object") return null;
+    return num(value.myPrice??value.marketPrice??value.price??value.current);
+  }
+
+  function resolveLiveTopFood(snapshot){
+    const foods=window.DDING_DATA?.foods||[];
+    const prices=priceMap(snapshot);
+    const rows=[];
+    for(const food of foods){
+      const normal=readFoodPrice(prices[food.name]);
+      if(normal!=null) rows.push({food,isGold:false,name:food.name,price:normal});
+      const goldName=food.gold?.name||("황금 "+food.name);
+      const gold=readFoodPrice(prices[goldName]);
+      if(gold!=null) rows.push({food,isGold:true,name:goldName,price:gold});
+    }
+    rows.sort((a,b)=>b.price-a.price||a.name.localeCompare(b.name,"ko"));
+    return rows[0]||null;
+  }
+
+  function snapshotTime(snapshot){
+    return snapshot?.capturedAt||snapshot?.publishedAt||snapshot?.updatedAt||snapshot?.generatedAt||null;
+  }
+
   async function render(){
     const F=MarketAdmin,card=document.querySelector("#foodCard"),tbody=document.querySelector("#ingredientRows");
     try{
-      const d=await F.market("market-latest");
+      const marketPromise=F.market("market-latest");
+      let priceSnapshot=null,priceError=null;
+      try{ priceSnapshot=await loadPublishedPriceSnapshot(); }
+      catch(e){ priceError=e; }
+      const d=await marketPromise;
+
       if(!d.latest_scan){
         card.innerHTML='<div class="empty-state"><strong>아직 실제 시장 스캔이 없습니다</strong><p>Minecraft에서 /스캔을 실행한 뒤 데이터가 업로드되면 이 화면이 자동으로 채워집니다.</p></div>';
         tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><strong>시장 데이터 없음</strong><p>첫 스캔을 기다리고 있습니다.</p></div></td></tr>'; return;
       }
-      const food=resolveFood(d.latest_scan);
-      if(!food){
-        card.innerHTML='<div class="empty-state"><strong>현재 1위 음식 정보가 아직 없습니다</strong><p>스캔 업로드에 top food 정보가 포함되면 자동으로 표시됩니다.</p></div>';
-        tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><strong>원재료 대상을 결정할 수 없습니다</strong><p>현재 1위 음식 데이터가 필요합니다.</p></div></td></tr>'; return;
+
+      if(!priceSnapshot){
+        card.innerHTML='<div class="empty-state"><strong>띵팜 최신 가격을 불러오지 못했습니다</strong><p>플리마켓 스캔에 저장된 과거 1위 음식으로 대신 계산하지 않습니다. 띵팜 가격 연결이 정상화되면 최신 확정 가격을 기준으로 자동 갱신됩니다.</p></div>';
+        tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><strong>최신 음식 가격 연결 필요</strong><p>'+F.escapeHtml(priceError?.message||"가격 API 조회 실패")+'</p></div></td></tr>'; return;
       }
-      const isGold=d.latest_scan.top_food_name===food.gold?.name;
-      const image=isGold?food.goldImage:food.image;
+
+      const top=resolveLiveTopFood(priceSnapshot);
+      if(!top){
+        card.innerHTML='<div class="empty-state"><strong>띵팜의 확정 음식 가격이 아직 없습니다</strong><p>일반·황금 요리 가격 데이터가 업로드되면 최신 1위 음식을 자동으로 선택합니다.</p></div>';
+        tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><strong>원재료 대상을 결정할 수 없습니다</strong><p>현재 확정 음식 가격 데이터가 필요합니다.</p></div></td></tr>'; return;
+      }
+
+      const food=top.food;
+      const image=top.isGold?food.goldImage:food.image;
+      const priceUpdated=snapshotTime(priceSnapshot);
       card.innerHTML='<div style="padding:20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">'+
         '<img src="'+F.escapeHtml(image||"")+'" alt="" style="width:58px;height:58px;object-fit:contain;image-rendering:pixelated">'+
-        '<div style="flex:1;min-width:220px"><p class="eyebrow">CURRENT TOP FOOD</p><h2 style="margin:0;font-size:20px">'+F.escapeHtml(d.latest_scan.top_food_name||food.name)+'</h2>'+
-        '<p style="margin:6px 0 0;color:var(--muted);font-size:11px">마지막 스캔 '+F.dateTime(d.latest_scan.completed_at)+' · 실제 저장 데이터</p></div>'+
-        '<div style="text-align:right"><div class="metric-head">현재 음식 가격</div><div class="metric-value" style="font-size:22px">'+F.gold(d.latest_scan.top_food_price)+'</div></div></div>';
+        '<div style="flex:1;min-width:220px"><p class="eyebrow">CURRENT TOP FOOD · DDINGFARM LIVE</p><h2 style="margin:0;font-size:20px">'+F.escapeHtml(top.name)+'</h2>'+
+        '<p style="margin:6px 0 0;color:var(--muted);font-size:11px">띵팜 가격 '+F.dateTime(priceUpdated)+' · 플리마켓 스캔 '+F.dateTime(d.latest_scan.completed_at)+'</p></div>'+
+        '<div style="text-align:right"><div class="metric-head">현재 음식 가격</div><div class="metric-value" style="font-size:22px">'+F.gold(top.price)+'</div></div></div>';
+
       const market=new Map((d.items||[]).map(x=>[x.item_name,x]));
       const ingredients=window.DDING_DATA?.ingredients||{};
       const recipe=(food.recipe||[]).map(([id,qty])=>({id,qty,name:ingredients[id]?.name||id,icon:ingredients[id]?.icon||""}));
