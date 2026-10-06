@@ -199,13 +199,60 @@
       return sellerScore+stockScore+offerScore+spread;
     }
 
-    function recommendPrice(g){
+    function saleDecision(g,count=0){
       const pool=(g.normal.length?g.normal:g.offers).slice().sort((a,b)=>price(a)-price(b));
-      if(!pool.length)return null;
-      const p1=price(pool[0]),lowTier=pool.filter(o=>price(o)===p1),lowStock=lowTier.reduce((a,o)=>a+stock(o),0);
-      const p2=pool.find(o=>price(o)>p1);
-      if(p2&&lowStock<=g.bundleQuantity*2&&price(p2)<=p1*1.12)return price(p2);
-      return p1;
+      if(!pool.length)return {price:null,lowPrice:null,lowStock:0,nextPrice:null,action:"none",reason:"비교할 정상 판매 매물이 없습니다."};
+
+      const bundle=Math.max(1,Number(g.bundleQuantity||1));
+      const lowPrice=price(pool[0]);
+      const lowTier=pool.filter(o=>price(o)===lowPrice);
+      const lowStock=lowTier.reduce((a,o)=>a+stock(o),0);
+      const next=pool.find(o=>price(o)>lowPrice);
+      const nextPrice=next?price(next):null;
+      const ownQty=Math.max(0,Math.floor(Number(count)||0));
+      const ownBundles=Math.floor(ownQty/bundle);
+      const lowBundles=lowStock/bundle;
+      const veryThin=lowStock<=bundle*2;
+
+      let recommended=lowPrice;
+      let action="hold";
+      let reason="";
+
+      if(veryThin){
+        recommended=lowPrice;
+        action="hold";
+        reason="현재 최저가 "+F.gold(lowPrice)+" / "+F.fmt(bundle)+"개의 경쟁 재고가 "+F.fmt(lowStock)+"개 ("+
+          lowBundles.toLocaleString("ko-KR",{maximumFractionDigits:1})+"묶음)로 매우 적어 곧 소진될 가능성이 큽니다. "+
+          "지금 1G를 더 낮출 실익이 작아 최저가 유지가 유리합니다.";
+        if(nextPrice!=null){
+          reason+=" 최저가 물량이 빠지면 다음 정상 가격대 "+F.gold(nextPrice)+" / "+F.fmt(bundle)+"개까지 가격을 올릴 여지도 있습니다.";
+        }
+      }else{
+        recommended=Math.max(1,lowPrice-1);
+        action="undercut";
+        if(ownQty>0&&ownQty<lowStock){
+          reason="내 보유량 "+F.fmt(ownQty)+"개 ("+F.fmt(ownBundles)+"묶음)보다 현재 최저가 경쟁 재고 "+F.fmt(lowStock)+"개가 더 많습니다. "+
+            "같은 가격으로 올리면 기존 매물 뒤에서 기다릴 가능성이 높아 "+F.gold(lowPrice)+"보다 1G 낮은 "+F.gold(recommended)+"를 추천합니다.";
+        }else if(ownQty>0){
+          reason="현재 최저가 경쟁 재고가 "+F.fmt(lowStock)+"개로 충분히 남아 있습니다. 내 보유량 "+F.fmt(ownQty)+"개를 같은 가격에 올리기보다 "+
+            "최저가보다 1G 낮은 "+F.gold(recommended)+"로 가격 우선권을 잡는 편이 유리합니다.";
+        }else{
+          reason="현재 최저가 경쟁 재고가 "+F.fmt(lowStock)+"개로 충분히 남아 있어 동일가 대기보다 "+
+            "최저가 "+F.gold(lowPrice)+"보다 1G 낮은 "+F.gold(recommended)+"로 가격 우선권을 잡는 편이 유리합니다.";
+        }
+        if(nextPrice!=null){
+          reason+=" 다음 정상 가격대는 "+F.gold(nextPrice)+" / "+F.fmt(bundle)+"개입니다.";
+        }
+      }
+
+      if(g.flagged.length){
+        reason+=" 극단 고가 "+F.fmt(g.flagged.length)+"건은 추천 계산에서 제외했습니다.";
+      }
+      return {price:recommended,lowPrice,lowStock,nextPrice,action,reason};
+    }
+
+    function recommendPrice(g,count=0){
+      return saleDecision(g,count).price;
     }
 
     function recommendedGroups(){
@@ -250,7 +297,7 @@
     function renderRecommendations(){
       const box=document.querySelector("#strategyCards"),recs=recommendedGroups();
       box.innerHTML=recs.length?recs.map((x,i)=>{
-        const g=x.g,rp=recommendPrice(g),best=g.best;
+        const g=x.g,rp=recommendPrice(g,g.bundleQuantity),best=g.best;
         return '<article class="panel strategy-card">'+
           '<div class="strategy-rank">MARKET PICK '+String(i+1).padStart(2,"0")+'</div>'+
           '<div class="strategy-title">'+F.escapeHtml(g.item_name)+'</div>'+
@@ -273,7 +320,7 @@
       if(!name){result.innerHTML='<strong>아이템을 선택해 주세요</strong><small>현재 시장의 묶음별 경쟁가를 기준으로 계산합니다.</small>';return}
       if(!groups.length){result.innerHTML='<strong>현재 판매 매물 없음</strong><small>해당 아이템은 마지막 완전 스캔에서 판매 매물을 찾지 못했습니다.</small>';return}
       const g=groups.slice().sort((a,b)=>opportunityScore(b)-opportunityScore(a))[0];
-      const rp=recommendPrice(g),available=Math.floor(count/Math.max(1,g.bundleQuantity)),initial=initialListings(g,available),qty=initial*g.bundleQuantity;
+      const rp=recommendPrice(g,count),available=Math.floor(count/Math.max(1,g.bundleQuantity)),initial=initialListings(g,available),qty=initial*g.bundleQuantity;
       result.innerHTML='<strong>추천 '+F.fmt(g.bundleQuantity)+'개 묶음 · '+F.gold(rp)+'</strong><small>보유 '+F.fmt(count)+'개 → '+F.fmt(available)+'묶음 가능 · 초기 권장 '+F.fmt(initial)+'묶음 ('+F.fmt(qty)+'개)</small>';
     }
 
@@ -370,10 +417,8 @@
     function renderSaleDrawer(){
       const g=drawerGroup;if(!g)return;
       const count=Math.max(0,Math.floor(Number(document.querySelector("#saleDrawerCount").value)||0));
-      const bundle=Math.max(1,g.bundleQuantity),available=Math.floor(count/bundle),rp=recommendPrice(g);
-      const pool=normalSalePool(g),p1=pool.length?price(pool[0]):null;
-      const lowTier=pool.filter(o=>price(o)===p1),lowStock=lowTier.reduce((a,o)=>a+stock(o),0);
-      const next=pool.find(o=>price(o)>p1),nextPrice=next?price(next):null;
+      const bundle=Math.max(1,g.bundleQuantity),available=Math.floor(count/bundle),decision=saleDecision(g,count),rp=decision.price;
+      const lowStock=decision.lowStock,nextPrice=decision.nextPrice;
       const initial=initialListings(g,available);
       const total=Number.isFinite(rp)&&available>0?rp*available:null;
       const best=g.best;
@@ -384,15 +429,12 @@
         '<div><span>최저가 경쟁 재고</span><strong>'+F.fmt(lowStock)+'개</strong></div>'+
         '<div><span>다음 정상 가격대</span><strong>'+(nextPrice?F.gold(nextPrice)+' / '+F.fmt(bundle)+'개':'없음')+'</strong></div>';
 
-      let reason="현재 최저가 유지";
-      if(nextPrice&&rp===nextPrice)reason="최저가 재고가 얇아 다음 가격대 진입 추천";
-      else if(g.flagged.length)reason="극단 고가 "+F.fmt(g.flagged.length)+"건 제외 후 계산";
       document.querySelector("#saleDrawerResult").innerHTML=
         '<div class="sale-result-card primary"><span>추천 판매금액</span><strong>'+(rp?F.gold(rp)+' / '+F.fmt(bundle)+'개':'시세 부족')+'</strong></div>'+
         '<div class="sale-result-card"><span>현재 보유량으로 가능한 묶음</span><strong>'+F.fmt(available)+'묶음 · '+F.fmt(available*bundle)+'개</strong></div>'+
         '<div class="sale-result-card"><span>추천 초기 등록량</span><strong>'+F.fmt(initial)+'묶음'+(initial?' · '+F.fmt(initial*bundle)+'개':'')+'</strong></div>'+
         '<div class="sale-result-card"><span>전량 등록 시 표시 총액</span><strong>'+(total!=null?F.gold(total):"—")+'</strong></div>'+
-        '<div class="sale-result-card"><span>판단 근거</span><strong>'+F.escapeHtml(reason)+'</strong></div>';
+        '<div class="sale-result-card"><span>판단 근거</span><strong>'+F.escapeHtml(decision.reason)+'</strong></div>';
     }
 
     function renderAll(){
