@@ -3,6 +3,13 @@ const F=MarketAdmin;
 const HISTORY_API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-market-history-v2";
 let days=7,mode="lowest",selected="",payload={series:[],items:[]};
 const key=()=>mode==="lowest"?"lowest_stack64_price":"average_stack64_price";
+function axisTime(stamp){
+  const d=new Date(stamp);
+  if(Number.isNaN(d.getTime()))return "—";
+  const parts=new Intl.DateTimeFormat("ko-KR",{timeZone:"Asia/Seoul",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(d);
+  const pick=t=>parts.find(p=>p.type===t)?.value||"";
+  return pick("month")+"."+pick("day")+" "+pick("hour")+":"+pick("minute");
+}
 async function history(body={}){
   const token=sessionStorage.getItem(F.tokenKey);if(!token)throw new Error("unauthorized");
   const r=await fetch(HISTORY_API,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(body)});
@@ -18,7 +25,7 @@ function drawChart(){
   const x=i=>L+(W-L-R)*(data.length===1?0:i/(data.length-1)),y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo||1));
   const pts=values.map((v,i)=>[x(i),y(v)]),line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" "),area=line+" L "+pts.at(-1)[0]+" "+(H-B)+" L "+pts[0][0]+" "+(H-B)+" Z";
   const grid=[0,.25,.5,.75,1].map(t=>{const yy=T+(H-T-B)*t,val=hi-(hi-lo)*t;return '<line class="chart-grid" x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'"/><text class="axis-label" x="8" y="'+(yy+4)+'">'+Math.round(val).toLocaleString("ko-KR")+'</text>'}).join("");
-  const labels=data.map((p,i)=>{if(data.length>8&&i%Math.ceil(data.length/6)!==0&&i!==data.length-1)return "";const anchor=i===0?"start":i===data.length-1?"end":"middle";return '<text class="axis-label" text-anchor="'+anchor+'" x="'+x(i)+'" y="'+(H-22)+'">'+F.dateTime(p.completed_at)+'</text>'}).join("");
+  const labels=data.map((p,i)=>{if(data.length>8&&i%Math.ceil(data.length/6)!==0&&i!==data.length-1)return "";const anchor=i===0?"start":i===data.length-1?"end":"middle";return '<text class="axis-label" text-anchor="'+anchor+'" x="'+x(i)+'" y="'+(H-22)+'">'+axisTime(p.completed_at)+'</text>'}).join("");
   wrap.innerHTML='<svg id="priceChart" viewBox="0 0 1000 370" preserveAspectRatio="none"><defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2b7655" stop-opacity=".22"/><stop offset="100%" stop-color="#2b7655" stop-opacity="0"/></linearGradient></defs>'+grid+'<path class="chart-area" d="'+area+'"/><path class="chart-line" d="'+line+'"/>'+pts.map((p,i)=>'<circle class="chart-dot" cx="'+p[0]+'" cy="'+p[1]+'" r="'+(i===pts.length-1?5:3.2)+'"/>').join("")+labels+'</svg>';
   const first=values[0],current=values.at(-1),diff=current-first,rate=first?diff/first*100:0,ch=document.querySelector("#chartChange");
   document.querySelector("#chartCurrent").textContent=F.gold(current);ch.textContent=(diff>=0?"+":"")+F.gold(diff)+" · "+F.pct(rate);ch.className="chart-change "+(diff>0?"up":diff<0?"down":"flat");
