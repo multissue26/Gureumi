@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>제작품 수익 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=1.0.0">
+  <link rel="stylesheet" href="admin-market.css?v=1.0.1-own">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
 </head>
 <body>
@@ -16,6 +16,7 @@
         <div><p class="eyebrow">SELLING STRATEGY</p><h2 id="saleDrawerTitle">판매한다면?</h2></div>
         <button id="saleDrawerClose" class="sale-drawer-close" type="button" aria-label="닫기">×</button>
       </div>
+      <div id="saleDrawerOwn" class="own-listing-callout hidden"></div>
       <div id="saleDrawerSummary" class="sale-drawer-summary"></div>
       <div class="sale-drawer-inputs">
         <div><label for="saleDrawerCount">보유 개수</label><input id="saleDrawerCount" type="number" min="0" step="1" value="64"></div>
@@ -26,6 +27,16 @@
     </aside>
   </div>
 
+
+  <div id="ownDrawerBackdrop" class="sale-drawer-backdrop" aria-hidden="true">
+    <aside class="sale-drawer own-listing-drawer" role="dialog" aria-modal="true" aria-labelledby="ownDrawerTitle">
+      <div class="sale-drawer-head">
+        <div><p class="eyebrow">MY LISTING</p><h2 id="ownDrawerTitle">내 매물 확인</h2></div>
+        <button id="ownDrawerClose" class="sale-drawer-close" type="button" aria-label="닫기">×</button>
+      </div>
+      <div id="ownDrawerBody"></div>
+    </aside>
+  </div>
 
   <main id="appView" class="shell">
     <div class="brandbar">
@@ -45,7 +56,7 @@
       <div>
         <p class="eyebrow">SELLING STRATEGY · FULL MARKET</p>
         <h1>제작품 수익</h1>
-        <p class="subtitle">현재 경쟁 매물을 기준으로 내가 올릴 묶음과 판매가를 빠르게 결정합니다. 원가가 검증되기 전까지 수익·ROI는 표시하지 않습니다.</p>
+        <p class="subtitle">내가 이미 등록한 매물은 경쟁 시세에서 제외하고, 다른 유저의 매물만 기준으로 판매 전략을 계산합니다. 내 매물은 별도 팝업에서 확인할 수 있습니다.</p>
       </div>
     </header>
 
@@ -60,7 +71,7 @@
       <div class="section-head">
         <div>
           <h2>추천 판매품목</h2>
-          <p>현재 시장의 판매자 수·경쟁 재고·가격 간격을 기준으로 공급이 상대적으로 얇은 품목을 먼저 보여줍니다. 아직 원가와 실제 판매속도는 반영하지 않습니다.</p>
+          <p>내 등록 매물을 제외한 판매자 수·경쟁 재고·가격 간격을 기준으로 공급이 상대적으로 얇은 품목을 먼저 보여줍니다.</p>
         </div>
       </div>
       <div id="strategyCards" class="strategy-grid"></div>
@@ -70,7 +81,7 @@
       <div class="section-head">
         <div>
           <h2>현재 시장 데이터</h2>
-          <p>판매 시장은 내가 올릴 가격을 정하기 위한 경쟁 매물 비교입니다. <b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p>
+          <p>판매 시장은 <b>내 등록 매물을 제외한 경쟁 매물</b>만 비교합니다. <b>5,000 G / 10개</b>는 10개 묶음 전체 가격이 5,000 G라는 뜻입니다.</p>
         </div>
         <div class="market-search"><input id="marketSearch" type="search" placeholder="아이템 검색 · 예: 하얀색 양털, 엔드 막대기" autocomplete="off"></div>
       </div>
@@ -108,7 +119,7 @@
   (()=>{"use strict";
     const F=MarketAdmin;
     const PAGE_SIZE=50;
-    let offers=[],mode="sale",query="",sort="best",page=1,lastGroups=[];
+    let allOffers=[],offers=[],ownListings=[],ownSellerName="",ownSellerConfidence="",mode="sale",query="",sort="best",page=1,lastGroups=[];
 
     const median=a=>{const v=a.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2};
     const unit=o=>F.offerUnit(o);
@@ -121,6 +132,57 @@
         if(!target)return true;
         return String(o.item_name||"").trim()===target;
       });
+    }
+
+
+    function inferOwnSeller(rows,ownRows){
+      const usable=(ownRows||[]).filter(o=>o?.item_name&&Number(o?.listing_price)>0&&Number(o?.listed_quantity)>0);
+      if(!usable.length)return {name:"",confidence:"none",matched:0};
+      const scores=new Map();
+      for(const own of usable){
+        const matches=rows.filter(o=>
+          o.trade_type!=="buy" &&
+          String(o.item_name||"").trim()===String(own.item_name||"").trim() &&
+          Number(o.quantity)===Number(own.listed_quantity) &&
+          Number(o.listing_price)===Number(own.listing_price) &&
+          o.seller_name
+        );
+        for(const seller of new Set(matches.map(o=>String(o.seller_name)))){
+          scores.set(seller,(scores.get(seller)||0)+1);
+        }
+      }
+      const ranked=[...scores.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+      if(!ranked.length)return {name:"",confidence:"none",matched:0};
+      const [name,matched]=ranked[0],second=ranked[1]?.[1]||0;
+      const required=usable.length>=2?Math.min(2,usable.length):1;
+      if(matched<required||matched===second)return {name:"",confidence:"ambiguous",matched};
+      return {name,confidence:matched===usable.length?"exact":"strong",matched};
+    }
+
+    function ownFor(itemName,bundleQuantity=null){
+      return ownListings.filter(o=>
+        String(o.item_name||"").trim()===String(itemName||"").trim() &&
+        (bundleQuantity==null||Number(o.listed_quantity)===Number(bundleQuantity))
+      );
+    }
+
+    function ownMarketMatch(own){
+      if(!ownSellerName)return null;
+      return allOffers.find(o=>
+        o.trade_type!=="buy" &&
+        String(o.seller_name||"")===ownSellerName &&
+        String(o.item_name||"").trim()===String(own.item_name||"").trim() &&
+        Number(o.quantity)===Number(own.listed_quantity) &&
+        Number(o.listing_price)===Number(own.listing_price)
+      )||null;
+    }
+
+    function ownButton(itemName,bundleQuantity,compact=false){
+      const count=ownFor(itemName,bundleQuantity).length;
+      if(!count)return "";
+      return '<button type="button" class="own-listing-btn'+(compact?' compact':'')+'" data-own-open="'+
+        F.escapeHtml(itemName)+'" data-own-bundle="'+F.fmt(bundleQuantity)+'">내 매물 확인'+
+        (count>1?' '+F.fmt(count)+'건':'')+'</button>';
     }
 
     function isHighOutlier(o,group){
@@ -284,13 +346,13 @@
           '<div class="strategy-rank">MARKET PICK '+String(i+1).padStart(2,"0")+'</div>'+
           '<div class="strategy-title">'+F.escapeHtml(g.item_name)+'</div>'+
           '<div class="strategy-main">'+
-            '<div class="strategy-kv"><span>현재 최저</span><strong>'+F.offerText(best)+'</strong></div>'+
+            '<div class="strategy-kv"><span>내 매물 제외 최저</span><strong>'+F.offerText(best)+'</strong></div>'+
             '<div class="strategy-kv"><span>추천 판매가</span><strong>'+F.gold(rp)+' / '+F.fmt(g.bundleQuantity)+'개</strong></div>'+
             '<div class="strategy-kv"><span>추천 묶음</span><strong>'+F.fmt(g.bundleQuantity)+'개</strong></div>'+
             '<div class="strategy-kv"><span>경쟁</span><strong>'+F.fmt(g.sellerCount)+'명 · '+F.fmt(g.totalStock)+'개</strong></div>'+
           '</div>'+
-          '<div class="strategy-meta"><span class="market-badge ok">시장 공급 기준</span><span>원가·판매속도 미반영</span></div>'+
-          '<button class="strategy-action" data-sale-open="'+F.escapeHtml(g.item_name)+'" data-sale-bundle="'+F.fmt(g.bundleQuantity)+'">판매한다면?</button>'+
+          '<div class="strategy-meta"><span class="market-badge ok">내 매물 제외</span><span>경쟁 매물 기준</span></div>'+
+          '<div class="strategy-actions"><button class="strategy-action" data-sale-open="'+F.escapeHtml(g.item_name)+'" data-sale-bundle="'+F.fmt(g.bundleQuantity)+'">판매한다면?</button>'+ownButton(g.item_name,g.bundleQuantity)+'</div>'+
         '</article>';
       }).join(""):'<div class="panel empty-state"><strong>추천 후보가 부족합니다</strong><p>판매자가 2명 이상인 정상 범위 매물이 더 쌓이면 시장 공급 기준 추천을 표시합니다.</p></div>';
     }
@@ -344,7 +406,7 @@
       const shown=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
       document.querySelector("#resultCount").textContent=F.fmt(rows.length)+"개 묶음 · "+page+"/"+pages+"페이지";
       document.querySelector("#marketHead").innerHTML=mode==="sale"
-        ?'<th>아이템</th><th>묶음</th><th>묶음 최저 판매가</th><th>환산 정보</th><th>남은 재고</th><th>최저가 판매자</th><th>시장 상태</th><th>판매 전략</th>'
+        ?'<th>아이템</th><th>묶음</th><th>내 매물 제외 최저가</th><th>환산 정보</th><th>경쟁 재고</th><th>경쟁 최저가 판매자</th><th>시장 상태</th><th>판매 전략</th>'
         :'<th>아이템</th><th>묶음</th><th>묶음 최고 매입가</th><th>환산 정보</th><th>납품 가능</th><th>최고가 매입자</th><th>시장 상태</th>';
 
       const body=document.querySelector("#marketRows");
@@ -358,7 +420,7 @@
           '<td>'+F.fmt(stock(o))+'개<span class="offer-sub">'+(mode==="sale"?"대표 최저가 매물 재고":"대표 최고가 매입 가능")+'</span></td>'+
           '<td>'+sellerDetails(r)+'</td>'+
           '<td>'+badge(r)+'</td>'+
-          (mode==="sale"?'<td><button type="button" class="sale-strategy-btn" data-sale-open="'+F.escapeHtml(r.item_name)+'" data-sale-bundle="'+F.fmt(r.bundleQuantity)+'">판매한다면?</button></td>':'')+
+          (mode==="sale"?'<td><div class="market-action-stack"><button type="button" class="sale-strategy-btn" data-sale-open="'+F.escapeHtml(r.item_name)+'" data-sale-bundle="'+F.fmt(r.bundleQuantity)+'">판매한다면?</button>'+ownButton(r.item_name,r.bundleQuantity,true)+'</div></td>':'')+
           '</tr>';
       }).join(""):'<tr><td colspan="'+(mode==="sale"?8:7)+'"><div class="empty-state"><strong>검색 결과가 없습니다</strong><p>다른 아이템명으로 검색해 주세요.</p></div></td></tr>';
 
@@ -404,10 +466,18 @@
       const initial=initialListings(g,available);
       const total=Number.isFinite(rp)&&available>0?rp*available:null;
       const best=g.best;
+      const ownRows=ownFor(g.item_name,bundle),ownBox=document.querySelector("#saleDrawerOwn");
+      if(ownRows.length){
+        ownBox.classList.remove("hidden");
+        ownBox.innerHTML='<div><strong>내 등록 매물 '+F.fmt(ownRows.length)+'건</strong><span>판매 전략은 이 매물을 제외한 경쟁 시세로 계산합니다.</span></div>'+
+          ownButton(g.item_name,bundle,true);
+      }else{
+        ownBox.classList.add("hidden");ownBox.innerHTML="";
+      }
 
       document.querySelector("#saleDrawerSummary").innerHTML=
         '<div><span>기준 묶음</span><strong>'+F.fmt(bundle)+'개</strong></div>'+
-        '<div><span>현재 정상 최저가</span><strong>'+F.offerText(best)+'</strong></div>'+
+        '<div><span>내 매물 제외 최저가</span><strong>'+F.offerText(best)+'</strong></div>'+
         '<div><span>최저가 경쟁 재고</span><strong>'+F.fmt(lowStock)+'개</strong></div>'+
         '<div><span>다음 정상 가격대</span><strong>'+(nextPrice?F.gold(nextPrice)+' / '+F.fmt(bundle)+'개':'없음')+'</strong></div>';
 
@@ -419,17 +489,57 @@
         '<div class="sale-result-card"><span>판단 근거</span><strong>'+F.escapeHtml(decision.reason)+'</strong></div>';
     }
 
+    function openOwnDrawer(name,bundleQuantity){
+      const qty=Number(bundleQuantity),rows=ownFor(name,Number.isFinite(qty)&&qty>0?qty:null);
+      if(!rows.length)return;
+      document.querySelector("#ownDrawerTitle").textContent=name+" · 내 매물 확인";
+      const cards=rows.map(o=>{
+        const match=ownMarketMatch(o);
+        const remaining=Number.isFinite(Number(o.remaining_quantity))?Number(o.remaining_quantity):(match?stock(match):null);
+        const source=match&&ownSellerName?"플리마켓 전체 스캔에서 내 판매자명과 일치":"내 등록 매물 화면에서 확인";
+        return '<article class="own-listing-card">'+
+          '<div class="own-listing-card-head"><span class="market-badge ok">내 매물</span><strong>'+F.gold(o.listing_price)+' / '+F.fmt(o.listed_quantity)+'개</strong></div>'+
+          '<div class="own-listing-grid">'+
+            '<div><span>등록 단위</span><b>'+F.fmt(o.listed_quantity)+'개</b></div>'+
+            '<div><span>등록 가격</span><b>'+F.gold(o.listing_price)+'</b></div>'+
+            '<div><span>현재 확인 재고</span><b>'+(remaining==null?"확인 불가":F.fmt(remaining)+"개")+'</b></div>'+
+            '<div><span>개당 환산</span><b>'+F.gold(Number(o.listing_price)/Math.max(1,Number(o.listed_quantity)))+'</b></div>'+
+          '</div><small>'+F.escapeHtml(source)+'</small></article>';
+      }).join("");
+      const sellerNote=ownSellerName
+        ?'<div class="own-seller-note"><span>내 판매자 식별</span><strong>'+F.escapeHtml(ownSellerName)+'</strong><small>내 등록 매물과 전체 시장의 상품·단위·가격을 대조해 식별했습니다.</small></div>'
+        :'<div class="own-seller-note warn"><span>내 판매자 식별</span><strong>자동 식별 보류</strong><small>동일 상품·가격 매물이 겹쳐 판매자명을 확정하지 못했습니다. 내 매물 정보 자체는 정상 표시됩니다.</small></div>';
+      document.querySelector("#ownDrawerBody").innerHTML=sellerNote+cards+
+        '<div class="sale-drawer-note">내 판매자명이 확정된 경우 제작품 수익의 판매 전략에서는 해당 판매자의 판매 매물을 전체 경쟁 시세에서 제외합니다.</div>';
+      const backdrop=document.querySelector("#ownDrawerBackdrop");
+      backdrop.classList.add("open");backdrop.setAttribute("aria-hidden","false");
+    }
+
+    function closeOwnDrawer(){
+      const backdrop=document.querySelector("#ownDrawerBackdrop");
+      backdrop.classList.remove("open");backdrop.setAttribute("aria-hidden","true");
+    }
+
     function renderAll(){
       renderRecommendations();renderMarket();
     }
 
     async function load(){
       try{
-        const d=await F.marketOffers();
-        offers=cleanOffers(d.offers||[]);
+        const [marketData,ownData]=await Promise.all([
+          F.marketOffers(),
+          F.market("market-own-listings")
+        ]);
+        allOffers=cleanOffers(marketData.offers||[]);
+        ownListings=Array.isArray(ownData.listings)?ownData.listings:[];
+        const inferred=inferOwnSeller(allOffers,ownListings);
+        ownSellerName=inferred.name||"";
+        ownSellerConfidence=inferred.confidence||"none";
+        offers=allOffers.filter(o=>!(o.trade_type!=="buy"&&ownSellerName&&String(o.seller_name||"")===ownSellerName));
         lastGroups=summarize();
         renderAll();
       }catch(e){
+        console.error(e);
         document.querySelector("#strategyCards").innerHTML='<div class="panel">'+F.errorState()+'</div>';
         document.querySelector("#marketRows").innerHTML='<tr><td colspan="7">'+F.errorState()+'</td></tr>';
       }
@@ -452,9 +562,15 @@
       const b=e.target.closest("button[data-sale-open]");if(!b)return;
       openSaleDrawer(b.dataset.saleOpen||"",b.dataset.saleBundle||"0");
     });
+    document.addEventListener("click",e=>{
+      const b=e.target.closest("button[data-own-open]");if(!b)return;
+      openOwnDrawer(b.dataset.ownOpen||"",b.dataset.ownBundle||"0");
+    });
     document.querySelector("#saleDrawerClose").addEventListener("click",closeSaleDrawer);
+    document.querySelector("#ownDrawerClose").addEventListener("click",closeOwnDrawer);
     document.querySelector("#saleDrawerBackdrop").addEventListener("click",e=>{if(e.target===e.currentTarget)closeSaleDrawer()});
-    document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSaleDrawer()});
+    document.querySelector("#ownDrawerBackdrop").addEventListener("click",e=>{if(e.target===e.currentTarget)closeOwnDrawer()});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeOwnDrawer();closeSaleDrawer()}});
     document.querySelector("#saleDrawerCount").addEventListener("input",e=>{
       const n=Math.max(0,Number(e.target.value)||0);
       document.querySelector("#saleDrawerSets").value=(n/64).toFixed(2).replace(/\.00$/,"");
