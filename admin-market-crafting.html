@@ -415,9 +415,9 @@
         return '<tr>'+
           '<td class="item-name">'+F.escapeHtml(r.item_name)+'<small>'+F.fmt(r.offers.length)+'개 경쟁 매물 · '+F.fmt(r.sellerCount)+'명</small></td>'+
           '<td><span class="market-badge muted">'+F.fmt(r.bundleQuantity)+'개 묶음</span></td>'+
-          '<td><span class="offer-main">'+F.offerText(o)+'</span><span class="offer-sub">'+(mode==="sale"?"이 묶음에서 가장 싼 판매가":"이 묶음에서 가장 높은 매입가")+'</span></td>'+
+          '<td><span class="offer-main">'+F.offerText(o)+'</span><span class="offer-sub">'+(mode==="sale"?"내 매물을 제외한 최저가":"이 묶음에서 가장 높은 매입가")+'</span></td>'+
           '<td><span class="offer-main">'+F.gold(unit(o))+' / 1개</span><span class="offer-sub">'+F.gold((unit(o)||0)*64)+' / 64개 · 다른 묶음 비교용</span></td>'+
-          '<td>'+F.fmt(stock(o))+'개<span class="offer-sub">'+(mode==="sale"?"대표 최저가 매물 재고":"대표 최고가 매입 가능")+'</span></td>'+
+          '<td>'+F.fmt(stock(o))+'개<span class="offer-sub">'+(mode==="sale"?"경쟁 최저가 재고":"대표 최고가 매입 가능")+'</span></td>'+
           '<td>'+sellerDetails(r)+'</td>'+
           '<td>'+badge(r)+'</td>'+
           (mode==="sale"?'<td><div class="market-action-stack"><button type="button" class="sale-strategy-btn" data-sale-open="'+F.escapeHtml(r.item_name)+'" data-sale-bundle="'+F.fmt(r.bundleQuantity)+'">판매한다면?</button>'+ownButton(r.item_name,r.bundleQuantity,true)+'</div></td>':'')+
@@ -495,7 +495,7 @@
       document.querySelector("#ownDrawerTitle").textContent=name+" · 내 매물 확인";
       const cards=rows.map(o=>{
         const match=ownMarketMatch(o);
-        const remaining=Number.isFinite(Number(o.remaining_quantity))?Number(o.remaining_quantity):(match?stock(match):null);
+        const remaining=o.remaining_quantity!=null&&Number.isFinite(Number(o.remaining_quantity))?Number(o.remaining_quantity):(match?stock(match):null);
         const source=match&&ownSellerName?"플리마켓 전체 스캔에서 내 판매자명과 일치":"내 등록 매물 화면에서 확인";
         return '<article class="own-listing-card">'+
           '<div class="own-listing-card-head"><span class="market-badge ok">내 매물</span><strong>'+F.gold(o.listing_price)+' / '+F.fmt(o.listed_quantity)+'개</strong></div>'+
