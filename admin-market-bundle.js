@@ -107,7 +107,7 @@ function resultState(r){
   return {label:"본전",kind:"muted"};
 }
 function render(){
-  const target=Math.min(99,Math.max(1,Math.floor(Number(document.querySelector("#targetSets").value)||7)));
+  const target=Math.min(99,Math.max(1,Math.floor(Number(document.querySelector("#targetSets").value)||1)));
   document.querySelector("#targetSets").value=String(target);
   rows=RECIPES.map(r=>evaluate(r,target));
   const sort=document.querySelector("#bundleSort").value;
