@@ -11,29 +11,18 @@
   
 </head>
 <body>
-  <main id="loginView" class="login">
-    <p class="eyebrow">PRIVATE MARKET CONSOLE</p>
-    <h2>관리자 확인</h2>
-    <p>플리마켓 운영 데이터는 관리자만 볼 수 있어요. 기존 띵팜 관리자 비밀번호로 로그인해 주세요.</p>
-    <form id="loginForm" class="login-form">
-      <input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required>
-      <button class="btn primary" type="submit">로그인</button>
-    </form>
-    <div id="loginMsg" class="login-msg"></div>
-  </main>
-
-  <main id="appView" class="shell hidden">
+  <main id="appView" class="shell">
     <div class="brandbar">
-      <a class="brand" href="admin-market.html">
+      <a class="brand" href="market.html">
         <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
-        <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
+        <span><strong>띵팜 플리마켓</strong><small>MARKET DATA</small></span>
       </a>
       <div class="top-actions">
         <span class="status-note">Supabase 실데이터 연결</span>
-        <button id="logoutBtn" class="btn">로그아웃</button>
+        
       </div>
     </div>
-    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="">가격 변동</a><a href="admin-market-sales.html" class="active">판매 장부</a></nav>
+    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="index.html" class="site-back">← 띵팜</a><a href="market.html">홈</a><a href="admin-market-recommend.html">음식 원재료 추천</a><a href="admin-market-crafting.html">제작품 수익</a><a href="admin-market-bundle.html">묶음 차익</a><a href="admin-market-listings.html">내 등록 매물</a><a href="admin-market-history.html">가격 변동</a><a href="admin-market-sales.html" class="active">판매 장부</a></nav>
     <header class="topbar"><div><p class="eyebrow">SALES LEDGER</p><h1>판매 장부</h1><p class="subtitle">Supabase에 저장된 실제 플리마켓 판매 완료 기록만 집계합니다.</p></div></header>
     
     <section class="metrics">
@@ -47,7 +36,7 @@
     </section>
   </main>
   
-  <script src="admin-market-core.js?v=0.4.0"></script>
+  <script src="admin-market-core.js?v=1.0.0"></script>
   <script>
   async function render(){
     const F=MarketAdmin,t=document.querySelector("#salesRows");
