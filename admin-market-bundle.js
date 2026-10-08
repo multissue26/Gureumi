@@ -6,8 +6,7 @@ const RECIPES=[
   {raw:"비트",product:"비트 묶음",per:32,icon:"assets/ingredient/beet-bundle.png"},
   {raw:"호박",product:"호박 묶음",per:32,icon:"assets/ingredient/pumpkin-bundle.png"},
   {raw:"수박",product:"수박 묶음",per:32,icon:"assets/ingredient/melon-bundle.png"},
-  {raw:"달콤한 열매",product:"달콤한 열매 묶음",per:64,icon:"assets/ingredient/sweet-berries-bundle.png"},
-  {raw:"사탕수수",product:"설탕 큐브",per:64,icon:"assets/ingredient/sugar-cube.png"}
+  {raw:"달콤한 열매",product:"달콤한 열매 묶음",per:64,icon:"assets/ingredient/sweet-berries-bundle.png"}
 ];
 let offers=[],latestScan=null,rows=[],selected=null;
 
