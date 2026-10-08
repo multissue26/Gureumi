@@ -9,6 +9,9 @@ on:
       - 'app.js'
       - 'admin-visitors.html'
       - 'market.html'
+      - 'food-margin.html'
+      - 'food-margin.js'
+      - 'food-margin.css'
       - 'admin-market*.html'
       - 'admin-market*.js'
       - 'admin-market.css'
@@ -47,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
-          cp index.html admin-visitors.html styles.css design-polish.css app.js data.js shop-data.js prices.example.json CNAME _site/
+          cp index.html admin-visitors.html styles.css design-polish.css app.js data.js shop-data.js prices.example.json CNAME food-margin.html food-margin.js food-margin.css _site/
           cp market.html admin-market*.html admin-market*.js admin-market.css _site/
           cp -R assets _site/assets
           touch _site/.nojekyll
