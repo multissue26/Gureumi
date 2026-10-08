@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="color-scheme" content="light">
+  <title>음식 마진 | 띵팜</title>
+  <link rel="stylesheet" href="food-margin.css?v=1.0.0">
+  <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
+</head>
+<body>
+  <main class="fm-shell">
+    <header class="fm-brandbar">
+      <a class="fm-brand" href="index.html">
+        <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
+        <span><strong>띵팜</strong><small>FOOD MARGIN</small></span>
+      </a>
+      <div class="fm-links">
+        <a href="index.html">← 띵팜</a>
+        <a href="market.html">플리마켓</a>
+        <a class="active" href="food-margin.html">음식 마진</a>
+      </div>
+    </header>
+
+    <section class="fm-hero">
+      <div>
+        <p class="fm-eyebrow">LIVE FLEA MARKET × FOOD PRICE</p>
+        <h1>음식 마진</h1>
+        <p class="fm-subtitle">현재 플리마켓의 실제 판매 매물을 싼 순서대로 구매한다고 가정해, 음식 1세트를 만들 때 필요한 재료비와 예상 순이익을 계산합니다.</p>
+      </div>
+      <div class="fm-status">
+        <span id="marketStatus" class="fm-dot-line"><i></i>플리마켓 확인 중</span>
+        <span id="foodPriceStatus" class="fm-dot-line"><i></i>음식 가격 확인 중</span>
+      </div>
+    </section>
+
+    <section class="fm-metrics">
+      <article><span>계산 가능한 음식</span><strong id="mReady">—</strong><small>재료 조달 + 음식 판매가 확인</small></article>
+      <article><span>순이익 1위</span><strong id="mBest">—</strong><small id="mBestSub">1세트 기준</small></article>
+      <article><span>최고 마진율</span><strong id="mMargin">—</strong><small>순이익 ÷ 판매금액</small></article>
+      <article><span>마지막 시장 스캔</span><strong id="mScan">—</strong><small id="mPriceTime">음식 가격 갱신 —</small></article>
+    </section>
+
+    <section class="fm-panel fm-controls">
+      <div class="fm-control-copy">
+        <h2>지금 만들면 얼마나 남을까?</h2>
+        <p>베이스 재료는 완제품을 사지 않고 <b>토마토·양파·마늘 씨앗 비용</b>으로 계산합니다. 씨앗 수량은 띵팜의 평균 수확량 기준 예상치입니다.</p>
+      </div>
+      <div class="fm-control-row">
+        <label>제작 목표
+          <input id="targetSets" type="number" min="1" max="99" step="1" value="1">
+          <span>세트 · 1세트 = 64개</span>
+        </label>
+        <label>정렬
+          <select id="sortMode">
+            <option value="net">순이익 높은 순</option>
+            <option value="margin">마진율 높은 순</option>
+            <option value="cost">재료비 낮은 순</option>
+            <option value="price">음식 판매가 높은 순</option>
+          </select>
+        </label>
+        <label class="fm-search">음식 찾기
+          <input id="foodSearch" type="search" placeholder="예: 딥 크림 빠네" autocomplete="off">
+        </label>
+      </div>
+    </section>
+
+    <section class="fm-section">
+      <div class="fm-section-head">
+        <div><p class="fm-eyebrow">MARGIN RANKING</p><h2>음식별 예상 마진</h2></div>
+        <span id="resultCount">—</span>
+      </div>
+      <div id="foodGrid" class="fm-grid">
+        <div class="fm-panel fm-empty"><strong>데이터를 불러오는 중입니다</strong><p>플리마켓과 띵팜 음식 가격을 연결하고 있습니다.</p></div>
+      </div>
+    </section>
+
+    <section class="fm-panel fm-method">
+      <div>
+        <span>재료 구매</span>
+        <strong>실제 매물 단위</strong>
+        <p>개당 환산가가 싼 정상 판매 매물부터 구매합니다. 최저가 재고가 부족하면 다음 최저가 매물로 자동으로 넘어갑니다.</p>
+      </div>
+      <div>
+        <span>베이스 재료</span>
+        <strong>씨앗 비용으로 대체</strong>
+        <p>토마토·양파·마늘 베이스는 필요한 작물량과 평균 수확량을 이용해 예상 씨앗 수를 계산한 뒤 실제 씨앗 매물을 구매합니다.</p>
+      </div>
+      <div>
+        <span>순이익</span>
+        <strong>판매금액 − 실제 조달비</strong>
+        <p>현재 음식 판매 단가 × 완성 음식 수량에서 실제 플리마켓 재료 구매비를 뺍니다. 확인되지 않은 수수료는 임의로 넣지 않습니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="detailBackdrop" class="fm-backdrop" aria-hidden="true">
+    <aside class="fm-drawer" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <div class="fm-drawer-head">
+        <div><p class="fm-eyebrow">COST BREAKDOWN</p><h2 id="detailTitle">상세 계산</h2></div>
+        <button id="detailClose" type="button" aria-label="닫기">×</button>
+      </div>
+      <div id="detailBody"></div>
+    </aside>
+  </div>
+
+  <script src="data.js?v=0.14.0-official-guide1"></script>
+  <script src="admin-market-core.js?v=1.0.0"></script>
+  <script src="food-margin.js?v=1.0.0"></script>
+</body>
+</html>
