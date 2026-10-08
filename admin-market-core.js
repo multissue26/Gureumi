@@ -1,5 +1,4 @@
 (()=>{"use strict";
-  const ADMIN_API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-admin-v2";
   const MARKET_API="https://cmimycfvvhugiyrwsior.supabase.co/functions/v1/ddingfarm-market-api";
   const tokenKey="ddingfarmAdminStatsToken";
   const $=s=>document.querySelector(s);
@@ -8,35 +7,19 @@
   const pct=n=>Number.isFinite(Number(n))?((Number(n)>=0?"+":"")+Number(n).toLocaleString("ko-KR",{maximumFractionDigits:1})+"%"):"—";
   const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 
-  async function call(path,body,token){
-    const r=await fetch(ADMIN_API+"/"+path,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})},body:JSON.stringify(body||{})});
+  async function post(action,body={}){
+    const r=await fetch(MARKET_API,{
+      method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({action,...(body||{})})
+    });
     const j=await r.json().catch(()=>({}));
     if(!r.ok){const e=new Error(j.error||("HTTP "+r.status));e.data=j;e.status=r.status;throw e}
     return j;
   }
-  async function market(action,body={}){
-    const token=sessionStorage.getItem(tokenKey);
-    if(!token) throw new Error("unauthorized");
-    try{return await call(action,body,token)}
-    catch(err){
-      if(err?.status===401){
-        sessionStorage.removeItem(tokenKey);
-        showLogin("로그인 시간이 끝났어요. 다시 로그인해 주세요.");
-      }
-      throw err;
-    }
-  }
-  async function marketOffers(){
-    const token=sessionStorage.getItem(tokenKey);
-    if(!token) throw new Error("unauthorized");
-    const r=await fetch(MARKET_API,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:"{}"});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok){
-      if(r.status===401){sessionStorage.removeItem(tokenKey);showLogin("로그인 시간이 끝났어요. 다시 로그인해 주세요.")}
-      const e=new Error(j.error||("HTTP "+r.status));e.data=j;e.status=r.status;throw e;
-    }
-    return j;
-  }
+  const market=(action,body={})=>post(action,body);
+  const marketOffers=()=>post("market-offers");
+
   function offerUnit(o){
     const q=Number(o?.quantity||0),p=Number(o?.listing_price);
     return q>0&&Number.isFinite(p)?p/q:null;
@@ -50,52 +33,47 @@
     return Number.isFinite(u)?"개당 "+gold(u)+" · /64 "+gold(u*64):"—";
   }
 
-  function showLogin(message=""){
-    $("#appView")?.classList.add("hidden");
-    $("#loginView")?.classList.remove("hidden");
-    if($("#loginMsg")) $("#loginMsg").textContent=message;
-    if($("#pw")){$("#pw").value="";$("#pw").focus()}
-  }
-  function showApp(){
-    $("#loginView")?.classList.add("hidden");
+  function normalizeChrome(){
+    $("#loginView")?.remove();
     $("#appView")?.classList.remove("hidden");
-  }
-  function bindLogout(){
-    $("#logoutBtn")?.addEventListener("click",()=>{sessionStorage.removeItem(tokenKey);showLogin("로그아웃했어요.")});
-  }
-  function bindLogin(render){
-    $("#loginForm")?.addEventListener("submit",async e=>{
-      e.preventDefault();$("#loginMsg").textContent="확인 중이에요...";
-      try{
-        const r=await call("login",{password:$("#pw").value});
-        sessionStorage.setItem(tokenKey,r.token);
-        showApp();
-        await render?.();
-      }catch(err){
-        if(err.data?.error==="blocked"){
-          const until=err.data.blocked_until?new Date(err.data.blocked_until).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}):"";
-          $("#loginMsg").textContent="비밀번호를 여러 번 틀렸어요. "+(until?until+" 이후에 다시 시도해 주세요.":"잠시 뒤 다시 시도해 주세요.");
-        }else $("#loginMsg").textContent="비밀번호가 맞지 않아요."+(err.data?.remaining!=null?" 남은 시도 "+err.data.remaining+"회":"");
-      }
+    $("#logoutBtn")?.remove();
+
+    document.querySelectorAll(".brand").forEach(a=>a.setAttribute("href","market.html"));
+    document.querySelectorAll(".brand small").forEach(el=>el.textContent="MARKET DATA");
+    document.querySelectorAll(".eyebrow").forEach(el=>{
+      if(el.textContent?.includes("PRIVATE"))el.textContent=el.textContent.replace("PRIVATE","DDINGFARM");
     });
-  }
-  async function boot(render){
-    bindLogin(render);bindLogout();
-    const token=sessionStorage.getItem(tokenKey);
-    if(!token){showLogin();return}
-    try{
-      await call("stats",{},token);
-      showApp();
-      await render?.();
-    }catch(err){
-      if(err?.status===401||err?.data?.error==="unauthorized"){
-        sessionStorage.removeItem(tokenKey);
-        showLogin("로그인 시간이 끝났어요. 다시 로그인해 주세요.");
-      }else{
-        showApp();
-        await render?.(err);
+
+    const nav=document.querySelector(".navbar");
+    if(nav){
+      const home=nav.querySelector('a[href="admin-market.html"]');
+      if(home)home.setAttribute("href","market.html");
+
+      if(!nav.querySelector('[data-site-back]')){
+        const back=document.createElement("a");
+        back.href="index.html";back.dataset.siteBack="1";back.className="site-back";back.textContent="← 띵팜";
+        nav.prepend(back);
       }
+      if(!nav.querySelector('a[href="admin-market-bundle.html"]')){
+        const link=document.createElement("a");
+        link.href="admin-market-bundle.html";link.textContent="묶음 차익";
+        const crafting=nav.querySelector('a[href="admin-market-crafting.html"]');
+        crafting?.insertAdjacentElement("afterend",link);
+      }
+
+      const file=(location.pathname.split("/").pop()||"market.html").toLowerCase();
+      nav.querySelectorAll("a").forEach(a=>{
+        if(a.dataset.siteBack)return;
+        const href=(a.getAttribute("href")||"").toLowerCase();
+        const active=(file==="market.html"||file==="admin-market.html")&&href==="market.html" || href===file;
+        a.classList.toggle("active",!!active);
+      });
     }
+  }
+
+  async function boot(render){
+    normalizeChrome();
+    try{await render?.()}catch(e){console.error(e)}
   }
 
   function updateScanAge(scannedAt){
@@ -122,12 +100,12 @@
   }
   function dateTime(v){
     if(!v)return "—";
-    const d=new Date(v); if(Number.isNaN(d.getTime()))return "—";
-    return d.toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+    const d=new Date(v);if(Number.isNaN(d.getTime()))return "—";
+    return d.toLocaleString("ko-KR",{timeZone:"Asia/Seoul",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
   }
   function errorState(message="데이터를 불러오지 못했습니다."){
     return '<div class="empty-state"><strong>데이터 조회 실패</strong><p>'+escapeHtml(message)+'</p></div>';
   }
 
-  window.MarketAdmin={boot,call,market,marketOffers,fmt,gold,pct,offerUnit,offerText,offerNormalizedText,escapeHtml,updateScanAge,dateTime,errorState,tokenKey};
+  window.MarketAdmin={boot,market,marketOffers,fmt,gold,pct,offerUnit,offerText,offerNormalizedText,escapeHtml,updateScanAge,dateTime,errorState,tokenKey};
 })();
