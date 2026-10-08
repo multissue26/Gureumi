@@ -1,0 +1,340 @@
+(()=>{"use strict";
+const D=window.DDING_DATA||{foods:[],ingredients:{},crops:[]};
+const F=window.MarketAdmin;
+const PRICE_API="https://dding-price-api.hansuyeon191-6fe.workers.dev";
+const BASE_SEEDS={
+  tomato_base:{crop:"tomato",seedName:"토마토 씨앗"},
+  onion_base:{crop:"onion",seedName:"양파 씨앗"},
+  garlic_base:{crop:"garlic",seedName:"마늘 씨앗"}
+};
+let allOffers=[],marketOffers=[],ownListings=[],ownSellerName="",latestScan=null,foodPrices={},foodPriceUpdated=null,results=[],selected=null;
+
+const $=s=>document.querySelector(s);
+const esc=v=>F.escapeHtml(v);
+const fmt=n=>F.fmt(n);
+const gold=n=>F.gold(n);
+const median=a=>{const v=a.filter(Number.isFinite).slice().sort((x,y)=>x-y);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2};
+const price=o=>Math.max(0,Number(o?.listing_price)||0);
+const qty=o=>Math.max(1,Math.floor(Number(o?.quantity)||1));
+const stock=o=>Math.max(0,Math.floor(Number(o?.stock_quantity??o?.quantity??0)));
+const unit=o=>{const q=qty(o),p=price(o);return q>0?p/q:null};
+const wholeLots=o=>Math.max(0,Math.floor(stock(o)/qty(o)));
+
+function cleanOffers(rows){
+  return (rows||[]).filter(o=>{
+    const target=String(o?.raw_data?.searchTarget||"").trim();
+    return !target||target===String(o?.item_name||"").trim();
+  });
+}
+
+function inferOwnSeller(rows,ownRows){
+  const usable=(ownRows||[]).filter(o=>o?.item_name&&Number(o?.listing_price)>0&&Number(o?.listed_quantity)>0);
+  if(!usable.length)return "";
+  const scores=new Map();
+  for(const own of usable){
+    const matches=rows.filter(o=>
+      o.trade_type!=="buy" &&
+      String(o.item_name||"").trim()===String(own.item_name||"").trim() &&
+      Number(o.quantity)===Number(own.listed_quantity) &&
+      Number(o.listing_price)===Number(own.listing_price) &&
+      o.seller_name
+    );
+    for(const seller of new Set(matches.map(o=>String(o.seller_name)))) scores.set(seller,(scores.get(seller)||0)+1);
+  }
+  const ranked=[...scores.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  if(!ranked.length)return "";
+  const [name,matched]=ranked[0],second=ranked[1]?.[1]||0;
+  const required=usable.length>=2?Math.min(2,usable.length):1;
+  return matched>=required&&matched!==second?name:"";
+}
+
+function isHighOutlier(o,group){
+  const values=group.map(unit).filter(v=>Number.isFinite(v)&&v>0),u=unit(o);
+  if(!(u>0)||values.length<2)return false;
+  const sorted=values.slice().sort((a,b)=>a-b);
+  if(values.length===2){
+    const lo=sorted[0],hi=sorted[1];
+    return u===hi&&lo>0&&hi>lo*20;
+  }
+  const med=median(values);
+  if(!(med>0)||u<=med*5)return false;
+  const mad=median(values.map(v=>Math.abs(v-med)))||0;
+  return mad===0||((u-med)/(1.4826*mad)>6);
+}
+
+function normalSaleOffers(itemName){
+  const all=marketOffers.filter(o=>o.trade_type!=="buy"&&String(o.item_name||"").trim()===itemName);
+  const flagged=all.filter(o=>isHighOutlier(o,all));
+  const normal=all.filter(o=>!flagged.includes(o));
+  return {all,flagged,pool:normal.length?normal:all};
+}
+
+function purchasePlan(itemName,required){
+  const source=normalSaleOffers(itemName);
+  const pool=source.pool.slice().filter(o=>wholeLots(o)>0).sort((a,b)=>(unit(a)-unit(b))||(price(a)-price(b)));
+  const need=Math.max(0,Math.ceil(Number(required)||0));
+  let acquired=0,cost=0;
+  const steps=[];
+  for(const o of pool){
+    if(acquired>=need)break;
+    const lotQty=qty(o),available=wholeLots(o),remain=need-acquired;
+    const take=Math.min(available,Math.ceil(remain/lotQty));
+    if(take<=0)continue;
+    const got=take*lotQty,lineCost=take*price(o);
+    acquired+=got;cost+=lineCost;
+    steps.push({offer:o,lots:take,qty:got,cost:lineCost});
+  }
+  return {itemName,required:need,acquired,cost,leftover:Math.max(0,acquired-need),complete:acquired>=need,steps,flagged:source.flagged};
+}
+
+function cropMeta(id){
+  return (D.crops||[]).find(c=>c.id===id)||null;
+}
+
+function ingredientMeta(id){
+  return D.ingredients?.[id]||{id,name:id,type:"미확인",recipe:[],icon:""};
+}
+
+function foodNeeds(food,outputQty){
+  const rows=[];
+  for(const [id,nRaw] of food.recipe||[]){
+    const n=Math.max(0,Number(nRaw)||0);
+    const base=BASE_SEEDS[id];
+    if(base){
+      const ing=ingredientMeta(id);
+      const cropRecipe=(ing.recipe||[]).find(([child])=>child===base.crop);
+      const cropPerBase=Math.max(0,Number(cropRecipe?.[1])||0);
+      const baseQty=n*outputQty;
+      const rawCropQty=baseQty*cropPerBase;
+      const crop=cropMeta(base.crop);
+      const yieldMin=Math.max(0,Number(crop?.yieldMin)||0);
+      const yieldMax=Math.max(yieldMin,Number(crop?.yieldMax)||yieldMin);
+      const yieldAvg=(yieldMin+yieldMax)/2;
+      const required=yieldAvg>0?Math.ceil(rawCropQty/yieldAvg):rawCropQty;
+      rows.push({
+        kind:"seed",sourceId:id,marketName:base.seedName,name:base.seedName,
+        icon:crop?.icon||ing.icon||"",required,
+        baseName:ing.name,baseQty,rawCropName:crop?.name||base.crop,rawCropQty,
+        yieldMin,yieldMax,yieldAvg,
+        note:yieldAvg>0
+          ?ing.name+" "+fmt(baseQty)+"개에 필요한 "+(crop?.name||base.crop)+" "+fmt(rawCropQty)+"개를 평균 수확량 "+yieldAvg.toLocaleString("ko-KR",{maximumFractionDigits:1})+"개/씨앗으로 환산"
+          :"수확량 정보가 없어 작물 필요량과 같은 수의 씨앗으로 계산"
+      });
+    }else{
+      const ing=ingredientMeta(id),required=Math.ceil(n*outputQty);
+      rows.push({
+        kind:"direct",sourceId:id,marketName:ing.name,name:ing.name,icon:ing.icon||"",
+        required,note:"레시피 재료를 플리마켓에서 직접 구매"
+      });
+    }
+  }
+  return rows;
+}
+
+function currentFoodPrice(food){
+  const row=foodPrices[food.name];
+  if(!row)return null;
+  const v=row.myPrice??row.marketPrice??row.price??row.current;
+  const n=Number(String(v??"").replace(/,/g,""));
+  return Number.isFinite(n)?n:null;
+}
+
+function evaluate(food,targetSets){
+  const outputQty=Math.max(1,targetSets)*64;
+  const needs=foodNeeds(food,outputQty).map(n=>({...n,plan:purchasePlan(n.marketName,n.required)}));
+  const ingredientCost=needs.reduce((sum,n)=>sum+n.plan.cost,0);
+  const complete=needs.every(n=>n.plan.complete);
+  const saleUnit=currentFoodPrice(food);
+  const revenue=Number.isFinite(saleUnit)?Math.round(saleUnit*outputQty):null;
+  const net=complete&&revenue!=null?revenue-ingredientCost:null;
+  const margin=net!=null&&revenue>0?net/revenue*100:null;
+  const roi=net!=null&&ingredientCost>0?net/ingredientCost*100:null;
+  return {food,targetSets,outputQty,needs,ingredientCost,complete,saleUnit,revenue,net,margin,roi};
+}
+
+function normalizeFoodPrices(payload){
+  const root=payload?.prices??payload??{};
+  const src=root?.prices??root;
+  const out={};
+  for(const [name,val] of Object.entries(src||{})){
+    if(typeof val==="number")out[name]={marketPrice:val,myPrice:val};
+    else if(val&&typeof val==="object")out[name]={
+      marketPrice:Number(String(val.marketPrice??val.price??val.current??"").replace(/,/g,"")),
+      myPrice:Number(String(val.myPrice??val.personalPrice??val.marketPrice??val.price??val.current??"").replace(/,/g,""))
+    };
+  }
+  return out;
+}
+
+async function loadFoodPrices(){
+  let bundle=null;
+  try{
+    const r=await fetch(PRICE_API+"/dashboard",{cache:"no-store"});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    bundle=await r.json();
+  }catch(_){
+    const r=await fetch(PRICE_API+"/prices",{cache:"no-store"});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const p=await r.json();
+    bundle={prices:p?.prices??p};
+  }
+  foodPrices=normalizeFoodPrices(bundle?.prices??bundle);
+  const p=bundle?.prices;
+  foodPriceUpdated=p?.capturedAt||p?.updatedAt||p?.generatedAt||bundle?.status?.publishedAt||bundle?.status?.updatedAt||null;
+}
+
+function cls(v){
+  if(v==null)return "muted";
+  return v>0?"positive":v<0?"negative":"muted";
+}
+
+function status(r){
+  if(!Number.isFinite(r.saleUnit))return {label:"음식 가격 없음",kind:"muted"};
+  if(!r.complete)return {label:"재료 부족",kind:"warn"};
+  if(r.net>0)return {label:"이득",kind:"ok"};
+  if(r.net<0)return {label:"손해",kind:"danger"};
+  return {label:"본전",kind:"muted"};
+}
+
+function formatMargin(v){
+  return Number.isFinite(v)?(v>=0?"+":"")+v.toLocaleString("ko-KR",{maximumFractionDigits:1})+"%":"—";
+}
+
+function dateTime(v){
+  if(!v)return "—";
+  const d=new Date(v);if(Number.isNaN(d.getTime()))return "—";
+  return d.toLocaleString("ko-KR",{timeZone:"Asia/Seoul",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+
+function render(){
+  const target=Math.min(99,Math.max(1,Math.floor(Number($("#targetSets").value)||1)));
+  $("#targetSets").value=String(target);
+  const q=$("#foodSearch").value.trim().toLowerCase();
+  results=(D.foods||[]).map(f=>evaluate(f,target));
+  const ready=results.filter(r=>r.complete&&r.revenue!=null&&r.net!=null);
+  const best=ready.slice().sort((a,b)=>b.net-a.net)[0]||null;
+  const bestMargin=ready.slice().sort((a,b)=>b.margin-a.margin)[0]||null;
+
+  $("#mReady").textContent=fmt(ready.length)+"종";
+  $("#mBest").textContent=best?best.food.name:"—";
+  $("#mBestSub").textContent=best?((best.net>=0?"+":"")+gold(best.net)+" · "+target+"세트"):"재료/가격 데이터 필요";
+  $("#mMargin").textContent=bestMargin?formatMargin(bestMargin.margin):"—";
+  $("#mScan").textContent=latestScan?dateTime(latestScan.completed_at):"—";
+  $("#mPriceTime").textContent="음식 가격 갱신 "+dateTime(foodPriceUpdated);
+
+  const sort=$("#sortMode").value;
+  let shown=results.filter(r=>!q||r.food.name.toLowerCase().includes(q));
+  shown.sort((a,b)=>{
+    if(sort==="margin")return (b.margin??-Infinity)-(a.margin??-Infinity);
+    if(sort==="cost")return (a.complete?a.ingredientCost:Infinity)-(b.complete?b.ingredientCost:Infinity);
+    if(sort==="price")return (b.saleUnit??-Infinity)-(a.saleUnit??-Infinity);
+    return (b.net??-Infinity)-(a.net??-Infinity);
+  });
+  $("#resultCount").textContent=fmt(shown.length)+"종 · "+fmt(target*64)+"개 제작 기준";
+
+  $("#foodGrid").innerHTML=shown.length?shown.map((r,i)=>{
+    const st=status(r),missing=r.needs.filter(n=>!n.plan.complete);
+    const netText=r.net==null?"계산 불가":(r.net>=0?"+":"")+gold(r.net);
+    const costText=r.complete?gold(r.ingredientCost):gold(r.ingredientCost)+" + 부족";
+    const revText=r.revenue==null?"—":gold(r.revenue);
+    const topBadge=i===0&&sort==="net"&&r.net!=null?'<span class="fm-top-badge">순이익 1위</span>':"";
+    return '<article class="fm-card '+(r.net==null?"unavailable":"")+'">'+
+      '<div class="fm-card-head"><div class="fm-food"><img src="'+esc(r.food.image||"")+'" alt=""><div>'+topBadge+'<span class="fm-grade">'+esc(r.food.grade||"")+'</span><h3>'+esc(r.food.name)+'</h3><small>'+fmt(r.outputQty)+'개 · '+fmt(r.targetSets)+'세트</small></div></div>'+
+      '<div class="fm-net '+cls(r.net)+'">'+netText+'<small>마진율 '+formatMargin(r.margin)+'</small></div></div>'+
+      '<div class="fm-kpis">'+
+        '<div><span>재료 실제 조달비</span><strong>'+costText+'</strong></div>'+
+        '<div><span>음식 판매금액</span><strong>'+revText+'</strong><small>'+(r.saleUnit==null?"판매가 없음":gold(r.saleUnit)+" / 1개")+'</small></div>'+
+        '<div><span>원가 대비 수익률</span><strong>'+formatMargin(r.roi)+'</strong></div>'+
+      '</div>'+
+      '<div class="fm-card-foot"><div><span class="fm-badge '+st.kind+'">'+st.label+'</span><small>'+(missing.length?" 부족: "+missing.map(x=>esc(x.name)).join(", "):" 실제 매물 순차 구매 반영")+'</small></div>'+
+      '<button type="button" data-detail="'+esc(r.food.slug)+'">상세보기</button></div>'+
+    '</article>';
+  }).join(""):'<div class="fm-panel fm-empty"><strong>검색 결과가 없습니다</strong><p>다른 음식 이름으로 검색해 주세요.</p></div>';
+}
+
+function stepRows(plan){
+  if(!plan.steps.length)return '<tr><td colspan="5">구매 가능한 정상 판매 매물이 없습니다.</td></tr>';
+  return plan.steps.map(s=>{
+    const o=s.offer,shop=String(o?.raw_data?.shopName||"—");
+    return '<tr><td><strong>'+esc(o.seller_name||"—")+'</strong><small>'+esc(shop)+'</small></td>'+
+      '<td>'+gold(o.listing_price)+' / '+fmt(o.quantity)+'개</td>'+
+      '<td>'+fmt(stock(o))+'개</td><td>'+fmt(s.lots)+'묶음 · '+fmt(s.qty)+'개</td><td><b>'+gold(s.cost)+'</b></td></tr>';
+  }).join("");
+}
+
+function openDetail(slug){
+  const r=results.find(x=>x.food.slug===slug);if(!r)return;
+  selected=r;
+  $("#detailTitle").textContent=r.food.name+" · "+fmt(r.targetSets)+"세트";
+  const st=status(r);
+  const needs=r.needs.map(n=>{
+    const p=n.plan;
+    const seedInfo=n.kind==="seed"
+      ?'<div class="fm-seed-note"><b>'+esc(n.baseName)+' 대신 '+esc(n.seedName||n.name)+' 비용 반영</b><span>'+
+        esc(n.rawCropName)+' '+fmt(n.rawCropQty)+'개 필요 · 평균 수확량 '+Number(n.yieldAvg||0).toLocaleString("ko-KR",{maximumFractionDigits:1})+
+        '개/씨앗 → 예상 씨앗 '+fmt(n.required)+'개</span></div>'
+      :"";
+    return '<section class="fm-detail-item">'+
+      '<div class="fm-detail-title"><div><span class="fm-badge '+(p.complete?"ok":"warn")+'">'+(p.complete?"조달 가능":"재고 부족")+'</span><h3>'+esc(n.name)+'</h3><small>'+esc(n.kind==="seed"?"베이스 재배용 씨앗":"플리마켓 직접 구매")+'</small></div>'+
+      '<div><span>필요 '+fmt(p.required)+'개</span><strong>'+gold(p.cost)+'</strong></div></div>'+
+      seedInfo+
+      '<div class="fm-procure-summary"><span>실제 구매 '+fmt(p.acquired)+'개</span><span>남는 수량 '+fmt(p.leftover)+'개</span><span>고가 이상치 제외 '+fmt(p.flagged.length)+'건</span></div>'+
+      '<details><summary>구매 순서 '+fmt(p.steps.length)+'단계 보기</summary><div class="fm-table-wrap"><table><thead><tr><th>판매자 / 상점</th><th>판매 단위</th><th>재고</th><th>실제 구매</th><th>비용</th></tr></thead><tbody>'+stepRows(p)+'</tbody></table></div></details>'+
+    '</section>';
+  }).join("");
+
+  $("#detailBody").innerHTML=
+    '<div class="fm-detail-hero">'+
+      '<div class="fm-detail-food"><img src="'+esc(r.food.image||"")+'" alt=""><div><span class="fm-grade">'+esc(r.food.grade||"")+'</span><h3>'+esc(r.food.name)+'</h3><p>'+fmt(r.outputQty)+'개 제작</p></div></div>'+
+      '<span class="fm-badge '+st.kind+'">'+st.label+'</span>'+
+    '</div>'+
+    '<div class="fm-detail-total">'+
+      '<div><span>총 재료 구매비</span><strong>'+gold(r.ingredientCost)+(r.complete?"":" + 재료 부족")+'</strong></div>'+
+      '<div><span>음식 판매 단가</span><strong>'+(r.saleUnit==null?"—":gold(r.saleUnit)+" / 1개")+'</strong></div>'+
+      '<div><span>1세트 포함 예상 매출</span><strong>'+(r.revenue==null?"—":gold(r.revenue))+'</strong></div>'+
+      '<div class="hero"><span>예상 순이익</span><strong class="'+cls(r.net)+'">'+(r.net==null?"계산 불가":(r.net>=0?"+":"")+gold(r.net))+'</strong><small>마진율 '+formatMargin(r.margin)+' · 원가 대비 '+formatMargin(r.roi)+'</small></div>'+
+    '</div>'+
+    '<div class="fm-detail-section-head"><h3>재료별 실제 구매 계획</h3><p>최저 개당가 매물부터 재고를 소진하고 부족하면 다음 가격대로 넘어갑니다. 판매 단위는 쪼개지 않고 실제 묶음 단위로 구매합니다.</p></div>'+
+    needs+
+    '<div class="fm-detail-note">베이스용 씨앗 수량은 띵팜에 기록된 작물의 평균 1회 수확량을 사용한 예상치입니다. 실제 수확량에 따라 필요한 씨앗 수는 달라질 수 있습니다. 플리마켓 등록 수수료 등 확인되지 않은 비용은 포함하지 않습니다.</div>';
+
+  const b=$("#detailBackdrop");b.classList.add("open");b.setAttribute("aria-hidden","false");
+}
+
+function closeDetail(){
+  const b=$("#detailBackdrop");b.classList.remove("open");b.setAttribute("aria-hidden","true");selected=null;
+}
+
+async function load(){
+  try{
+    const [marketData,ownData]=await Promise.all([
+      F.marketOffers(),
+      F.market("market-own-listings").catch(()=>({listings:[]})),
+      loadFoodPrices()
+    ]).then(([m,o])=>[m,o]);
+    latestScan=marketData.latest_scan||null;
+    allOffers=cleanOffers(marketData.offers||[]);
+    ownListings=Array.isArray(ownData?.listings)?ownData.listings:[];
+    ownSellerName=inferOwnSeller(allOffers,ownListings);
+    marketOffers=allOffers.filter(o=>!(o.trade_type!=="buy"&&ownSellerName&&String(o.seller_name||"")===ownSellerName));
+    $("#marketStatus").innerHTML='<i class="ok"></i>플리마켓 연결 · '+fmt(marketOffers.filter(o=>o.trade_type!=="buy").length)+'개 판매 매물';
+    $("#foodPriceStatus").innerHTML='<i class="ok"></i>음식 가격 연결 · '+fmt(Object.keys(foodPrices).length)+'종';
+    render();
+  }catch(e){
+    console.error(e);
+    $("#marketStatus").innerHTML='<i class="bad"></i>데이터 연결 실패';
+    $("#foodPriceStatus").innerHTML='<i class="bad"></i>가격 확인 필요';
+    $("#foodGrid").innerHTML='<div class="fm-panel fm-empty"><strong>데이터를 불러오지 못했습니다</strong><p>'+esc(e.message||"잠시 후 다시 시도해 주세요.")+'</p></div>';
+  }
+}
+
+$("#targetSets").addEventListener("input",render);
+$("#sortMode").addEventListener("change",render);
+$("#foodSearch").addEventListener("input",render);
+$("#foodGrid").addEventListener("click",e=>{const b=e.target.closest("[data-detail]");if(b)openDetail(b.dataset.detail||"")});
+$("#detailClose").addEventListener("click",closeDetail);
+$("#detailBackdrop").addEventListener("click",e=>{if(e.target===e.currentTarget)closeDetail()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDetail()});
+
+F.boot(load);
+})();
