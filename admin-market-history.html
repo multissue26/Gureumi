@@ -19,36 +19,25 @@
   .chart-panel{overflow:hidden}.chart-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 20px 0}
   .chart-price{font-size:31px;font-weight:850;letter-spacing:-.045em}.chart-change{margin-top:6px;font-size:12px;font-weight:800}
   .chart-meta{text-align:right;color:var(--muted);font-size:10px;line-height:1.7}.chart-wrap{position:relative;height:390px;padding:0 4px 6px}
-  #priceChart{width:100%;height:100%;display:block}.chart-grid{stroke:#e3e5df;stroke-width:1}.chart-line{fill:none;stroke:#28694d;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart-dot{fill:#fff;stroke:#28694d;stroke-width:2}.chart-area{fill:url(#areaFill)}.axis-label{fill:#929993;font-size:10px;font-family:var(--font)}
+  #priceChart{width:100%;height:100%;display:block}.chart-grid{stroke:#e3e5df;stroke-width:1}.chart-line{fill:none;stroke:#28694d;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart-dot{fill:#fff;stroke:#28694d;stroke-width:2}.chart-area{fill:url(#areaFill)}.axis-label{fill:#929993;font-size:10px;font-family:var(--font)}.axis-time{font-weight:800}.axis-time-sub{fill:#a1a9a3;font-size:9px;font-weight:650}
   .chart-empty{height:100%;display:grid;place-items:center;padding:30px;text-align:center;color:var(--muted)}.chart-empty strong{display:block;color:var(--ink2);font-size:15px;margin-bottom:7px}
   .chart-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}.chart-stat{padding:14px 18px;border-right:1px solid var(--line)}.chart-stat:last-child{border-right:0}.chart-stat span{display:block;color:var(--muted2);font-size:9px;font-weight:800}.chart-stat b{display:block;margin-top:5px;font-size:14px}
   @media(max-width:760px){.history-item-tools{min-width:100%;flex-wrap:wrap}.history-search{min-width:100%}.history-toolbar select{flex:1;min-width:0}.chart-wrap{height:330px}.chart-stats{grid-template-columns:1fr 1fr}.chart-stat:nth-child(2){border-right:0}.chart-stat:nth-child(-n+2){border-bottom:1px solid var(--line)}}
   </style>
 </head>
 <body>
-  <main id="loginView" class="login">
-    <p class="eyebrow">PRIVATE MARKET CONSOLE</p>
-    <h2>관리자 확인</h2>
-    <p>플리마켓 운영 데이터는 관리자만 볼 수 있어요. 기존 띵팜 관리자 비밀번호로 로그인해 주세요.</p>
-    <form id="loginForm" class="login-form">
-      <input id="pw" type="password" autocomplete="current-password" placeholder="관리자 비밀번호" required>
-      <button class="btn primary" type="submit">로그인</button>
-    </form>
-    <div id="loginMsg" class="login-msg"></div>
-  </main>
-
-  <main id="appView" class="shell hidden">
+  <main id="appView" class="shell">
     <div class="brandbar">
-      <a class="brand" href="admin-market.html">
+      <a class="brand" href="market.html">
         <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
-        <span><strong>띵팜 플리마켓</strong><small>PRIVATE CONSOLE</small></span>
+        <span><strong>띵팜 플리마켓</strong><small>MARKET DATA</small></span>
       </a>
       <div class="top-actions">
         <span class="status-note">Supabase 실데이터 연결</span>
-        <button id="logoutBtn" class="btn">로그아웃</button>
+        
       </div>
     </div>
-    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="admin-market.html" class="">홈</a><a href="admin-market-recommend.html" class="">음식 원재료 추천</a><a href="admin-market-crafting.html" class="">제작품 수익</a><a href="admin-market-listings.html" class="">내 등록 매물</a><a href="admin-market-history.html" class="active">가격 변동</a><a href="admin-market-sales.html" class="">판매 장부</a></nav>
+    <nav class="navbar" aria-label="플리마켓 메뉴"><a href="index.html" class="site-back">← 띵팜</a><a href="market.html">홈</a><a href="admin-market-recommend.html">음식 원재료 추천</a><a href="admin-market-crafting.html">제작품 수익</a><a href="admin-market-bundle.html">묶음 차익</a><a href="admin-market-listings.html">내 등록 매물</a><a href="admin-market-history.html" class="active">가격 변동</a><a href="admin-market-sales.html">판매 장부</a></nav>
     <header class="topbar"><div><p class="eyebrow">PRICE HISTORY</p><h1>가격 변동</h1><p class="subtitle">실제 /스캔 시점별 정상 범위 매물의 최저가와 수량 가중 평균가를 차트로 확인합니다. 극단 고가는 자동 제외합니다.</p></div></header>
     
     <section class="history-toolbar">
@@ -76,7 +65,7 @@
     </section>
   </main>
   
-  <script src="admin-market-core.js?v=0.8.0"></script>
-  <script src="admin-market-history.js?v=0.9.0"></script>
+  <script src="admin-market-core.js?v=1.0.0"></script>
+  <script src="admin-market-history.js?v=1.0.0"></script>
 </body>
 </html>
