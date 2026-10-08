@@ -39,18 +39,18 @@
 
     <section class="metrics">
       <article class="metric"><div class="metric-head">계산 가능한 품목</div><div id="mReady" class="metric-value pending">—</div><div class="metric-foot">원물 조달 + 묶음 판매 시세 확인 완료</div></article>
-      <article class="metric"><div class="metric-head">7묶음 최고 예상 순이익</div><div id="mBestNet" class="metric-value pending">—</div><div class="metric-foot">기본 7묶음 기준 · 수수료 미반영</div></article>
+      <article class="metric"><div class="metric-head">7세트 최고 예상 순이익</div><div id="mBestNet" class="metric-value pending">—</div><div class="metric-foot">기본 7세트(완성품 448개) 기준 · 수수료 미반영</div></article>
       <article class="metric"><div class="metric-head">최고 예상 수익률</div><div id="mBestRoi" class="metric-value pending">—</div><div class="metric-foot">순이익 ÷ 실제 원물 구매비</div></article>
       <article class="metric"><div class="metric-head">마지막 시장 스캔</div><div id="mScan" class="metric-value pending">—</div><div class="metric-foot">완전 스캔 기준</div></article>
     </section>
 
     <section class="section">
       <div class="section-head">
-        <div><h2>차익 순위</h2><p>원물은 싼 매물부터 실제 판매 묶음 단위로 구매한다고 가정합니다. 기본값은 요청한 7묶음 제작 기준입니다.</p></div>
+        <div><h2>차익 순위</h2><p>원물은 싼 매물부터 실제 판매 묶음 단위로 구매한다고 가정합니다. 기본값은 요청한 7세트 판매 기준입니다. 1세트는 완성된 묶음 아이템 64개입니다.</p></div>
       </div>
       <div class="bundle-toolbar">
         <div class="bundle-toolbar-left">
-          <label class="bundle-field">제작 묶음 수 <input id="targetBundles" type="number" min="1" max="999" step="1" value="7"></label>
+          <label class="bundle-field">판매 목표 세트 <input id="targetSets" type="number" min="1" max="99" step="1" value="7"> <span>1세트 = 64개</span></label>
         </div>
         <div class="bundle-toolbar-right">
           <label class="bundle-field">정렬
@@ -80,6 +80,6 @@
   </div>
 
   <script src="admin-market-core.js?v=1.0.0"></script>
-  <script src="admin-market-bundle.js?v=1.0.0"></script>
+  <script src="admin-market-bundle.js?v=1.0.1"></script>
 </body>
 </html>
