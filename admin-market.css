@@ -207,3 +207,49 @@ button:disabled,select:disabled{cursor:not-allowed;opacity:.45}
 .food-mode-bar{display:flex;justify-content:flex-end;margin:-2px 0 12px}
 .ingredient-excluded{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;background:#f0eee7;color:#8b7657;font-size:8px;font-weight:850;vertical-align:middle}
 @media(max-width:720px){.sale-drawer{width:100%;padding:18px}.sale-drawer-summary,.sale-drawer-inputs{grid-template-columns:1fr}}
+
+
+/* market-public-v1.0 */
+.navbar .site-back{margin-right:4px;border-right:1px solid var(--line);border-radius:8px 0 0 8px;color:#3f5e4f}
+.bundle-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.bundle-toolbar-left,.bundle-toolbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bundle-field{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-weight:800}
+.bundle-field input,.bundle-field select{height:39px;border:1px solid var(--line2);background:#fff;border-radius:9px;padding:0 11px;font:inherit;font-size:11px;font-weight:760;color:var(--ink)}
+.bundle-field input{width:82px;text-align:right}
+.bundle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.bundle-card{padding:18px;position:relative;overflow:hidden}
+.bundle-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#2f6a50}
+.bundle-card.unavailable:before{background:#b7bcb8}
+.bundle-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.bundle-card-title{display:flex;align-items:center;gap:10px}
+.bundle-card-title img{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;background:#f4f3ef;border:1px solid #e4e5df;border-radius:10px;padding:4px}
+.bundle-rank{font-size:9px;color:var(--muted2);font-weight:850;letter-spacing:.1em}
+.bundle-card h3{margin:4px 0 0;font-size:17px;letter-spacing:-.035em}
+.bundle-recipe{margin-top:4px;color:var(--muted);font-size:10px}
+.bundle-profit{font-size:24px;font-weight:880;letter-spacing:-.045em;text-align:right}
+.bundle-profit.positive{color:#176a4c}.bundle-profit.negative{color:#b44c47}.bundle-profit.muted{color:#8a918c}
+.bundle-profit small{display:block;margin-top:5px;font-size:9px;color:var(--muted2);font-weight:750;letter-spacing:0}
+.bundle-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
+.bundle-kpi{padding:10px;background:#f5f5f1;border:1px solid #e3e4de;border-radius:10px}
+.bundle-kpi span{display:block;color:var(--muted2);font-size:9px;font-weight:780}
+.bundle-kpi strong{display:block;margin-top:4px;font-size:12px;font-weight:850;font-variant-numeric:tabular-nums}
+.bundle-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:13px}
+.bundle-card-foot small{color:var(--muted2);font-size:9px;line-height:1.5}
+.bundle-detail-btn{border:1px solid #cfd7d1;background:#fff;color:#245b43;border-radius:9px;padding:8px 11px;font-size:10px;font-weight:850;cursor:pointer;white-space:nowrap}
+.bundle-detail-btn:hover{background:#eff6f2;border-color:#a9c4b5}
+.bundle-drawer{width:min(620px,96vw)}
+.bundle-section{margin-top:20px}
+.bundle-section h3{margin:0 0 9px;font-size:14px;letter-spacing:-.02em}
+.bundle-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.bundle-summary-box{border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px}
+.bundle-summary-box span{display:block;color:var(--muted2);font-size:9px;font-weight:800}
+.bundle-summary-box strong{display:block;margin-top:5px;font-size:15px}
+.bundle-summary-box.hero{background:#eff7f2;border-color:#a9c9b7}
+.bundle-summary-box.hero strong{font-size:21px;color:#174c39}
+.bundle-mini-table{width:100%;min-width:0}
+.bundle-mini-table th{font-size:9px;padding:9px 8px}
+.bundle-mini-table td{font-size:10px;padding:10px 8px}
+.bundle-mini-table .shop-cell small{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bundle-note{margin-top:12px;padding:11px 12px;border-radius:10px;background:#f1f1ec;color:var(--muted);font-size:10px;line-height:1.65}
+@media(max-width:900px){.bundle-grid{grid-template-columns:1fr}.bundle-kpis{grid-template-columns:1fr 1fr 1fr}}
+@media(max-width:620px){.bundle-kpis{grid-template-columns:1fr}.bundle-summary-grid{grid-template-columns:1fr}.bundle-card-head{align-items:center}.bundle-profit{font-size:20px}.navbar .site-back{position:sticky;left:0;background:var(--paper);z-index:2}}
