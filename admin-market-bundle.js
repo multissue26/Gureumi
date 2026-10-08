@@ -134,9 +134,9 @@ function render(){
     const note=!r.plan.complete
       ?"필요 "+F.fmt(req)+"개 중 "+F.fmt(r.plan.acquired)+"개만 조달 가능"
       :!r.sell.available?"현재 "+F.escapeHtml(r.recipe.product)+" 판매 매물 없음"
-      :"원물 "+F.fmt(req)+"개 → "+F.fmt(r.targetBundles)+"묶음";
+      :"원물 "+F.fmt(req)+"개 → 완성품 "+F.fmt(r.outputQty)+"개 ("+F.fmt(r.targetSets)+"세트)";
     return '<article class="panel bundle-card '+(r.net==null?"unavailable":"")+'">'+
-      '<div class="bundle-card-head"><div class="bundle-card-title"><img src="'+F.escapeHtml(r.recipe.icon)+'" alt=""><div><div class="bundle-rank">RANK '+String(i+1).padStart(2,"0")+'</div><h3>'+F.escapeHtml(r.recipe.raw)+' → '+F.escapeHtml(r.recipe.product)+'</h3><div class="bundle-recipe">1묶음당 원물 '+F.fmt(r.recipe.per)+'개 · 현재 '+F.fmt(r.outputQty)+'개 ('+F.fmt(r.targetSets)+'세트) 기준</div></div></div>'+
+      '<div class="bundle-card-head"><div class="bundle-card-title"><img src="'+F.escapeHtml(r.recipe.icon)+'" alt=""><div><div class="bundle-rank">RANK '+String(i+1).padStart(2,"0")+'</div><h3>'+F.escapeHtml(r.recipe.raw)+' → '+F.escapeHtml(r.recipe.product)+'</h3><div class="bundle-recipe">완성품 1개당 원물 '+F.fmt(r.recipe.per)+'개 · 현재 '+F.fmt(r.outputQty)+'개 ('+F.fmt(r.targetSets)+'세트) 기준</div></div></div>'+
       '<div><div class="bundle-profit '+cls(r.net)+'">'+net+'<small>'+(r.roi==null?"수익률 —":"수익률 "+F.pct(r.roi))+'</small></div></div></div>'+
       '<div class="bundle-kpis"><div class="bundle-kpi"><span>실제 원물 구매비</span><strong>'+capital+'</strong></div><div class="bundle-kpi"><span>예상 판매 매출</span><strong>'+revenue+'</strong></div><div class="bundle-kpi"><span>원물 매물 재고</span><strong>'+F.fmt(r.raw.pool.reduce((a,o)=>a+wholeLots(o)*lotQty(o),0))+'개</strong></div></div>'+
       '<div class="bundle-card-foot"><small><span class="market-badge '+s.kind+'">'+s.label+'</span> · '+note+'</small><button class="bundle-detail-btn" type="button" data-bundle-detail="'+F.escapeHtml(r.recipe.product)+'">상세보기</button></div>'+
@@ -172,7 +172,7 @@ function openDetail(product){
       '<div class="bundle-summary-box"><span>제작 가능</span><strong>'+F.fmt(r.all.craftable)+'개 · '+(r.all.craftable/64).toLocaleString("ko-KR",{maximumFractionDigits:2})+'세트 · 원물 '+F.fmt(r.all.leftover)+'개 남음</strong></div>'+
       '<div class="bundle-summary-box hero"><span>전부 제작·판매 예상 순이익</span><strong>'+allNet+'</strong></div>'+
     '</div><div class="bundle-note">전부 매입 계산은 극단 고가로 판정된 원물 매물을 제외한 정상 범위 매물의 완전한 판매 단위만 구매한다고 가정합니다. 예상 매출 '+(r.allRevenue==null?"—":F.gold(r.allRevenue))+' · '+F.escapeHtml(r.sell.reason||"")+'</div></div>'+
-    '<div class="bundle-section"><h3>원물 판매자 전체</h3><div class="panel table-wrap"><table class="bundle-mini-table"><thead><tr><th>판매자 / 상점</th><th>판매 단위</th><th>재고</th><th>구매 가능 묶음</th><th>전량 구매비</th></tr></thead><tbody>'+
+    '<div class="bundle-section"><h3>원물 판매자 전체</h3><div class="panel table-wrap"><table class="bundle-mini-table"><thead><tr><th>판매자 / 상점</th><th>판매 단위</th><th>재고</th><th>구매 가능 판매단위</th><th>전량 구매비</th></tr></thead><tbody>'+
       (r.raw.pool.length?r.raw.pool.slice().sort((a,b)=>unit(a)-unit(b)).map(o=>'<tr><td><div class="shop-cell"><strong>'+F.escapeHtml(o.seller_name||"—")+'</strong><small>'+F.escapeHtml(shopName(o))+'</small></div></td><td>'+F.offerText(o)+'</td><td>'+F.fmt(stock(o))+'개</td><td>'+F.fmt(wholeLots(o))+'묶음</td><td class="price">'+F.gold(wholeLots(o)*price(o))+'</td></tr>').join(""):'<tr><td colspan="5">현재 원물 판매 매물이 없습니다.</td></tr>')+
     '</tbody></table></div>'+(r.raw.flagged.length?'<div class="bundle-note">극단 고가 원물 '+F.fmt(r.raw.flagged.length)+'건은 추천 매입과 전량 매입 계산에서 제외했습니다.</div>':'')+'</div>'+
     '<div class="bundle-note">순이익 = 예상 판매 매출 - 실제 원물 구매비입니다. 서버의 별도 등록 수수료나 가공 비용은 확인된 값이 없어 포함하지 않았습니다.</div>';
