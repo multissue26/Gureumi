@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="color-scheme" content="light">
   <title>제작품 수익 | 띵팜</title>
-  <link rel="stylesheet" href="admin-market.css?v=1.0.1-own">
+  <link rel="stylesheet" href="admin-market.css?v=1.0.2-priceguide">
   <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
 </head>
 <body>
@@ -497,8 +497,60 @@
         const match=ownMarketMatch(o);
         const remaining=o.remaining_quantity!=null&&Number.isFinite(Number(o.remaining_quantity))?Number(o.remaining_quantity):(match?stock(match):null);
         const source=match&&ownSellerName?"플리마켓 전체 스캔에서 내 판매자명과 일치":"내 등록 매물 화면에서 확인";
+        const myPrice=Number(o.listing_price||0),bundle=Math.max(1,Number(o.listed_quantity||1));
+        const group=ownSellerName?lastGroups.find(g=>g.mode==="sale"&&g.item_name===o.item_name&&g.bundleQuantity===bundle):null;
+        const decision=group?saleDecision(group,remaining==null?bundle:remaining):null;
+        const competitorLow=decision&&Number.isFinite(decision.lowPrice)?decision.lowPrice:null;
+        const recommended=decision&&Number.isFinite(decision.price)?decision.price:null;
+        let guideKind="muted",guideTitle="가격 조정 판단 보류",guideAction="비교 가능한 경쟁 시세가 충분하지 않습니다.",compareText="경쟁 최저가 확인 불가";
+        if(!ownSellerName){
+          guideAction="내 판매자명을 확정하지 못해 내 매물을 경쟁 시세에서 안전하게 제외할 수 없습니다.";
+        }else if(recommended!=null){
+          const gap=myPrice-recommended;
+          if(competitorLow!=null){
+            const marketGap=myPrice-competitorLow;
+            compareText=marketGap===0
+              ?"경쟁 최저가와 같은 가격"
+              :marketGap>0
+                ?"경쟁 최저가보다 "+F.gold(marketGap)+" 높음"
+                :"경쟁 최저가보다 "+F.gold(Math.abs(marketGap))+" 낮음";
+          }
+          if(gap>0){
+            guideKind="high";
+            guideTitle="현재 가격이 추천가보다 "+F.gold(gap)+" 높아요";
+            guideAction=F.gold(gap)+" 내려서 "+F.gold(recommended)+" / "+F.fmt(bundle)+"개로 조정하는 것을 추천합니다.";
+          }else if(gap<0){
+            guideKind="low";
+            guideTitle="현재 가격이 추천가보다 "+F.gold(Math.abs(gap))+" 낮아요";
+            guideAction=F.gold(Math.abs(gap))+" 올려서 "+F.gold(recommended)+" / "+F.fmt(bundle)+"개까지 조정해도 현재 전략 기준 경쟁력을 유지합니다.";
+          }else{
+            guideKind="good";
+            guideTitle="현재 가격이 추천가와 같아요";
+            guideAction="지금 "+F.gold(myPrice)+" / "+F.fmt(bundle)+"개 가격을 유지하는 것을 추천합니다.";
+          }
+        }else if(group){
+          guideAction="내 매물을 제외한 경쟁 매물은 확인됐지만 추천가를 만들기에는 시세가 부족합니다.";
+        }else if(ownSellerName){
+          guideAction="현재 같은 판매 단위의 다른 유저 매물이 없어 가격을 올리거나 내릴 근거가 부족합니다.";
+        }
+
+        const competitorText=competitorLow==null?"없음":F.gold(competitorLow)+" / "+F.fmt(bundle)+"개";
+        const recommendedText=recommended==null?"판단 보류":F.gold(recommended)+" / "+F.fmt(bundle)+"개";
+        const reason=decision?.reason||"다른 유저의 정상 범위 경쟁 매물이 충분히 쌓이면 자동으로 판매 전략을 계산합니다.";
+
         return '<article class="own-listing-card">'+
           '<div class="own-listing-card-head"><span class="market-badge ok">내 매물</span><strong>'+F.gold(o.listing_price)+' / '+F.fmt(o.listed_quantity)+'개</strong></div>'+
+          '<div class="own-price-guide '+guideKind+'">'+
+            '<div class="own-price-guide-kicker">PRICE CHECK</div>'+
+            '<strong>'+F.escapeHtml(guideTitle)+'</strong>'+
+            '<p>'+F.escapeHtml(guideAction)+'</p>'+
+            '<div class="own-price-compare">'+
+              '<div><span>내 현재 가격</span><b>'+F.gold(myPrice)+' / '+F.fmt(bundle)+'개</b></div>'+
+              '<div><span>내 매물 제외 최저</span><b>'+competitorText+'</b></div>'+
+              '<div><span>추천 판매가</span><b>'+recommendedText+'</b></div>'+
+            '</div>'+
+            '<small>'+F.escapeHtml(compareText)+' · '+F.escapeHtml(reason)+'</small>'+
+          '</div>'+
           '<div class="own-listing-grid">'+
             '<div><span>등록 단위</span><b>'+F.fmt(o.listed_quantity)+'개</b></div>'+
             '<div><span>등록 가격</span><b>'+F.gold(o.listing_price)+'</b></div>'+
@@ -510,7 +562,7 @@
         ?'<div class="own-seller-note"><span>내 판매자 식별</span><strong>'+F.escapeHtml(ownSellerName)+'</strong><small>내 등록 매물과 전체 시장의 상품·단위·가격을 대조해 식별했습니다.</small></div>'
         :'<div class="own-seller-note warn"><span>내 판매자 식별</span><strong>자동 식별 보류</strong><small>동일 상품·가격 매물이 겹쳐 판매자명을 확정하지 못했습니다. 내 매물 정보 자체는 정상 표시됩니다.</small></div>';
       document.querySelector("#ownDrawerBody").innerHTML=sellerNote+cards+
-        '<div class="sale-drawer-note">내 판매자명이 확정된 경우 제작품 수익의 판매 전략에서는 해당 판매자의 판매 매물을 전체 경쟁 시세에서 제외합니다.</div>';
+        '<div class="sale-drawer-note">가격 조정 안내는 내 매물을 제외한 정상 범위 경쟁 매물과 기존 판매 전략을 기준으로 계산합니다. 경쟁 시세가 부족하면 임의로 가격을 정하지 않고 판단을 보류합니다.</div>';
       const backdrop=document.querySelector("#ownDrawerBackdrop");
       backdrop.classList.add("open");backdrop.setAttribute("aria-hidden","false");
     }
