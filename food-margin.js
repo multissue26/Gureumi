@@ -155,12 +155,17 @@ function evaluate(food,targetSets){
 function normalizeFoodPrices(payload){
   const root=payload?.prices??payload??{};
   const src=root?.prices??root;
+  const toNum=v=>{
+    if(v==null||v==="")return null;
+    const n=Number(String(v).replace(/,/g,""));
+    return Number.isFinite(n)?n:null;
+  };
   const out={};
   for(const [name,val] of Object.entries(src||{})){
     if(typeof val==="number")out[name]={marketPrice:val,myPrice:val};
     else if(val&&typeof val==="object")out[name]={
-      marketPrice:Number(String(val.marketPrice??val.price??val.current??"").replace(/,/g,"")),
-      myPrice:Number(String(val.myPrice??val.personalPrice??val.marketPrice??val.price??val.current??"").replace(/,/g,""))
+      marketPrice:toNum(val.marketPrice??val.price??val.current),
+      myPrice:toNum(val.myPrice??val.personalPrice??val.marketPrice??val.price??val.current)
     };
   }
   return out;
