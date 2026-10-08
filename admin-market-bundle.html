@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="color-scheme" content="light">
+  <title>묶음 차익 | 띵팜 플리마켓</title>
+  <link rel="stylesheet" href="admin-market.css?v=1.0.0">
+  <link rel="icon" type="image/png" href="assets/brand/ddingfarm-logo.png">
+</head>
+<body>
+  <main id="appView" class="shell">
+    <div class="brandbar">
+      <a class="brand" href="market.html">
+        <img src="assets/brand/ddingfarm-logo.png" alt="띵팜">
+        <span><strong>띵팜 플리마켓</strong><small>MARKET DATA</small></span>
+      </a>
+      <div class="top-actions"><span class="status-note">Supabase 실데이터 연결</span></div>
+    </div>
+    <nav class="navbar" aria-label="플리마켓 메뉴">
+      <a href="index.html" class="site-back">← 띵팜</a>
+      <a href="market.html">홈</a>
+      <a href="admin-market-recommend.html">음식 원재료 추천</a>
+      <a href="admin-market-crafting.html">제작품 수익</a>
+      <a href="admin-market-bundle.html" class="active">묶음 차익</a>
+      <a href="admin-market-listings.html">내 등록 매물</a>
+      <a href="admin-market-history.html">가격 변동</a>
+      <a href="admin-market-sales.html">판매 장부</a>
+    </nav>
+
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">RAW CROP → BUNDLE</p>
+        <h1>묶음 차익</h1>
+        <p class="subtitle">플리마켓에서 원작물을 실제 매물 단위로 사서 묶음으로 가공해 팔 때의 조달비, 예상 매출, 순이익을 비교합니다.</p>
+      </div>
+    </header>
+
+    <section class="metrics">
+      <article class="metric"><div class="metric-head">계산 가능한 품목</div><div id="mReady" class="metric-value pending">—</div><div class="metric-foot">원물 조달 + 묶음 판매 시세 확인 완료</div></article>
+      <article class="metric"><div class="metric-head">7묶음 최고 예상 순이익</div><div id="mBestNet" class="metric-value pending">—</div><div class="metric-foot">기본 7묶음 기준 · 수수료 미반영</div></article>
+      <article class="metric"><div class="metric-head">최고 예상 수익률</div><div id="mBestRoi" class="metric-value pending">—</div><div class="metric-foot">순이익 ÷ 실제 원물 구매비</div></article>
+      <article class="metric"><div class="metric-head">마지막 시장 스캔</div><div id="mScan" class="metric-value pending">—</div><div class="metric-foot">완전 스캔 기준</div></article>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><h2>차익 순위</h2><p>원물은 싼 매물부터 실제 판매 묶음 단위로 구매한다고 가정합니다. 기본값은 요청한 7묶음 제작 기준입니다.</p></div>
+      </div>
+      <div class="bundle-toolbar">
+        <div class="bundle-toolbar-left">
+          <label class="bundle-field">제작 묶음 수 <input id="targetBundles" type="number" min="1" max="999" step="1" value="7"></label>
+        </div>
+        <div class="bundle-toolbar-right">
+          <label class="bundle-field">정렬
+            <select id="bundleSort">
+              <option value="net">순이익 높은 순</option>
+              <option value="roi">수익률 높은 순</option>
+              <option value="capital">필요 원금 낮은 순</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="bundleGrid" class="bundle-grid">
+        <div class="panel empty-state"><strong>시장 데이터 확인 중</strong><p>마지막 완전 스캔의 원물과 묶음 매물을 계산하고 있습니다.</p></div>
+      </div>
+      <div class="bundle-note">제작 레시피는 띵팜에 검증되어 있는 농작물 가공 레시피를 사용합니다. 플리마켓 등록 수수료나 별도 가공 비용은 확인된 값이 없어 순이익 계산에 넣지 않습니다.</div>
+    </section>
+  </main>
+
+  <div id="bundleBackdrop" class="sale-drawer-backdrop" aria-hidden="true">
+    <aside class="sale-drawer bundle-drawer" role="dialog" aria-modal="true" aria-labelledby="bundleDrawerTitle">
+      <div class="sale-drawer-head">
+        <div><p class="eyebrow">BUNDLE DETAIL</p><h2 id="bundleDrawerTitle">묶음 차익 상세</h2></div>
+        <button id="bundleDrawerClose" class="sale-drawer-close" type="button" aria-label="닫기">×</button>
+      </div>
+      <div id="bundleDrawerBody"></div>
+    </aside>
+  </div>
+
+  <script src="admin-market-core.js?v=1.0.0"></script>
+  <script src="admin-market-bundle.js?v=1.0.0"></script>
+</body>
+</html>
