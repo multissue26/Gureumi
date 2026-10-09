@@ -178,3 +178,17 @@ a{color:inherit}
   .fm-mode-tabs button{flex:1}
   .fm-detail-tools>div:last-child{justify-content:flex-start}
 }
+
+
+/* food-margin-forecast-v1 */
+.fm-forecast{display:inline-flex;align-items:center;width:max-content;margin-top:6px;border-radius:999px;padding:4px 7px;font-size:8px;font-weight:850;border:1px solid transparent;white-space:nowrap}
+.fm-forecast.up{color:#206244;background:#edf7f1;border-color:#d2eadc}
+.fm-forecast.down{color:#9e463e;background:#fbefed;border-color:#f1d5d1}
+.fm-forecast.neutral{color:#737a75;background:#f0f1ee;border-color:#e1e3de}
+.fm-detail-forecast{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:10px 12px;border:1px solid #dde2dd;background:#f7f8f5;border-radius:10px}
+.fm-detail-forecast .fm-forecast{margin-top:0}
+.fm-detail-forecast small{color:var(--muted2);font-size:8.5px;line-height:1.45;text-align:right}
+@media(max-width:520px){
+  .fm-detail-forecast{align-items:flex-start;flex-direction:column}
+  .fm-detail-forecast small{text-align:left}
+}
