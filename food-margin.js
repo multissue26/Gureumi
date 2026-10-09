@@ -237,10 +237,11 @@ function normalizeFoodPrices(payload){
   };
   const out={};
   for(const [name,val] of Object.entries(src||{})){
-    if(typeof val==="number")out[name]={marketPrice:val,myPrice:val};
+    if(typeof val==="number")out[name]={marketPrice:val,myPrice:val,history:[]};
     else if(val&&typeof val==="object")out[name]={
       marketPrice:toNum(val.marketPrice??val.price??val.current),
-      myPrice:toNum(val.myPrice??val.personalPrice??val.marketPrice??val.price??val.current)
+      myPrice:toNum(val.myPrice??val.personalPrice??val.marketPrice??val.price??val.current),
+      history:Array.isArray(val.history)?val.history:[]
     };
   }
   return out;
@@ -261,6 +262,45 @@ async function loadFoodPrices(){
   foodPrices=normalizeFoodPrices(bundle?.prices??bundle);
   const p=bundle?.prices;
   foodPriceUpdated=p?.capturedAt||p?.updatedAt||p?.generatedAt||bundle?.status?.publishedAt||bundle?.status?.updatedAt||null;
+}
+
+function marginPriceForecast(food,foodMode=mode){
+  const key=foodMode==="gold"?(food?.gold?.name||("황금 "+food.name)):food.name;
+  const row=foodPrices[key];
+  const current=currentFoodPrice(food,foodMode);
+  const min=Number(foodMode==="gold"?food?.gold?.minPrice:food?.minPrice);
+  const max=Number(foodMode==="gold"?food?.gold?.maxPrice:food?.maxPrice);
+  const past=(row?.history||[])
+    .map(h=>Number(h?.price))
+    .filter(Number.isFinite)
+    .reverse();
+  if(Number.isFinite(current)&&(past.length===0||past[past.length-1]!==Number(current)))past.push(Number(current));
+  if(!Number.isFinite(current)||!Number.isFinite(min)||!Number.isFinite(max)||max<=min||past.length<3){
+    return {label:"예측 대기",kind:"neutral",upPct:null,downPct:null,confidence:"낮음",samples:past.length};
+  }
+  const recent=past.slice(-8),range=Math.max(1,max-min),diffs=[];
+  for(let i=1;i<recent.length;i++)diffs.push(recent[i]-recent[i-1]);
+  let weighted=0,weightSum=0;
+  diffs.forEach((d,i)=>{
+    const w=i+1,scaled=Math.max(-1,Math.min(1,(d/range)*4));
+    weighted+=scaled*w;weightSum+=w;
+  });
+  const momentum=weightSum?weighted/weightSum:0;
+  const pos=Math.max(0,Math.min(1,(current-min)/range));
+  const score=Math.max(-1,Math.min(1,momentum*.72+(0.5-pos)*.7*.28));
+  const upPct=Math.round(Math.max(25,Math.min(75,50+score*34))),downPct=100-upPct;
+  const kind=upPct>=58?"up":upPct<=42?"down":"neutral";
+  const label=kind==="up"?"상승 우세":kind==="down"?"하락 우세":"방향 불명확";
+  const confidence=recent.length>=5&&Math.abs(score)>=.28?"보통":"낮음";
+  return {label,kind,upPct,downPct,confidence,samples:recent.length};
+}
+
+function marginForecastBadge(food,foodMode=mode){
+  const f=marginPriceForecast(food,foodMode);
+  if(f.upPct==null)return '<span class="fm-forecast neutral">다음 가격 · 예측 대기</span>';
+  const arrow=f.kind==="up"?"↑":f.kind==="down"?"↓":"↔";
+  const chance=f.kind==="down"?f.downPct:f.upPct;
+  return '<span class="fm-forecast '+f.kind+'">다음 '+arrow+' '+esc(f.label)+(f.kind==="neutral"?"":" "+chance+"%")+' · 신뢰 '+esc(f.confidence)+'</span>';
 }
 
 function cls(v){
@@ -325,7 +365,7 @@ function render(){
     const topBadge=i===0&&sort==="net"&&r.net!=null?'<span class="fm-top-badge">순이익 1위</span>':"";
     const owned=r.excludedCount?'<span class="fm-owned-note">보유/직접 조달 '+fmt(r.excludedCount)+'종 제외</span>':"";
     return '<article class="fm-card '+(r.net==null?"unavailable":"")+' '+(mode==="gold"?"gold-mode":"")+'">'+
-      '<div class="fm-card-head"><div class="fm-food"><img src="'+esc(r.image||"")+'" alt=""><div>'+topBadge+'<span class="fm-grade">'+esc(r.grade||"")+'</span><h3>'+esc(r.name)+'</h3><small>'+fmt(r.outputQty)+'개 · '+fmt(r.targetSets)+'세트</small></div></div>'+
+      '<div class="fm-card-head"><div class="fm-food"><img src="'+esc(r.image||"")+'" alt=""><div>'+topBadge+'<span class="fm-grade">'+esc(r.grade||"")+'</span><h3>'+esc(r.name)+'</h3><small>'+fmt(r.outputQty)+'개 · '+fmt(r.targetSets)+'세트</small>'+marginForecastBadge(r.food,r.mode)+'</div></div>'+
       '<div class="fm-net '+cls(r.net)+'">'+netText+'<small>마진율 '+formatMargin(r.margin)+'</small></div></div>'+
       '<div class="fm-kpis">'+
         '<div><span>구매할 재료비</span><strong>'+costText+'</strong>'+owned+'</div>'+
@@ -386,6 +426,7 @@ function openDetail(slug){
       '<span class="fm-badge '+st.kind+'">'+st.label+'</span>'+
     '</div>'+
     craftNote+
+    '<div class="fm-detail-forecast">'+marginForecastBadge(r.food,r.mode)+'<small>최근 가격 기록과 현재 가격 범위를 이용한 통계적 추정입니다.</small></div>'+
     '<div class="fm-detail-total">'+
       '<div><span>구매 포함 재료</span><strong>'+fmt(includedCount)+'종</strong><small>보유/직접 조달 '+fmt(r.excludedCount)+'종 제외</small></div>'+
       '<div><span>총 구매 재료비</span><strong>'+gold(r.ingredientCost)+(r.complete?"":" + 재료 부족")+'</strong></div>'+
