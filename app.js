@@ -128,6 +128,20 @@
     const [min, max] = rangeFor(food, gold);
     return Math.max(0, Math.min(1, (p - min) / (max - min || 1)));
   }
+
+  function maxPricePercent(food, gold = false) {
+    const p = currentPrice(food, gold);
+    const [, max] = rangeFor(food, gold);
+    if (p == null || !Number.isFinite(Number(max)) || Number(max) <= 0) return null;
+    return (Number(p) / Number(max)) * 100;
+  }
+
+  function maxPricePercentText(food, gold = false, compact = false) {
+    const pct = maxPricePercent(food, gold);
+    if (pct == null) return '';
+    const shown = pct >= 99.5 ? Math.round(pct) : Number(pct.toFixed(pct < 10 ? 1 : 0));
+    return compact ? `최고가 ${shown}%` : `최고가의 ${shown}%`;
+  }
   function foodBySlug(slug) { return D.foods.find(f => f.slug === slug); }
 
   function resolveIngredient(id) {
@@ -590,7 +604,8 @@
     if (!p) return `<div class="price-line"><strong>${fmt(min)}~</strong><small>상단 ${fmt(max)}</small></div>`;
     const mine = p.myPrice ?? p.marketPrice;
     const market = p.marketPrice;
-    return `<div class="price-line"><strong>${fmt(mine)}</strong><small>${p.myPrice != null && market != null && p.myPrice !== market ? `기준 ${fmt(market)}` : '현재가'} · 범위 ${fmt(min)}~${fmt(max)}</small></div>`;
+    const ratio = maxPricePercentText(food, gold);
+    return `<div class="price-line"><strong>${fmt(mine)}</strong><small>${p.myPrice != null && market != null && p.myPrice !== market ? `기준 ${fmt(market)}` : '현재가'} · 범위 ${fmt(min)}~${fmt(max)}${ratio ? ` <span class="max-price-ratio">${ratio}</span>` : ''}</small></div>`;
   }
 
   function foodCard(food, gold = false) {
@@ -777,6 +792,65 @@
     return {current, previous, diff, pct:(diff / previous) * 100};
   }
 
+  function priceForecast(food, gold = false) {
+    const rows = priceHistory(food, gold)
+      .map(r => Number(r?.price))
+      .filter(Number.isFinite);
+    const current = Number(marketPrice(food, gold));
+    const [minRaw,maxRaw] = rangeFor(food, gold);
+    const min = Number(minRaw), max = Number(maxRaw);
+    if (!Number.isFinite(current) || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+      return {label:'예측 대기',kind:'neutral',upPct:null,downPct:null,low:null,high:null,confidence:'낮음',samples:rows.length};
+    }
+    if (rows.length < 3) {
+      return {label:'예측 대기',kind:'neutral',upPct:null,downPct:null,low:null,high:null,confidence:'낮음',samples:rows.length};
+    }
+
+    const recent = rows.slice(-8);
+    const range = Math.max(1, max - min);
+    const diffs = [];
+    for (let i=1;i<recent.length;i++) diffs.push(recent[i]-recent[i-1]);
+    let weighted = 0, weightSum = 0;
+    diffs.forEach((d,i) => {
+      const w = i + 1;
+      const scaled = Math.max(-1, Math.min(1, (d / range) * 4));
+      weighted += scaled * w;
+      weightSum += w;
+    });
+    const momentum = weightSum ? weighted / weightSum : 0;
+    const pos = Math.max(0, Math.min(1, (current - min) / range));
+    const rangeBias = (0.5 - pos) * 0.7;
+    const score = Math.max(-1, Math.min(1, momentum * 0.72 + rangeBias * 0.28));
+    const upPct = Math.round(Math.max(25, Math.min(75, 50 + score * 34)));
+    const downPct = 100 - upPct;
+    const label = upPct >= 58 ? '상승 우세' : upPct <= 42 ? '하락 우세' : '방향 불명확';
+    const kind = upPct >= 58 ? 'up' : upPct <= 42 ? 'down' : 'neutral';
+
+    const abs = diffs.slice(-5).map(Math.abs).filter(Number.isFinite).sort((a,b)=>a-b);
+    const mid = abs.length ? (abs.length % 2 ? abs[(abs.length-1)/2] : (abs[abs.length/2-1]+abs[abs.length/2])/2) : range * .1;
+    const move = Math.max(range * .04, Math.min(range * .28, mid || range * .1));
+    const center = current + score * move * .55;
+    const low = Math.max(min, Math.round(center - move));
+    const high = Math.min(max, Math.round(center + move));
+    const strength = Math.abs(score);
+    const confidence = recent.length >= 7 && strength >= .48 ? '보통' : recent.length >= 5 && strength >= .28 ? '보통' : '낮음';
+    return {label,kind,upPct,downPct,low,high,confidence,samples:recent.length,score};
+  }
+
+  function forecastBadge(forecast, compact = false) {
+    if (!forecast || forecast.upPct == null) return `<span class="forecast-pill neutral">예측 대기</span>`;
+    const arrow = forecast.kind === 'up' ? '↑' : forecast.kind === 'down' ? '↓' : '↔';
+    const chance = forecast.kind === 'down' ? forecast.downPct : forecast.upPct;
+    const label = forecast.kind === 'neutral' ? forecast.label : `${arrow} ${forecast.label} ${chance}%`;
+    return `<span class="forecast-pill ${forecast.kind}">${label}${compact ? '' : ` · 신뢰 ${forecast.confidence}`}</span>`;
+  }
+
+  function forecastCell(food, gold = false) {
+    const f = priceForecast(food, gold);
+    if (f.upPct == null) return `<div class="forecast-cell">${forecastBadge(f,true)}<small>기록 ${f.samples}회 · 3회 이상 필요</small></div>`;
+    return `<div class="forecast-cell">${forecastBadge(f,true)}<small>예상 ${fmt(f.low)} ~ ${fmt(f.high)} · 신뢰 ${f.confidence}</small></div>`;
+  }
+
   function changeBadge(change, compact = false) {
     if (change?.pct == null) return `<span class="change-pill neutral">기록 대기</span>`;
     const up = change.diff > 0, down = change.diff < 0;
@@ -832,15 +906,18 @@
 
   function efficiencyRankHtml(rows) {
     if (!rows.length) return `<div class="empty compact"><strong>가격 연결 대기</strong>가격 데이터를 연결하면 자동으로 계산해요.</div>`;
-    return rows.slice(0,5).map((x,i) => `<button class="market-rank-row" data-cooking-food="${x.food.slug}" aria-label="${esc(x.food.name)} 제작법으로 이동">
-      <span class="market-rank-no">${i+1}</span>
-      <span class="market-rank-food" data-tip="1">
-        <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
-        <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>확인된 NPC 구매비 ${fmt(x.npcCost)} · 예상 차익 ${fmt(x.net)}</small></span>
-        ${foodRecipeTooltip(x.food)}
-      </span>
-      <span class="market-rank-value"><b>${fmt(x.sale)}</b>${changeBadge(x.change,true)}</span>
-    </button>`).join('');
+    return rows.slice(0,5).map((x,i) => {
+      const maxPct = maxPricePercentText(x.food, false, true);
+      return `<button class="market-rank-row" data-cooking-food="${x.food.slug}" aria-label="${esc(x.food.name)} 제작법으로 이동">
+        <span class="market-rank-no">${i+1}</span>
+        <span class="market-rank-food" data-tip="1">
+          <span class="market-rank-icon"><img src="${x.food.image}" alt="${esc(x.food.name)}"></span>
+          <span class="market-rank-main"><b>${esc(x.food.name)}</b><small>확인된 NPC 구매비 ${fmt(x.npcCost)} · 예상 차익 ${fmt(x.net)}</small></span>
+          ${foodRecipeTooltip(x.food)}
+        </span>
+        <span class="market-rank-value"><b>${fmt(x.sale)}</b><span class="market-rank-meta">${changeBadge(x.change,true)}${maxPct ? `<span class="rank-max-pct">${maxPct}</span>` : ''}</span></span>
+      </button>`;
+    }).join('');
   }
 
   function highPriceRankHtml(rows) {
@@ -931,6 +1008,7 @@
     state.selectedTrendFood = selected.slug;
     const selectedPrice = getPrice(selected, trendGold);
     const selectedChange = priceChange(selected, trendGold);
+    const selectedForecast = priceForecast(selected, trendGold);
     const changes = D.foods.map(food => ({food, ...priceChange(food)}))
       .filter(x => x.current != null)
       .sort((a,b) => (b.pct ?? -9999) - (a.pct ?? -9999));
@@ -981,7 +1059,7 @@
           <div class="market-chart-main">
             <div class="market-chart-head">
               <div class="market-selected-food"><span class="market-selected-icon"><img src="${trendImage(selected, trendGold)}" alt=""></span><div><span class="market-kicker">${trendGold ? 'SELECTED GOLD FOOD' : 'SELECTED FOOD'}</span><h3>${esc(trendName(selected, trendGold))}</h3></div></div>
-              <div class="market-selected-numbers"><div><small>시장 판매가</small><b>${fmt(marketPrice(selected, trendGold))}</b></div><div><small>나의 판매가</small><b>${fmt(selectedPrice?.myPrice ?? selectedPrice?.marketPrice)}</b></div>${changeBadge(selectedChange)}</div>
+              <div class="market-selected-numbers"><div><small>시장 판매가</small><b>${fmt(marketPrice(selected, trendGold))}</b></div><div><small>나의 판매가</small><b>${fmt(selectedPrice?.myPrice ?? selectedPrice?.marketPrice)}</b></div>${changeBadge(selectedChange)}${forecastBadge(selectedForecast,true)}</div>
             </div>
             <div class="market-chart-wrap">${trendChartSvg(selected, trendGold)}</div>
           </div>
@@ -1778,12 +1856,14 @@
         </div>
         <div class="public-price-status"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span><b>${freshness.publishedFresh ? '현재 가격은 최신이에요!' : rows.length ? '가격 업데이트를 확인해 주세요!' : '가격 정보를 기다리고 있어요.'}</b><small>마지막 업데이트 · ${esc(lastUpdated)}</small></div>
       </section>
-      <section class="section"><div class="section-head"><div><h2>현재 가격</h2><p>지금 확인할 수 있는 가격을 한눈에 모아봤어요!</p></div><div class="status-row"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span>${freshness.publishedFresh ? '최신' : rows.length ? '확인 필요' : '대기'}</div></div>
-      <div class="card price-panel">${rows.length ? `<div class="price-table-wrap"><table class="price-table"><thead><tr><th>음식</th><th>기준 판매가</th><th>나의 판매가</th><th>범위 내 위치</th></tr></thead><tbody>${rows.map(([f,g]) => {
+      <section class="section"><div class="section-head"><div><h2>현재 가격</h2><p>현재 위치와 최근 기록을 이용한 다음 변동 전망을 함께 보여줘요.</p></div><div class="status-row"><span class="status-dot ${freshness.publishedFresh ? 'on' : ''}"></span>${freshness.publishedFresh ? '최신' : rows.length ? '확인 필요' : '대기'}</div></div>
+      <div class="card price-panel">${rows.length ? `<div class="price-table-wrap"><table class="price-table"><thead><tr><th>음식</th><th>기준 판매가</th><th>나의 판매가</th><th>범위 내 위치</th><th>최고가 대비</th><th>다음 전망</th></tr></thead><tbody>${rows.map(([f,g]) => {
         const p = getPrice(f,g), pct = normalizedPrice(f,g), percent = pct == null ? null : Math.round(pct * 100);
-        return `<tr><td>${g ? '황금 · ' : ''}${esc(g ? f.gold.name : f.name)}</td><td>${fmt(p.marketPrice)}</td><td><b>${fmt(p.myPrice ?? p.marketPrice)}</b></td><td>${percent == null ? '—' : `<div class="price-position"><div class="mini-progress"><span style="width:${percent}%"></span></div>${percent}%</div>`}</td></tr>`;
+        const maxPct = maxPricePercentText(f,g);
+        return `<tr><td>${g ? '황금 · ' : ''}${esc(g ? f.gold.name : f.name)}</td><td>${fmt(p.marketPrice)}</td><td><b>${fmt(p.myPrice ?? p.marketPrice)}</b></td><td>${percent == null ? '—' : `<div class="price-position"><div class="mini-progress"><span style="width:${percent}%"></span></div>${percent}%</div>`}</td><td><span class="price-max-cell">${maxPct||'—'}</span></td><td>${forecastCell(f,g)}</td></tr>`;
       }).join('')}</tbody></table></div>` : `<div class="empty"><strong>아직 보여드릴 가격이 없어요.</strong>최신 가격 업데이트를 눌러 다시 확인해 주세요!</div>`}</div></section>
-      <div class="note-strip public-price-note" style="margin-top:14px">가격은 매월 <b>1·3·6·9·12·15·18·21·24·27·30일 오전 3시</b>에 바뀔 수 있어요. 필요할 때 업데이트 버튼으로 확인해 주세요!</div>
+      <div class="note-strip public-price-note" style="margin-top:14px">가격 전망은 최근 기록의 방향·변동폭과 현재 가격 범위를 함께 본 <b>통계적 추정</b>이에요. 서버의 실제 다음 가격을 확정적으로 예측하는 값은 아닙니다.</div>
+      <div class="note-strip public-price-note" style="margin-top:8px">가격은 매월 <b>1·3·6·9·12·15·18·21·24·27·30일 오전 3시</b>에 바뀔 수 있어요. 필요할 때 업데이트 버튼으로 확인해 주세요!</div>
     </div>`;
   }
 
