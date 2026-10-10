@@ -94,9 +94,12 @@ function evaluate(recipe,targetSets){
   const net=revenue==null?null:revenue-plan.cost;
   const roi=net!=null&&plan.cost>0?net/plan.cost*100:null;
   const all=buyAllPlan(raw.pool,recipe.per);
-  const allRevenue=sell.available?Math.round(sell.recommendedUnit*all.craftable):null;
+  const allSellLots=sell.available?Math.floor(all.craftable/sell.bestQty):0;
+  const allSoldQty=sell.available?allSellLots*sell.bestQty:0;
+  const allProductLeftover=sell.available?Math.max(0,all.craftable-allSoldQty):all.craftable;
+  const allRevenue=sell.available?allSellLots*sell.recommendedTotal:null;
   const allNet=allRevenue==null?null:allRevenue-all.cost;
-  return {recipe,targetSets,outputQty,raw,plan,sell,revenue,net,roi,all,allRevenue,allNet};
+  return {recipe,targetSets,outputQty,raw,plan,sell,revenue,net,roi,all,allSellLots,allSoldQty,allProductLeftover,allRevenue,allNet};
 }
 function cls(v){return v==null?"muted":v>0?"positive":v<0?"negative":"muted"}
 function resultState(r){
@@ -168,9 +171,9 @@ function openDetail(product){
     '<div class="bundle-section"><h3>현재 정상가 원물 매물을 전부 산다면</h3><div class="bundle-summary-grid">'+
       '<div class="bundle-summary-box"><span>총 구매 원물</span><strong>'+F.fmt(r.all.acquired)+'개</strong></div>'+
       '<div class="bundle-summary-box"><span>총 구매비</span><strong>'+F.gold(r.all.cost)+'</strong></div>'+
-      '<div class="bundle-summary-box"><span>제작 가능</span><strong>'+F.fmt(r.all.craftable)+'개 · '+(r.all.craftable/64).toLocaleString("ko-KR",{maximumFractionDigits:2})+'세트 · 원물 '+F.fmt(r.all.leftover)+'개 남음</strong></div>'+
+      '<div class="bundle-summary-box"><span>제작 가능</span><strong>'+F.fmt(r.all.craftable)+'개 · 판매 '+F.fmt(r.allSellLots)+'세트 ('+F.fmt(r.allSoldQty)+'개) · 완성품 '+F.fmt(r.allProductLeftover)+'개 남음 · 원물 '+F.fmt(r.all.leftover)+'개 남음</strong></div>'+
       '<div class="bundle-summary-box hero"><span>전부 제작·판매 예상 순이익</span><strong>'+allNet+'</strong></div>'+
-    '</div><div class="bundle-note">전부 매입 계산은 극단 고가로 판정된 원물 매물을 제외한 정상 범위 매물의 완전한 판매 단위만 구매한다고 가정합니다. 예상 매출 '+(r.allRevenue==null?"—":F.gold(r.allRevenue))+' · '+F.escapeHtml(r.sell.reason||"")+'</div></div>'+
+    '</div><div class="bundle-note">전부 매입 계산은 극단 고가로 판정된 원물 매물을 제외한 정상 범위 매물의 완전한 판매 단위만 구매한다고 가정합니다. 완성품도 추천 판매 단위 '+(r.sell.available?F.fmt(r.sell.bestQty)+'개':'—')+'를 채운 세트만 매출에 포함하고, 남는 완성품은 매출에서 제외합니다. 예상 매출 '+(r.allRevenue==null?"—":F.gold(r.allRevenue))+' · '+F.escapeHtml(r.sell.reason||"")+'</div></div>'+
     '<div class="bundle-section"><h3>원물 판매자 전체</h3><div class="panel table-wrap"><table class="bundle-mini-table"><thead><tr><th>판매자 / 상점</th><th>판매 단위</th><th>재고</th><th>구매 가능 판매단위</th><th>전량 구매비</th></tr></thead><tbody>'+
       (r.raw.pool.length?r.raw.pool.slice().sort((a,b)=>unit(a)-unit(b)).map(o=>'<tr><td><div class="shop-cell"><strong>'+F.escapeHtml(o.seller_name||"—")+'</strong><small>'+F.escapeHtml(shopName(o))+'</small></div></td><td>'+F.offerText(o)+'</td><td>'+F.fmt(stock(o))+'개</td><td>'+F.fmt(wholeLots(o))+'묶음</td><td class="price">'+F.gold(wholeLots(o)*price(o))+'</td></tr>').join(""):'<tr><td colspan="5">현재 원물 판매 매물이 없습니다.</td></tr>')+
     '</tbody></table></div>'+(r.raw.flagged.length?'<div class="bundle-note">극단 고가 원물 '+F.fmt(r.raw.flagged.length)+'건은 추천 매입과 전량 매입 계산에서 제외했습니다.</div>':'')+'</div>'+
