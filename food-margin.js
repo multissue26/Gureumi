@@ -300,7 +300,10 @@ function marginForecastBadge(food,foodMode=mode){
   if(f.upPct==null)return '<span class="fm-forecast neutral">다음 가격 · 예측 대기</span>';
   const arrow=f.kind==="up"?"↑":f.kind==="down"?"↓":"↔";
   const chance=f.kind==="down"?f.downPct:f.upPct;
-  return '<span class="fm-forecast '+f.kind+'">다음 '+arrow+' '+esc(f.label)+(f.kind==="neutral"?"":" "+chance+"%")+' · 신뢰 '+esc(f.confidence)+'</span>';
+  if(f.kind==="neutral"){
+    return '<span class="fm-forecast neutral"><span>다음 ↔ '+esc(f.label)+'</span><small class="fm-forecast-prob">상승 '+f.upPct+'% · 하락 '+f.downPct+'%</small><small class="fm-forecast-confidence">신뢰 '+esc(f.confidence)+'</small></span>';
+  }
+  return '<span class="fm-forecast '+f.kind+'">다음 '+arrow+' '+esc(f.label)+' '+chance+'% · 신뢰 '+esc(f.confidence)+'</span>';
 }
 
 function cls(v){
