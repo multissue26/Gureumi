@@ -841,8 +841,10 @@
     if (!forecast || forecast.upPct == null) return `<span class="forecast-pill neutral">예측 대기</span>`;
     const arrow = forecast.kind === 'up' ? '↑' : forecast.kind === 'down' ? '↓' : '↔';
     const chance = forecast.kind === 'down' ? forecast.downPct : forecast.upPct;
-    const label = forecast.kind === 'neutral' ? forecast.label : `${arrow} ${forecast.label} ${chance}%`;
-    return `<span class="forecast-pill ${forecast.kind}">${label}${compact ? '' : ` · 신뢰 ${forecast.confidence}`}</span>`;
+    if (forecast.kind === 'neutral') {
+      return `<span class="forecast-pill neutral"><span>↔ ${forecast.label}</span><small class="forecast-prob">상승 ${forecast.upPct}% · 하락 ${forecast.downPct}%</small>${compact ? '' : `<small class="forecast-confidence">신뢰 ${forecast.confidence}</small>`}</span>`;
+    }
+    return `<span class="forecast-pill ${forecast.kind}">${arrow} ${forecast.label} ${chance}%${compact ? '' : ` · 신뢰 ${forecast.confidence}`}</span>`;
   }
 
   function forecastCell(food, gold = false) {
