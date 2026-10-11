@@ -192,3 +192,9 @@ a{color:inherit}
   .fm-detail-forecast{align-items:flex-start;flex-direction:column}
   .fm-detail-forecast small{text-align:left}
 }
+
+
+/* food-margin-unclear-probabilities-v1 */
+.fm-forecast.neutral{gap:5px}
+.fm-forecast.neutral .fm-forecast-prob{font-size:7px;font-weight:850;color:#68716b}
+.fm-forecast.neutral .fm-forecast-confidence{font-size:7px;font-weight:760;color:#8b918d}
