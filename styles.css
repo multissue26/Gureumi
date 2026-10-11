@@ -598,3 +598,9 @@ kbd{font-family:inherit;font-size:9px;border:1px solid #d5d7d1;border-bottom-col
   .market-rank-meta{justify-content:flex-end}
   .max-price-ratio{margin-left:2px}
 }
+
+
+/* unclear-forecast-probabilities-v1 */
+.forecast-pill.neutral{gap:5px}
+.forecast-pill.neutral .forecast-prob{font-size:6.9px;font-weight:850;color:#68716b;opacity:.9}
+.forecast-pill.neutral .forecast-confidence{font-size:6.9px;font-weight:760;color:#8b918d;opacity:.9}
