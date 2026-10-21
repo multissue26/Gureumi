@@ -220,3 +220,19 @@ a{color:inherit}
  .fm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
  .fm-kpis>div:last-child{grid-column:1/-1}
 }
+
+/* food-margin-v2.1 · 선택 구매 및 실제 제작 가능 수량 */
+.fm-buy-list{display:grid;gap:7px;margin-top:11px}
+.fm-buy-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.fm-buy-row.unchecked{background:#f3f4f0;border-style:dashed}
+.fm-buy-row label{display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer}
+.fm-buy-row input{accent-color:#194f3b;width:17px;height:17px;flex:0 0 auto}
+.fm-buy-row label span{display:grid;gap:4px;min-width:0}
+.fm-buy-row label strong{font-size:11px}
+.fm-buy-row label small{color:var(--muted);font-size:9px;line-height:1.5}
+.fm-buy-cost{font-size:11px;text-align:right;white-space:nowrap}
+.fm-buy-row.unchecked .fm-buy-cost{color:var(--muted)}
+.fm-purchase-summary>div{min-width:0}
+.fm-purchase-summary strong{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.fm-detail-total .hero{background:#eaf3ed}
+@media(max-width:560px){.fm-buy-row{align-items:flex-start;flex-direction:column;gap:7px}.fm-buy-cost{padding-left:26px}}

@@ -255,5 +255,103 @@
     return best;
   }
 
-  return {inputCount,recipeLeaves,goldNeeds,npcMap,selectPurchases,assess,numericPrice};
+
+  // 메인 카드: 재료의 '실제 사용량' x 판매 매물의 개당 단가로 계산한다.
+  // 플리마켓 묶음 전체를 지불하는 금액은 상세의 실제 구매비에서만 취급한다.
+  function bestUnitOffer(name,offers,npcs){
+    const npc=npcs?.get(name);
+    let best=npc?{unitPrice:npc.price,source:'NPC · '+npc.npc}:null;
+    for(const item of offers||[]){
+      if(item?.trade_type==='buy'||String(item?.item_name||'').trim()!==name)continue;
+      const lot=offerLots(item);
+      if(!lot||lot.available<=0)continue;
+      const price=lot.price/lot.quantity;
+      if(!best||price<best.unitPrice)best={unitPrice:price,source:lot.seller};
+    }
+    return best;
+  }
+  function unitPreview(food,mode,scenario,ctx){
+    const name=mode==='gold'?(food.gold?.name||'황금 '+food.name):food.name;
+    const reference=mode==='gold'?positiveInt(food.gold?.bulk?.output)||1:1;
+    const source=mode==='gold'?goldNeeds(food,reference,ctx.data,scenario,1):recipeLeaves(food,1,ctx.data,scenario);
+    const plans=source.leaves.map(leaf=>({...leaf,price:bestUnitOffer(leaf.name,ctx.offers,ctx.npc)}));
+    const missing=plans.filter(p=>!p.price).map(p=>p.name);
+    const complete=source.errors.length===0&&missing.length===0;
+    const unit=numericPrice(ctx.prices,name);
+    const cost=complete?plans.reduce((v,p)=>v+p.quantity*p.price.unitPrice,0)/reference:null;
+    return {food,name,mode,quantity:1,reference,scenario,unit,cost,complete,plans,errors:source.errors,
+      missingNames:missing,estimate:complete&&unit!==null?unit-cost:null,gross:unit};
+  }
+  // 사용자가 체크한 재료만 구매한다. 체크 해제된 재료는 '보유분이 충분하다'는 조건이지,
+  // 그 재료가 공짜이거나 자동 확보되었다는 뜻은 아니다.
+  function purchasePlan(food,target,mode,scenario,ctx,selectedNames){
+    const selected=new Set(selectedNames);
+    const name=mode==='gold'?(food.gold?.name||'황금 '+food.name):food.name;
+    const unit=numericPrice(ctx.prices,name);
+    const evaluate=source=>{
+      const plans=source.leaves.map(leaf=>{
+        const buy=selected.has(leaf.name);
+        const plan=buy?selectPurchases(leaf.name,leaf.quantity,ctx.offers,ctx.npc):null;
+        const allocated=buy&&plan?.complete&&plan.obtained>0 ? plan.cost*leaf.quantity/plan.obtained:null;
+        return {...leaf,buy,plan,allocated};
+      });
+      const complete=source.errors.length===0&&plans.every(x=>!x.buy||x.plan.complete);
+      const cash=plans.reduce((sum,x)=>sum+(x.buy?x.plan.cost:0),0);
+      const cost=complete?plans.reduce((sum,x)=>sum+(x.buy?x.allocated:0),0):null;
+      const obtained=plans.filter(x=>x.buy).map(x=>({name:x.name,quantity:x.plan.obtained}));
+      const missing=plans.filter(x=>x.buy&&!x.plan.complete).map(x=>x.name);
+      const gross=unit==null?null:unit*target;
+      return {food,name,mode,quantity:target,scenario,plans,errors:source.errors,baseDetails:source.baseDetails,
+        meta:source.meta||null,selected,complete,missing,obtained,unit,gross,cash,cost,
+        remainingValue:cost==null?null:Math.max(0,cash-cost),
+        consumedDifference:complete&&gross!=null?gross-cost:null,
+        cashDifference:complete&&gross!=null?gross-cash:null};
+    };
+    if(mode!=='gold')return evaluate(recipeLeaves(food,target,ctx.data,scenario));
+    const out=positiveInt(food.gold?.bulk?.output)||1;
+    const maxBulk=Math.ceil(target/out);
+    // 기존의 황금 제작 옵션 비교는 유지하고, 선택된 재료의 실제 구매 지출로 고른다.
+    const candidates=maxBulk<=100?Array.from({length:maxBulk+1},(_,i)=>i):
+      [...new Set([0,Math.floor(target/out),maxBulk,...Array.from({length:99},(_,i)=>Math.floor(i*maxBulk/98))])];
+    let result=null;
+    for(const runs of candidates){
+      const option=evaluate(goldNeeds(food,target,ctx.data,scenario,runs));
+      if(!result||(option.complete&&!result.complete)||
+        (option.complete===result.complete&& (option.complete?option.cash<result.cash:
+         option.missing.length+option.errors.length<result.missing.length+result.errors.length)))result=option;
+    }
+    result.choiceCount=candidates.length;
+    result.choiceLimited=maxBulk>100;
+    return result;
+  }
+  function maxFromPurchases(food,mode,data,selectedPlans,scenario='average'){
+    const tracked=selectedPlans.filter(x=>x.buy);
+    if(!tracked.length)return {count:null,reason:'구매 재료를 선택하지 않아 상한을 정할 수 없음'};
+    if(tracked.some(x=>!x.plan?.complete))return {count:null,reason:'선택한 재료의 구매 가능 수량이 부족함'};
+    const stock=new Map(tracked.map(x=>[x.name,x.plan.obtained]));
+    // 구매하지 않은 재료는 별도 보유분이 충분하다고 가정한다. 직접 보유량은 알 수 없다.
+    function fits(target){
+      let source;
+      if(mode==='gold'){
+        const size=positiveInt(food.gold?.bulk?.output);
+        if(!size)return false;
+        const goldName=data?.ingredients?.gold_dust?.name||'금 가루';
+        const upper=Math.ceil(target/size);
+        // 대량 제작을 가능한 한 많이 사용해야 추가로 필요한 일반 음식과
+        // 식용 금가루 소모가 작아진다. 대량용 금가루만 제한되어 있으면 그만큼만 쓴다.
+        const runs=stock.has(goldName)?Math.min(upper,stock.get(goldName)):upper;
+        source=goldNeeds(food,target,data,scenario,runs);
+      }else source=recipeLeaves(food,target,data,scenario);
+      return source.errors.length===0&&source.leaves.every(x=>!stock.has(x.name)||x.quantity<=stock.get(x.name));
+    }
+    if(!fits(1))return {count:0,reason:'구매 수량으로 요리 1개를 만들기 부족함'};
+    let low=1,high=2;
+    while(high<=1000000&&fits(high)){low=high;high*=2}
+    if(low>=1000000||high>1000000&&fits(1000000))return {count:null,reason:'선택 구매품목만으로 제작 수량의 상한을 확정할 수 없음'};
+    high=Math.min(high,1000000);
+    while(high-low>1){const mid=Math.floor((low+high)/2);if(fits(mid))low=mid;else high=mid}
+    return {count:low,reason:'선택 구매 재료 기준 · 나머지는 충분히 보유한 경우 · 평균 수확 가정'};
+  }
+
+  return {inputCount,recipeLeaves,goldNeeds,npcMap,selectPurchases,assess,numericPrice,bestUnitOffer,unitPreview,purchasePlan,maxFromPurchases};
 });
