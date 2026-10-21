@@ -116,7 +116,6 @@ function purchaseTable(rows){
 function renderDetail(){
  const r=results.find(v=>v.food.slug===selected);if(!r)return;
  const qty=input().qty;if(qty==null)return;
- const baseSource=mode==='gold'?P.goldNeeds(r.food,qty,D):P.recipeLeaves(r.food,qty,D);
  const sourceNames=availableMaterialNames(r.food,qty);
  const selectedNames=getChoices(r.food.slug,sourceNames);
  // 황금 제작 방법에 따라 재료 목록이 달라지므로 체크 상태는 재료명 기준으로 유지한다.
@@ -130,8 +129,6 @@ function renderDetail(){
  const missing=plan.errors.concat(insufficient.map(x=>x.name+' 실제 구매량 부족'));
  const hasUnchecked=unchecked.length>0;
  const produced=max.count;
- const maybeTotalRevenue=produced!=null&&plan.unit!=null?produced*plan.unit:null;
- const maybeTotalCashDiff=maybeTotalRevenue!=null&&plan.complete?maybeTotalRevenue-plan.cash:null;
  const base=plan.baseDetails.map(x=>'<li>'+esc(x.base)+' '+fmt(x.baseCount)+'개 → '+esc(x.crop)+' '+fmt(x.cropCount)+'개 → '+esc(x.seed)+' '+fmt(x.seedCount)+'개 (평균 수확 추정)</li>').join('');
  const bundle=plan.plans.filter(x=>D.ingredients[x.id]?.type==='묶음').map(x=>{
   const part=D.ingredients[x.id].recipe?.[0],crop=D.ingredients[part?.[0]];
@@ -141,17 +138,27 @@ function renderDetail(){
  const checkedCount=plan.plans.filter(x=>x.buy).length;
  const top= '<div class="fm-detail-hero"><div class="fm-detail-food"><img src="'+esc(img||'')+'" alt=""><div><span class="fm-grade">'+(mode==='gold'?'GOLD':'NORMAL')+'</span><h3>'+esc(plan.name)+'</h3><p>선택 재료 '+fmt(checkedCount)+'종 구매 · 나머지는 직접 수급</p></div></div></div>'+choiceNote;
  const maxLabel=produced==null?'산출 불가':fmt(produced)+'개';
- const summary='<div class="fm-detail-total fm-purchase-summary">'+
-  '<div><span>제작 목표</span><strong>'+fmt(qty)+'개</strong></div>'+
-  '<div><span>선택 구매 재료 기준 최대 제작 가능</span><strong>'+maxLabel+'</strong><small>'+esc(max.reason)+'</small></div>'+
-  '<div><span>선택 재료 실제 구매 지출</span><strong>'+gold(plan.cash)+'</strong><small>플리마켓 판매 단위별 총 결제액</small></div>'+
-  '<div><span>이번 제작에 소비할 구매 재료 원가</span><strong>'+(plan.cost==null?'미확인':gold(plan.cost))+'</strong><small>구매한 묶음에서 실제 사용할 수량만 평균단가로 배분</small></div>'+
-  '<div><span>목표 수량 예상 매출</span><strong>'+(plan.gross==null?'판매가 미확인':gold(plan.gross))+'</strong></div>'+
-  '<div><span>구매 후 남는 재료 취득원가</span><strong>'+(plan.remainingValue==null?'미확인':gold(plan.remainingValue))+'</strong><small>다음 제작에 사용할 수 있는 재료의 장부상 가치</small></div>'+
-  '<div class="hero"><span>목표 수량 소비원가 기준 예상 차익</span><strong class="'+(plan.consumedDifference<0?'negative':'')+'">'+fmtV(plan.consumedDifference)+'</strong><small>체크 해제한 재료의 원가와 판매 수수료는 포함되지 않음</small></div>'+
-  '<div><span>목표 수량 판매 후 현금 차이</span><strong class="'+(plan.cashDifference<0?'negative':'')+'">'+fmtV(plan.cashDifference)+'</strong><small>총 매출 − 이번에 실제 지출할 구매비</small></div>'+
-  '<div><span>최대 제작 가능 수량 예상 매출</span><strong>'+(maybeTotalRevenue==null?'—':gold(maybeTotalRevenue))+'</strong><small>표시된 최대 개수를 모두 제작·판매할 수 있다는 조건</small></div>'+
-  '<div><span>최대 수량 판매 후 현금 차이</span><strong class="'+(maybeTotalCashDiff<0?'negative':'')+'">'+fmtV(maybeTotalCashDiff)+'</strong><small>최대 수량을 모두 판매한 매출 − 선택 재료 구매비</small></div></div>';
+ // 핵심 3개 숫자만 기본 표시한다. 구매 시 현금 흐름과 잔여 자재 가치는 아래 펼침 영역으로 옮긴다.
+ const detailMetrics=[
+  ['이번 제작의 소비원가',plan.cost==null?'미확인':gold(plan.cost)],
+  ['구매 후 남는 재료 가치',plan.remainingValue==null?'미확인':gold(plan.remainingValue)],
+  ['이번 제작 판매 후 현금 차이',fmtV(plan.cashDifference)]
+ ].map(([label,value])=>'<div class="fm-breakdown-line"><span>'+label+'</span><strong>'+value+'</strong></div>').join('');
+ const hasUnpriced=!plan.complete||plan.cost==null;
+ const unitLabel=hasUnchecked?'선택 재료 기준 예상 차익':'재료 소비원가 기준 예상 차익';
+ const differenceLabel=hasUnpriced?'계산 불가':fmtV(plan.consumedDifference);
+ const summary='<section class="fm-compact-summary" aria-label="요리 제작·구매 요약">'+
+  '<div class="fm-summary-quantity"><div><span>제작 목표</span><strong>'+fmt(qty)+'개</strong></div>'+
+  '<div><span>구매 재료 기준 제작 가능</span><strong>'+maxLabel+'</strong></div></div>'+
+  '<div class="fm-summary-metrics">'+
+  '<div><span>실제 구매 지출</span><strong>'+gold(plan.cash)+'</strong><small>64개 등 매물 판매 단위 그대로 결제</small></div>'+
+  '<div><span>목표 수량 판매금액</span><strong>'+(plan.gross==null?'판매가 미확인':gold(plan.gross))+'</strong><small>요리 '+fmt(qty)+'개 판매 가정</small></div>'+
+  '<div class="fm-summary-profit '+(plan.consumedDifference<0?'loss':'')+'"><span>'+unitLabel+'</span><strong>'+differenceLabel+'</strong><small>'+
+  (hasUnchecked?'직접 수급하는 재료의 원가는 제외':'구매 재료의 실제 소비량만 원가로 반영')+' · 수수료 제외</small></div></div>'+
+  '<p class="fm-summary-disclaimer">구매 지출은 묶음 전체 결제액, 예상 차익은 그중 <strong>실제 소비한 재료비</strong> 기준입니다. 남는 재료와 현금 차이는 아래에서 확인할 수 있어요.</p>'+
+  '<details class="fm-breakdown"><summary>잔여 재료 · 현금 차이 보기</summary><div>'+detailMetrics+'</div>'+
+  '<p>남는 재료의 가치는 재판매 확정금이 아닌 취득원가입니다. 체크하지 않은 재료의 가치와 수수료는 차익에서 제외됩니다.</p></details>'+
+  (produced==null?'<p class="fm-summary-caveat">'+esc(max.reason)+'</p>':'')+'</section>';
  const rows=plan.plans.map((x,i)=>{
   const source=x.buy?x.plan:null;
   const unit=x.buy&&source.obtained>0?source.cost/source.obtained:null;

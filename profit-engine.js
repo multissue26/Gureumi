@@ -7,6 +7,9 @@
   'use strict';
   const SEEDS={tomato:{name:'토마토 씨앗'},onion:{name:'양파 씨앗'},garlic:{name:'마늘 씨앗'}};
   const EPS=1e-9;
+  // 현재 플리마켓에서 실제 완성 재료로 거래되는 가공 아이템은
+  // 원재료로 재귀 분해하지 않는다. 베이스는 여기에 포함하지 않는다.
+  const MARKET_FINISHED=new Set(['sugar_cube','cheese_slice','flour_dough','butter_slice']);
   function positiveInt(n){return Number.isSafeInteger(Number(n))&&Number(n)>0?Number(n):null}
   function integer(n){return Number.isSafeInteger(Number(n))&&Number(n)>=0?Number(n):null}
   function inputCount(raw,unit){
@@ -39,7 +42,7 @@
       // 농작물 가공 시설의 '묶음'은 플리마켓에 올라오는 실제 아이템 단위다.
       // 재료 1묶음을 낱개 원작물 32/64개로 풀어 구매하면 다른 품목이므로 안 된다.
       // 토마토/양파/마늘 베이스처럼 판매되지 않는 중간 재료는 아래에서 계속 분해한다.
-      if(record.type==='묶음'){ add(record.name,amount,id); return; }
+      if(record.type==='묶음'||MARKET_FINISHED.has(id)){ add(record.name,amount,id); return; }
       if(record.recipe?.length){
         // 알려진 토마토/양파/마늘 베이스는 씨앗 수확량을 고려해 전개한다.
         if(id.endsWith('_base') && record.recipe.length===1 && SEEDS[record.recipe[0][0]]){

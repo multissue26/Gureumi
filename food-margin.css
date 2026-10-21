@@ -236,3 +236,32 @@ a{color:inherit}
 .fm-purchase-summary strong{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .fm-detail-total .hero{background:#eaf3ed}
 @media(max-width:560px){.fm-buy-row{align-items:flex-start;flex-direction:column;gap:7px}.fm-buy-cost{padding-left:26px}}
+
+
+/* food-margin-v2.2 · 계산 의미를 보존한 상세 요약 축약 */
+.fm-compact-summary{margin:14px 0 20px}
+.fm-summary-quantity{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 13px;border-bottom:1px solid var(--line)}
+.fm-summary-quantity>div:last-child{text-align:right}
+.fm-summary-quantity span{display:block;color:var(--muted);font-size:10px;font-weight:700}
+.fm-summary-quantity strong{display:block;margin-top:4px;font-size:16px;font-weight:850;font-variant-numeric:tabular-nums}
+.fm-summary-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.fm-summary-metrics>div{min-width:0;padding:13px 14px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.fm-summary-metrics>div>span{display:block;color:var(--muted);font-weight:750;font-size:10px}
+.fm-summary-metrics>div>strong{display:block;margin-top:7px;color:#202b25;font-weight:850;font-size:20px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.fm-summary-metrics>div>small{display:block;margin-top:4px;color:var(--muted);line-height:1.5;font-size:9px}
+.fm-summary-metrics .fm-summary-profit{grid-column:1/-1;background:#eef6f0;border-color:#b4d0bd}
+.fm-summary-metrics .fm-summary-profit strong{font-size:25px;color:#216243}
+.fm-summary-metrics .fm-summary-profit.loss{background:#fbf2f0;border-color:#eac9c4}
+.fm-summary-metrics .fm-summary-profit.loss strong{color:#a43f37}
+.fm-summary-disclaimer{margin:11px 2px 0;color:#5d6b61;font-size:10px;line-height:1.7}
+.fm-summary-disclaimer strong{font-weight:850;color:#435c4b}
+.fm-breakdown{margin-top:10px;padding:0 12px;border:1px solid #e0e4de;border-radius:9px;background:#f8f8f5}
+.fm-breakdown summary{cursor:pointer;padding:11px 0;color:#596a5e;font-size:10px;font-weight:800}
+.fm-breakdown[open] summary{border-bottom:1px solid #e0e4de}
+.fm-breakdown>div{padding-top:6px}
+.fm-breakdown-line{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;font-size:10px}
+.fm-breakdown-line span{color:#6a766d}
+.fm-breakdown-line strong{font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fm-breakdown>p{margin:3px 0 12px;color:var(--muted);font-size:9px;line-height:1.6}
+.fm-summary-caveat{font-size:9px;color:#746d54;line-height:1.6;margin:8px 2px 0}
+@media(max-width:560px){.fm-summary-metrics{grid-template-columns:1fr}.fm-summary-metrics .fm-summary-profit{grid-column:1}.fm-summary-quantity{gap:6px}.fm-summary-quantity strong{font-size:15px}}
