@@ -109,6 +109,7 @@ function openDetail(slug){
  const gross=r.gross==null?'음식 판매가 미확인':gold(r.gross);
  const fmtValue=x=>x==null?'계산 불가':signed(x);
  const base=r.baseDetails.map(x=>'<li>'+esc(x.base)+' '+fmt(x.baseCount)+'개 → '+esc(x.crop)+' '+fmt(x.cropCount)+'개 → '+esc(x.seed)+' 평균 '+fmt(x.seedCount)+'개 (1회 수확 '+fmt(x.yieldMin)+'~'+fmt(x.yieldMax)+'개)</li>').join('');
+ const bundleDesc=r.plans.filter(x=>D.ingredients[x.id]?.type==='묶음').map(x=>{const part=D.ingredients[x.id].recipe?.[0],crop=D.ingredients[part?.[0]];return '<li>'+esc(x.name)+' '+fmt(x.quantity)+'개 (묶음 1개 = '+esc(crop?.name||'작물')+' '+fmt(part?.[1])+'개)</li>'}).join('');
  const goldCraft=r.meta?'<p class="fm-detail-note">황금 제작: 대량 '+fmt(r.meta.bulkRuns)+'회, 소량 '+fmt(r.meta.singleRuns)+'회 · 일반 음식 '+fmt(r.meta.normalCount)+'개 사용'+(r.meta.overproduced?' · 초과 제작 '+fmt(r.meta.overproduced)+'개':'')+' · 제작 조합 '+fmt(r.choiceCount||1)+'개 비교'+(r.choiceLimited?' (최적 조합 보장 안 됨)':'')+'</p>':'';
  $('#detailBody').innerHTML='<div class="fm-detail-hero"><div class="fm-detail-food"><img src="'+esc(img||'')+'" alt=""><div><span class="fm-grade">'+esc(r.mode==='gold'?'GOLD':r.food.grade)+'</span><h3>'+esc(r.name)+'</h3><p>개당 예상 차익 '+(r.estimate==null?'—':gold(r.estimate/r.quantity))+'</p></div></div><span class="fm-badge '+(r.complete?'ok':'warn')+'">'+(r.complete?'구매 목록 계산됨':'재료 부족/정보 확인')+'</span></div>'+goldCraft+
  '<div class="fm-detail-total">'+
@@ -119,6 +120,7 @@ function openDetail(slug){
  '<div class="fm-detail-section-head"><h3>실제 구매 목록</h3><p>필요한 원재료를 플리마켓 판매자·NPC별로 구분했습니다. 화면의 매물은 실제 구매 시 변경될 수 있습니다.</p></div>'+purchaseTable(allSteps)+
  '<div class="fm-detail-section-head"><h3>재료별 필요 수량</h3></div>'+ 
  '<div class="fm-requirements">'+r.plans.map(x=>'<div><span>'+esc(x.name)+' · 필요 '+fmt(x.quantity)+'개</span><strong>'+(x.plan.complete?gold(x.plan.cost):'미확인 / '+gold(x.plan.cost))+'</strong></div>').join('')+'</div>'+ 
+ (bundleDesc?'<div class="fm-detail-section-head"><h3>작물 묶음 구매 단위</h3><p>아래 수량은 플리마켓에서 검색할 묶음 아이템 수입니다. 낱개 작물로 바꾸어 검색하지 않습니다.</p></div><ul class="fm-base-list">'+bundleDesc+'</ul>':'')+
  (base?'<div class="fm-detail-section-head"><h3>베이스 씨앗 환산 과정</h3><p>평균 수확 기준은 확정 수량이 아닙니다.</p></div><ul class="fm-base-list">'+base+'</ul>':'')+
  (issues.length?'<div class="fm-detail-alert"><strong>확인 필요</strong><p>'+esc(issues.join(' · '))+'</p></div>':'')+
  (r.plans.some(x=>!x.plan.optimal&&x.plan.complete)?'<p class="fm-detail-note">일부 재료는 구매 수량이 커서 빠른 단가순 구매 조합을 사용했습니다. 실제 구매 목록의 비용은 계산했지만 최소 총구매비라고 보장하지 않습니다.</p>':'')+

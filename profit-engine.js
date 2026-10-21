@@ -36,6 +36,10 @@
       if(!record?.name)return errors.push('확인되지 않은 재료 ID: '+id);
       if(SEEDS[id] && !record.recipe?.length)return errors.push(id+' 베이스 정보 오류');
       if(id.endsWith('_base') && !record.recipe?.length)return errors.push(record.name+'의 레시피 없음');
+      // 농작물 가공 시설의 '묶음'은 플리마켓에 올라오는 실제 아이템 단위다.
+      // 재료 1묶음을 낱개 원작물 32/64개로 풀어 구매하면 다른 품목이므로 안 된다.
+      // 토마토/양파/마늘 베이스처럼 판매되지 않는 중간 재료는 아래에서 계속 분해한다.
+      if(record.type==='묶음'){ add(record.name,amount,id); return; }
       if(record.recipe?.length){
         // 알려진 토마토/양파/마늘 베이스는 씨앗 수확량을 고려해 전개한다.
         if(id.endsWith('_base') && record.recipe.length===1 && SEEDS[record.recipe[0][0]]){
