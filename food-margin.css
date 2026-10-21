@@ -198,3 +198,25 @@ a{color:inherit}
 .fm-forecast.neutral{gap:5px}
 .fm-forecast.neutral .fm-forecast-prob{font-size:7px;font-weight:850;color:#68716b}
 .fm-forecast.neutral .fm-forecast-confidence{font-size:7px;font-weight:760;color:#8b918d}
+
+/* food-margin-v2 — concise shopping list and accurate quantity controls */
+#targetAmount{width:126px;max-width:100%}
+#targetUnit{min-width:110px}
+#inputMessage{margin-top:10px}
+#inputMessage.invalid{color:#b44c47;background:#faece9}
+.fm-requirements{margin-top:9px;display:grid;gap:7px}
+.fm-requirements>div{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:9px;font-size:11px}
+.fm-requirements strong{white-space:nowrap}
+.fm-base-list{padding-left:22px;color:#57695b;font-size:10px;line-height:1.8}
+.fm-detail-alert{margin-top:14px;background:#fdf3e6;border:1px solid #ebcfab;border-radius:10px;padding:12px;color:#775322;font-size:11px}
+.fm-detail-alert p{margin:5px 0 0;line-height:1.6}
+@media(max-width:720px){#targetAmount,#targetUnit{width:100%;min-width:0}}
+
+@media(max-width:560px){
+ .fm-control-head{flex-direction:column;align-items:stretch}
+ .fm-mode-tabs{width:100%}.fm-mode-tabs button{flex:1}
+ .fm-card-head{flex-direction:column;align-items:stretch}
+ .fm-net{text-align:left;white-space:normal;overflow-wrap:anywhere}
+ .fm-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fm-kpis>div:last-child{grid-column:1/-1}
+}
