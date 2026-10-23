@@ -10,6 +10,9 @@
   // 현재 플리마켓에서 실제 완성 재료로 거래되는 가공 아이템은
   // 원재료로 재귀 분해하지 않는다. 베이스는 여기에 포함하지 않는다.
   const MARKET_FINISHED=new Set(['sugar_cube','cheese_slice','flour_dough','butter_slice']);
+  // 금가루는 게임 내 직접 수급이 확정된 재료다. 구매비·소비원가·매물 검사에서 제외한다.
+  const GOLD_SELF_SUPPLIED=new Set(['gold_dust','edible_gold_dust']);
+  function ownGold(leaf,mode){return mode==='gold'&&GOLD_SELF_SUPPLIED.has(leaf?.id)}
   function positiveInt(n){return Number.isSafeInteger(Number(n))&&Number(n)>0?Number(n):null}
   function integer(n){return Number.isSafeInteger(Number(n))&&Number(n)>=0?Number(n):null}
   function inputCount(raw,unit){
@@ -221,7 +224,7 @@
     const unit=numericPrice(ctx.prices,name);
     const gross=unit==null?null:unit*quantity;
     const calculate=(source)=>{
-      const plans=source.leaves.map(r=>({...r,plan:selectPurchases(r.name,r.quantity,ctx.offers,ctx.npc)}));
+      const plans=source.leaves.filter(r=>!ownGold(r,mode)).map(r=>({...r,plan:selectPurchases(r.name,r.quantity,ctx.offers,ctx.npc)}));
       const errors=[...source.errors];
       const complete=plans.every(p=>p.plan.complete)&&errors.length===0;
       const cost=plans.reduce((v,p)=>v+p.plan.cost,0);
@@ -277,7 +280,7 @@
     const name=mode==='gold'?(food.gold?.name||'황금 '+food.name):food.name;
     const reference=mode==='gold'?positiveInt(food.gold?.bulk?.output)||1:1;
     const source=mode==='gold'?goldNeeds(food,reference,ctx.data,scenario,1):recipeLeaves(food,1,ctx.data,scenario);
-    const plans=source.leaves.map(leaf=>({...leaf,price:bestUnitOffer(leaf.name,ctx.offers,ctx.npc)}));
+    const plans=source.leaves.filter(leaf=>!ownGold(leaf,mode)).map(leaf=>({...leaf,price:bestUnitOffer(leaf.name,ctx.offers,ctx.npc)}));
     const missing=plans.filter(p=>!p.price).map(p=>p.name);
     const complete=source.errors.length===0&&missing.length===0;
     const unit=numericPrice(ctx.prices,name);
@@ -293,10 +296,11 @@
     const unit=numericPrice(ctx.prices,name);
     const evaluate=source=>{
       const plans=source.leaves.map(leaf=>{
-        const buy=selected.has(leaf.name);
+        const autoSupplied=ownGold(leaf,mode);
+        const buy=!autoSupplied&&selected.has(leaf.name);
         const plan=buy?selectPurchases(leaf.name,leaf.quantity,ctx.offers,ctx.npc):null;
         const allocated=buy&&plan?.complete&&plan.obtained>0 ? plan.cost*leaf.quantity/plan.obtained:null;
-        return {...leaf,buy,plan,allocated};
+        return {...leaf,autoSupplied,buy,plan,allocated};
       });
       const complete=source.errors.length===0&&plans.every(x=>!x.buy||x.plan.complete);
       const cash=plans.reduce((sum,x)=>sum+(x.buy?x.plan.cost:0),0);
