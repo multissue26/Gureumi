@@ -231,7 +231,8 @@
       const fees=ctx.feeRate==null?null:gross==null?null:gross*ctx.feeRate;
       const net=complete&&gross!==null&&fees!==null?gross-fees-cost:null;
       const missing=plans.filter(p=>!p.plan.complete).length+errors.length;
-      return {food,name,quantity,mode,scenario,plans,baseDetails:source.baseDetails,errors,complete,unit,gross,cost,fees,net,
+      const goldUsed=source.leaves.filter(r=>ownGold(r,mode)).reduce((total,r)=>total+r.quantity,0);
+      return {food,name,quantity,mode,scenario,plans,baseDetails:source.baseDetails,errors,complete,unit,gross,cost,fees,net,goldUsed,
         estimate:complete&&gross!==null?gross-cost:null,margin:net!==null&&gross>0?net/gross*100:null,meta:source.meta,missing};
     };
     if(mode!=='gold')return calculate(recipeLeaves(food,quantity,ctx.data,scenario));
@@ -251,7 +252,7 @@
     for(const runs of choices){
       const option=calculate(goldNeeds(food,quantity,ctx.data,scenario,runs));
       if(best===null|| (option.complete&&!best.complete) ||
-         (option.complete===best.complete && (option.complete ? option.cost<best.cost : option.missing<best.missing || (option.missing===best.missing&&option.cost<best.cost)))){
+         (option.complete===best.complete && (option.complete ? option.cost<best.cost-EPS || (Math.abs(option.cost-best.cost)<=EPS&&option.goldUsed<best.goldUsed) : option.missing<best.missing || (option.missing===best.missing&&option.cost<best.cost)))){
         best=option;
       }
     }
@@ -308,7 +309,8 @@
       const obtained=plans.filter(x=>x.buy).map(x=>({name:x.name,quantity:x.plan.obtained}));
       const missing=plans.filter(x=>x.buy&&!x.plan.complete).map(x=>x.name);
       const gross=unit==null?null:unit*target;
-      return {food,name,mode,quantity:target,scenario,plans,errors:source.errors,baseDetails:source.baseDetails,
+      const goldUsed=source.leaves.filter(r=>ownGold(r,mode)).reduce((total,r)=>total+r.quantity,0);
+      return {food,name,mode,quantity:target,scenario,plans,errors:source.errors,baseDetails:source.baseDetails,goldUsed,
         meta:source.meta||null,selected,complete,missing,obtained,unit,gross,cash,cost,
         remainingValue:cost==null?null:Math.max(0,cash-cost),
         consumedDifference:complete&&gross!=null?gross-cost:null,
@@ -324,7 +326,7 @@
     for(const runs of candidates){
       const option=evaluate(goldNeeds(food,target,ctx.data,scenario,runs));
       if(!result||(option.complete&&!result.complete)||
-        (option.complete===result.complete&& (option.complete?option.cash<result.cash:
+        (option.complete===result.complete&& (option.complete?option.cash<result.cash-EPS || (Math.abs(option.cash-result.cash)<=EPS&&option.goldUsed<result.goldUsed):
          option.missing.length+option.errors.length<result.missing.length+result.errors.length)))result=option;
     }
     result.choiceCount=candidates.length;
