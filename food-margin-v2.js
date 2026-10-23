@@ -6,6 +6,11 @@ const $=s=>document.querySelector(s);
 const esc=v=>F.escapeHtml(v??'');
 const fmt=v=>Number(v||0).toLocaleString('ko-KR',{maximumFractionDigits:2});
 const gold=v=>Number.isFinite(v)?fmt(v)+' G':'—';
+const stackLabel=value=>{
+ const count=Math.floor(Number(value)||0);
+ const sets=Math.floor(count/64),rest=count%64;
+ return sets?fmt(sets)+'세트'+(rest?' + '+fmt(rest)+'개':''):fmt(rest)+'개';
+};
 const signed=v=>v==null?'—':(v>0?'+':'')+gold(v);
 const dateTime=v=>F.dateTime(v);
 let mode='normal',offers=[],prices={},lastScan='',priceTime='',selected='',results=[],marketOk=false,priceOk=false;
@@ -163,7 +168,7 @@ function renderDetail(){
   const source=x.buy?x.plan:null;
   const unit=x.buy&&source.obtained>0?source.cost/source.obtained:null;
   const note=x.buy?(source.complete?'구매 '+fmt(source.obtained)+'개 · 남음 '+fmt(source.leftover)+'개 · 평균 '+gold(unit)+'/개':'일부 구매 가능 · 재고 부족'):'보유·직접 수급 가정 · 구매 지출 제외';
-  return '<div class="fm-buy-row '+(x.buy?'':'unchecked')+'"><label><input type="checkbox" data-buy-name="'+esc(x.name)+'" '+(x.buy?'checked':'')+'><span><strong>'+esc(x.name)+'</strong><small>필요 '+fmt(x.quantity)+'개 · '+esc(note)+'</small></span></label><strong class="fm-buy-cost">'+(x.buy?gold(source.cost):'직접 수급')+'</strong></div>';
+  return '<div class="fm-buy-row '+(x.buy?'':'unchecked')+'"><label><input type="checkbox" data-buy-name="'+esc(x.name)+'" '+(x.buy?'checked':'')+'><span><strong>'+esc(x.name)+'</strong><small>필요 '+fmt(x.quantity)+'개 ('+stackLabel(x.quantity)+') · '+esc(note)+'</small></span></label><strong class="fm-buy-cost">'+(x.buy?gold(source.cost):'직접 수급')+'</strong></div>';
  }).join('');
  const attention=missing.length?'<div class="fm-detail-alert"><strong>구매 수량 부족 / 계산 불가</strong><p>'+esc(missing.join(' · '))+'</p></div>':'';
  const reminders='<p class="fm-detail-note">※ 구매 체크를 해제한 재료는 실제로 보유하고 있다고 가정하며, 보유 개수를 자동으로 읽지 않습니다. 따라서 최대 제작 가능 수량은 <strong>선택한 구매 재료에 한해 계산한 조건부 수량</strong>입니다. 씨앗의 평균 수확량은 확정 수확량이 아닙니다. 플리마켓 매물은 구매 전 소진될 수 있고, 판매 수수료는 아직 확인되지 않았습니다. 최종 순이익으로 확정하지 않습니다.</p>';
