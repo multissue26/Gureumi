@@ -137,6 +137,22 @@
     if(!q||stock===null||!Number.isSafeInteger(price)||price<=0)return null;
     return {quantity:q,price,available:Math.floor(stock/q),seller:String(o?.seller_name||'판매자 정보 없음'),shop:String(o?.raw_data?.shopName||''),offer:o};
   }
+  // Buy requests provide reference prices only; they are never available for purchase.
+  function med(a){const b=a.filter(v=>Number.isFinite(v)&&v>0).sort((x,y)=>x-y);if(!b.length)return null;const m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+  function analyzeSales(name,offers,npc){
+    const same=(offers||[]).filter(o=>String(o?.item_name||'').trim()===name);
+    const sales=same.filter(o=>o.trade_type==='sale').map(offerLots).filter(o=>o&&o.available>0);
+    const bids=same.filter(o=>o.trade_type==='buy').map(o=>{const q=positiveInt(o.quantity),v=Number(o.listing_price);return q&&Number.isFinite(v)&&v>0?v/q:null}).filter(v=>v!==null);
+    const refs=[];
+    if(bids.length>=3)refs.push(med(bids));
+    if(sales.length>=3)refs.push(med(sales.map(o=>o.price/o.quantity)));
+    if(npc&&npc.price>0)refs.push(npc.price);
+    const baseline=refs.length?Math.max(...refs):null;
+    const suspect=baseline?sales.filter(o=>o.price/o.quantity>5*baseline):[];
+    const exclude=new Set(suspect);
+    return {sales:sales.filter(o=>!exclude.has(o)),suspect,
+      warnings:suspect.length?['고가 의심 판매 매물 '+suspect.length+'건 제외 · 참고 단가의 5배 초과(가격·판매단위 확인 필요)']:[]};
+  }
   function exactPurchase(name,need,candidate,npc){
     if(need>2048||candidate.length>100)return null;
     const maxLot=Math.max(1,...candidate.map(c=>c.quantity));
@@ -187,12 +203,12 @@
   function selectPurchases(name,need,offers,npcs){
     if(!positiveInt(need))return {name,required:need,obtained:0,leftover:0,cost:0,complete:false,steps:[],reason:'잘못된 수량'};
     const npc=npcs.get(name)||null;
-    const candidate=(offers||[]).filter(o=>o?.trade_type!=='buy'&&String(o?.item_name||'').trim()===name)
-      .map(offerLots).filter(v=>v&&v.available>0);
+    const analysis=analyzeSales(name,offers,npc);
+    const candidate=analysis.sales;
     // 개당가격, 묶음단가, 판매자 순. 실물 묶음 단위의 과구매 가능성은 결과에 표시한다.
     candidate.sort((a,b)=>a.price/a.quantity-b.price/b.quantity||a.price-b.price||a.seller.localeCompare(b.seller));
     const exact=exactPurchase(name,need,candidate,npc);
-    if(exact)return exact;
+    if(exact)return {...exact,warnings:analysis.warnings};
     let have=0,cost=0;const steps=[];
     for(const o of candidate){
       if(have>=need)break;
@@ -210,12 +226,12 @@
       have+=quantity;cost+=price;
       steps.push({type:'npc',name,quantity,unit:1,lots:quantity,cost:price,seller:'NPC · '+npc.npc,shop:npc.location,verified:npc.verified});
     }
-    return {name,required:need,obtained:have,leftover:Math.max(0,have-need),cost,complete:have>=need,steps,reason:have>=need?'':npc?'':'매물·NPC 구매 데이터 부족',npcUsed:steps.some(s=>s.type==='npc'),optimal:false};
+    return {name,required:need,obtained:have,leftover:Math.max(0,have-need),cost,complete:have>=need,steps,reason:have>=need?'':analysis.suspect.length&&!candidate.length&&!npc?'고가 의심 매물만 존재':'판매 매물·NPC 재고 부족',warnings:analysis.warnings,npcUsed:steps.some(s=>s.type==='npc'),optimal:false};
   }
   function numericPrice(prices,name){
     const record=prices?.[name];
     if(!record)return null;
-    const v=typeof record==='object'?(record.myPrice??record.marketPrice??record.price??record.current):record;
+    const v=typeof record==='object'?record.marketPrice:record; // 상점 일반 판매가만 사용, myPrice 사용 금지
     const n=Number(String(v??'').replace(/,/g,''));
     return v==null||v===''||!Number.isFinite(n)||n<0?null:n;
   }
@@ -265,29 +281,27 @@
 
   // 메인 카드: 재료의 '실제 사용량' x 판매 매물의 개당 단가로 계산한다.
   // 플리마켓 묶음 전체를 지불하는 금액은 상세의 실제 구매비에서만 취급한다.
-  function bestUnitOffer(name,offers,npcs){
-    const npc=npcs?.get(name);
-    let best=npc?{unitPrice:npc.price,source:'NPC · '+npc.npc}:null;
-    for(const item of offers||[]){
-      if(item?.trade_type==='buy'||String(item?.item_name||'').trim()!==name)continue;
-      const lot=offerLots(item);
-      if(!lot||lot.available<=0)continue;
-      const price=lot.price/lot.quantity;
-      if(!best||price<best.unitPrice)best={unitPrice:price,source:lot.seller};
-    }
-    return best;
+  function bestUnitOffer(name,offers,npcs,need=1){
+    const npc=npcs?.get(name)||null,analysis=analyzeSales(name,offers,npc);
+    const sources=analysis.sales.map(o=>({unitPrice:o.price/o.quantity,stock:o.quantity*o.available}));
+    if(npc)sources.push({unitPrice:npc.price,stock:Infinity});
+    sources.sort((x,y)=>x.unitPrice-y.unitPrice);
+    let left=need,spent=0;
+    for(const o of sources){if(left<=0)break;const used=Math.min(left,o.stock);spent+=used*o.unitPrice;left-=used}
+    return {unitPrice:left===0?spent/need:null,complete:left===0,available:need-left,warnings:analysis.warnings};
   }
   function unitPreview(food,mode,scenario,ctx){
     const name=mode==='gold'?(food.gold?.name||'황금 '+food.name):food.name;
     const reference=mode==='gold'?positiveInt(food.gold?.bulk?.output)||1:1;
     const source=mode==='gold'?goldNeeds(food,reference,ctx.data,scenario,1):recipeLeaves(food,1,ctx.data,scenario);
-    const plans=source.leaves.filter(leaf=>!ownGold(leaf,mode)).map(leaf=>({...leaf,price:bestUnitOffer(leaf.name,ctx.offers,ctx.npc)}));
-    const missing=plans.filter(p=>!p.price).map(p=>p.name);
+    const plans=source.leaves.filter(leaf=>!ownGold(leaf,mode)).map(leaf=>({...leaf,price:bestUnitOffer(leaf.name,ctx.offers,ctx.npc,leaf.quantity)}));
+    const missing=plans.filter(p=>!p.price.complete).map(p=>p.name+' (재고 '+p.price.available+'/'+p.quantity+'개)');
+    const priceWarnings=plans.flatMap(p=>(p.price.warnings||[]).map(w=>p.name+': '+w));
     const complete=source.errors.length===0&&missing.length===0;
     const unit=numericPrice(ctx.prices,name);
     const cost=complete?plans.reduce((v,p)=>v+p.quantity*p.price.unitPrice,0)/reference:null;
     return {food,name,mode,quantity:1,reference,scenario,unit,cost,complete,plans,errors:source.errors,
-      missingNames:missing,estimate:complete&&unit!==null?unit-cost:null,gross:unit};
+      missingNames:missing,priceWarnings,estimate:complete&&unit!==null?unit-cost:null,gross:unit};
   }
   // 사용자가 체크한 재료만 구매한다. 체크 해제된 재료는 '보유분이 충분하다'는 조건이지,
   // 그 재료가 공짜이거나 자동 확보되었다는 뜻은 아니다.
@@ -336,7 +350,7 @@
   function maxFromPurchases(food,mode,data,selectedPlans,scenario='average'){
     const tracked=selectedPlans.filter(x=>x.buy);
     if(!tracked.length)return {count:null,reason:'구매 재료를 선택하지 않아 상한을 정할 수 없음'};
-    if(tracked.some(x=>!x.plan?.complete))return {count:null,reason:'선택한 재료의 구매 가능 수량이 부족함'};
+    const partial=tracked.some(x=>!x.plan?.complete);
     const stock=new Map(tracked.map(x=>[x.name,x.plan.obtained]));
     // 구매하지 않은 재료는 별도 보유분이 충분하다고 가정한다. 직접 보유량은 알 수 없다.
     function fits(target){
@@ -359,7 +373,7 @@
     if(low>=1000000||high>1000000&&fits(1000000))return {count:null,reason:'선택 구매품목만으로 제작 수량의 상한을 확정할 수 없음'};
     high=Math.min(high,1000000);
     while(high-low>1){const mid=Math.floor((low+high)/2);if(fits(mid))low=mid;else high=mid}
-    return {count:low,reason:'선택 구매 재료 기준 · 나머지는 충분히 보유한 경우 · 평균 수확 가정'};
+    return {count:low,reason:(partial?'목표 수량 재고 부족 · 현재 확보 가능 재료로 제한 · ':'선택 구매 재료 기준 · ')+'그 외 재료는 충분히 보유한 경우 · 평균 수확 가정'};
   }
 
   return {inputCount,recipeLeaves,goldNeeds,npcMap,selectPurchases,assess,numericPrice,bestUnitOffer,unitPreview,purchasePlan,maxFromPurchases};
