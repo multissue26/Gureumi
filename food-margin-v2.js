@@ -33,8 +33,8 @@ function normalizePrices(payload){
  const root=payload?.prices??payload??{};const src=root?.prices??root;const out={};
  const num=v=>{if(v==null||v==='')return null;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:null};
  for(const [name,v] of Object.entries(src||{})){
-  if(typeof v==='number')out[name]={marketPrice:v,myPrice:v};
-  else if(v&&typeof v==='object')out[name]={marketPrice:num(v.marketPrice??v.price??v.current),myPrice:num(v.myPrice??v.personalPrice??v.marketPrice??v.price??v.current)};
+  if(typeof v==='number')out[name]={marketPrice:v};
+  else if(v&&typeof v==='object')out[name]={marketPrice:num(v.marketPrice??v.price??v.current)};
  }
  return out;
 }
@@ -75,7 +75,7 @@ function render(){
  explicit?`상세보기 제작 목표 ${fmt(qty)}개 · ${$('#targetUnit').value==='set'?'1세트 = 64개':'개별 수량'}`:'상세보기는 1개 제작을 기본값으로 사용합니다.';
  notice.classList.toggle('invalid',qty==null);
  $('#foodModeTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
- $('#modeHint').textContent=mode==='gold'?'황금 요리의 실제 판매가와 개당 재료비를 비교합니다. 금 가루·식용 금 가루는 직접 수급(원가 0G) 기준입니다.':'메인은 재료 1개당 단가로 소비 원가를 계산합니다. 상세에서는 실제 매물 구매 지출을 표시합니다.';
+ $('#modeHint').textContent=mode==='gold'?'황금 상점 일반 판매가 · 금가루 직접 수급(원가 0G) 기준입니다.':'상점 일반 판매가 기준 · 매물 수량 부족 또는 비정상 고가 매물은 수익 추천에서 제외합니다.';
  if(qty==null){$('#foodGrid').innerHTML='<div class="fm-panel fm-empty">제작 수량을 다시 확인해 주세요.</div>';return}
  results=D.foods.map(f=>evalFood(f));
  const ready=results.filter(r=>r.complete&&r.estimate!=null);
@@ -103,12 +103,12 @@ function render(){
  $('#foodGrid').innerHTML=sorted.map(r=>{
   const noCost=r.estimate==null,available=r.complete&&r.unit!=null;
   const img=mode==='gold'?(r.food.goldImage||r.food.image):r.food.image;
-  const why=r.errors.length?r.errors.join(' · '):r.unit==null?(mode==='gold'?'황금 요리 판매가 미확인':'음식 판매가 없음'):r.missingNames.join(', ')+' 단가 미확인';
-  const badge=available?'<span class="fm-badge ok">개당 원가 확인</span>':'<span class="fm-badge warn">확인 필요</span>';
+  const why=r.errors.length?r.errors.join(' · '):r.unit==null?(mode==='gold'?'황금 상점 일반 판매가 미확인':'상점 일반 판매가 미확인'):r.missingNames.length?r.missingNames.join(', ')+' · 구매 재고 부족':(r.priceWarnings||[]).join(' · ');
+  const badge=available?'<span class="fm-badge ok">개당 원가 확인</span>':'<span class="fm-badge warn">재료 확인 필요</span>';
   return '<article class="fm-card '+(noCost?'unavailable ':'')+(mode==='gold'?'gold-mode':'')+'">'+
    '<div class="fm-card-head"><div class="fm-food"><img src="'+esc(img||'')+'" alt=""><div><span class="fm-grade">'+esc(mode==='gold'?r.food.gold?.grade||'':r.food.grade||'')+'</span><h3>'+esc(r.name)+'</h3><small>'+(mode==='gold'?'대량 '+fmt(r.reference)+'개 제작 시 개당':'요리 1개 기준')+'</small></div></div>'+
    '<div class="fm-net '+(r.estimate>0?'positive':r.estimate<0?'negative':'muted')+'">'+(noCost?'원가·판매가 확인 필요':signed(r.estimate))+'<small>'+(mode==='gold'?'금가루 자가수급 · 수수료 제외':'개당 예상 차익 · 수수료 제외')+'</small></div></div>'+
-   '<div class="fm-kpis"><div><span>'+(mode==='gold'?'황금 요리 개당 판매가':'개당 판매가')+'</span><strong>'+(r.unit==null?'—':gold(r.unit))+'</strong></div><div><span>개당 재료 소비원가</span><strong>'+(r.cost==null?'—':gold(r.cost))+'</strong></div><div><span>확인된 재료 단가</span><strong>'+fmt(r.plans.filter(x=>x.price).length)+' / '+fmt(r.plans.length)+'종</strong></div></div>'+
+   '<div class="fm-kpis"><div><span>'+(mode==='gold'?'황금 상점 개당 판매가':'상점 개당 판매가')+'</span><strong>'+(r.unit==null?'—':gold(r.unit))+'</strong></div><div><span>개당 재료 소비원가</span><strong>'+(r.cost==null?'—':gold(r.cost))+'</strong></div><div><span>확인된 재료 단가</span><strong>'+fmt(r.plans.filter(x=>x.price).length)+' / '+fmt(r.plans.length)+'종</strong></div></div>'+
    '<div class="fm-card-foot"><div>'+badge+'<small>'+esc(why||' 매물 개당 가격 환산 · 실제 구매 지출은 상세보기')+'</small></div><button data-detail="'+esc(r.food.slug)+'">제작·구매 상세</button></div></article>';
  }).join('')||'<div class="fm-panel fm-empty">일치하는 요리가 없습니다.</div>';
 }
@@ -131,7 +131,8 @@ function renderDetail(){
  const fmtV=v=>v==null?'계산 불가':signed(v);
  const unchecked=plan.plans.filter(x=>!x.buy&&!x.autoSupplied);
  const insufficient=plan.plans.filter(x=>x.buy&&!x.plan.complete);
- const missing=plan.errors.concat(insufficient.map(x=>x.name+' 실제 구매량 부족'));
+ const missing=plan.errors.concat(insufficient.map(x=>x.name+': 필요 '+fmt(x.quantity)+'개 / 확보 가능 '+fmt(x.plan.obtained)+'개 ('+x.plan.reason+')'));
+ const priceWarnings=[...new Set(plan.plans.filter(x=>x.buy).flatMap(x=>(x.plan.warnings||[]).map(w=>x.name+': '+w)))];
  const hasUnchecked=unchecked.length>0;
  const produced=max.count;
  const base=plan.baseDetails.map(x=>'<li>'+esc(x.base)+' '+fmt(x.baseCount)+'개 → '+esc(x.crop)+' '+fmt(x.cropCount)+'개 → '+esc(x.seed)+' '+fmt(x.seedCount)+'개 (평균 수확 추정)</li>').join('');
@@ -157,8 +158,8 @@ function renderDetail(){
   '<div class="fm-summary-quantity"><div><span>제작 목표</span><strong>'+fmt(qty)+'개</strong></div>'+
   '<div><span>구매 재료 기준 제작 가능</span><strong>'+maxLabel+'</strong></div></div>'+
   '<div class="fm-summary-metrics">'+
-  '<div><span>실제 구매 지출</span><strong>'+gold(plan.cash)+'</strong><small>64개 등 매물 판매 단위 그대로 결제</small></div>'+
-  '<div><span>'+(mode==='gold'?'황금 요리 판매금액':'목표 수량 판매금액')+'</span><strong>'+(plan.gross==null?(mode==='gold'?'황금 판매가 미확인':'판매가 미확인'):gold(plan.gross))+'</strong><small>요리 '+fmt(qty)+'개 판매 가정</small></div>'+
+  '<div><span>'+(plan.complete?'선택 재료 예상 구매비':'현재 확보 가능한 일부 재료비')+'</span><strong>'+gold(plan.cash)+'</strong><small>'+(plan.complete?'매물 판매 단위별 지출 · 결제 전 예상':'목표 재료 확보 불가 · 구매 완료액 아님')+'</small></div>'+
+  '<div><span>'+(mode==='gold'?'황금 상점 예상 판매액':'상점 예상 판매액')+'</span><strong>'+(plan.gross==null?'상점 일반 판매가 미확인':gold(plan.gross))+'</strong><small>'+(plan.complete?'목표 수량 전부 판매하는 경우':'재고 부족 · 전량 제작 가능한 경우에만 해당')+'</small></div>'+
   '<div class="fm-summary-profit '+(plan.consumedDifference<0?'loss':'')+'"><span>'+unitLabel+'</span><strong>'+differenceLabel+'</strong><small>'+
   (hasUnchecked?'직접 수급하는 재료의 원가는 제외':'구매 재료의 실제 소비량만 원가로 반영')+' · 수수료 제외</small></div></div>'+
   '<p class="fm-summary-disclaimer">구매 지출은 묶음 전체 결제액, 예상 차익은 그중 <strong>실제 소비한 재료비</strong> 기준입니다. 남는 재료와 현금 차이는 아래에서 확인할 수 있어요.</p>'+
@@ -168,15 +169,15 @@ function renderDetail(){
  const rows=plan.plans.filter(x=>!x.autoSupplied).map((x,i)=>{
   const source=x.buy?x.plan:null;
   const unit=x.buy&&source.obtained>0?source.cost/source.obtained:null;
-  const note=x.buy?(source.complete?'구매 '+fmt(source.obtained)+'개 · 남음 '+fmt(source.leftover)+'개 · 평균 '+gold(unit)+'/개':'일부 구매 가능 · 재고 부족'):'보유·직접 수급 가정 · 구매 지출 제외';
-  return '<div class="fm-buy-row '+(x.buy?'':'unchecked')+'"><label><input type="checkbox" data-buy-name="'+esc(x.name)+'" '+(x.buy?'checked':'')+'><span><strong>'+esc(x.name)+'</strong><small>필요 '+fmt(x.quantity)+'개 ('+stackLabel(x.quantity)+') · '+esc(note)+'</small></span></label><strong class="fm-buy-cost">'+(x.buy?gold(source.cost):'직접 수급')+'</strong></div>';
+  const note=x.buy?(source.complete?'구매 '+fmt(source.obtained)+'개 · 남음 '+fmt(source.leftover)+'개 · 평균 '+gold(unit)+'/개':'재고 부족 · 확보 가능 '+fmt(source.obtained)+'/'+fmt(x.quantity)+'개'):'보유·직접 수급 가정 · 구매 지출 제외';
+  return '<div class="fm-buy-row '+(x.buy?'':'unchecked')+'"><label><input type="checkbox" data-buy-name="'+esc(x.name)+'" '+(x.buy?'checked':'')+'><span><strong>'+esc(x.name)+'</strong><small>필요 '+fmt(x.quantity)+'개 ('+stackLabel(x.quantity)+') · '+esc(note)+'</small></span></label><strong class="fm-buy-cost">'+(x.buy?(source.complete?gold(source.cost):'부분 매물 '+gold(source.cost)):'직접 수급')+'</strong></div>';
  }).join('');
- const attention=missing.length?'<div class="fm-detail-alert"><strong>구매 수량 부족 / 계산 불가</strong><p>'+esc(missing.join(' · '))+'</p></div>':'';
+ const attention=(missing.length||priceWarnings.length)?'<div class="fm-detail-alert"><strong>'+(missing.length?'목표 재료 확보 불가 · 수익 계산 제외':'고가 의심 매물 경고')+'</strong>'+(missing.length?'<p>'+esc(missing.join(' · '))+'</p>':'')+(priceWarnings.length?'<p>'+esc(priceWarnings.join(' · '))+'</p>':'')+'</div>':'';
  const reminders='<p class="fm-detail-note">※ '+(mode==='gold'?'금 가루·식용 금 가루는 반드시 직접 수급하며 원가를 0G로 처리합니다. ':'')+'구매 체크를 해제한 재료는 실제로 보유하고 있다고 가정하며, 보유 개수를 자동으로 읽지 않습니다. 따라서 최대 제작 가능 수량은 <strong>선택한 구매 재료에 한해 계산한 조건부 수량</strong>입니다. 씨앗의 평균 수확량은 확정 수확량이 아닙니다. 플리마켓 매물은 구매 전 소진될 수 있고, 판매 수수료는 아직 확인되지 않았습니다. 최종 순이익으로 확정하지 않습니다.</p>';
  const body=top+summary+
   '<div class="fm-detail-section-head fm-detail-tools"><div><h3>구매할 재료 선택</h3><p>구매할 항목만 체크해. 미선택 재료는 직접 수급한다고 가정해.</p></div><div><button data-select-all="1">전체 선택</button><button data-select-all="0">전체 해제</button></div></div>'+
   '<div class="fm-buy-list">'+rows+'</div>'+
-  '<div class="fm-detail-section-head"><h3>판매자별 구매 목록</h3><p>실제 판매 매물의 묶음 수량을 적용했어. 묶음을 더 많이 사면 남는 재료는 유지돼.</p></div>'+purchaseTable(allSteps)+
+  '<div class="fm-detail-section-head"><h3>'+(plan.complete?'판매자별 구매 목록':'현재 확보 가능한 일부 판매 매물')+'</h3><p>판매 매물만 구매 후보로 사용하며, 시세 대비 고가 의심 매물은 경고 후 추천에서 제외합니다.</p></div>'+purchaseTable(allSteps)+
   (bundle?'<div class="fm-detail-section-head"><h3>작물 묶음의 구성</h3></div><ul class="fm-base-list">'+bundle+'</ul>':'')+
   (base?'<div class="fm-detail-section-head"><h3>베이스 재료의 씨앗 환산</h3><p>수확량은 평균 추정치이므로 실제 제작 가능 개수는 달라질 수 있어.</p></div><ul class="fm-base-list">'+base+'</ul>':'')+attention+reminders;
  const drawer=$('.fm-drawer'),before=drawer.scrollTop;
