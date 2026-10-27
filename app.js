@@ -119,7 +119,7 @@
   function getPrice(food, gold = false) { return state.prices[priceKey(food, gold)] || null; }
   function currentPrice(food, gold = false) {
     const p = getPrice(food, gold);
-    return p?.myPrice ?? p?.marketPrice ?? null;
+    return p?.marketPrice ?? null;
   }
   function rangeFor(food, gold = false) { return gold ? [food.gold.minPrice, food.gold.maxPrice] : [food.minPrice, food.maxPrice]; }
   function normalizedPrice(food, gold = false) {
@@ -599,13 +599,11 @@
   }
 
   function priceDisplay(food, gold = false) {
-    const p = getPrice(food, gold);
+    const market = getPrice(food, gold)?.marketPrice;
     const [min, max] = rangeFor(food, gold);
-    if (!p) return `<div class="price-line"><strong>${fmt(min)}~</strong><small>상단 ${fmt(max)}</small></div>`;
-    const mine = p.myPrice ?? p.marketPrice;
-    const market = p.marketPrice;
+    if (market == null) return '<div class="price-line"><strong>—</strong><small>상점 판매가 미확인</small></div>';
     const ratio = maxPricePercentText(food, gold);
-    return `<div class="price-line"><strong>${fmt(mine)}</strong><small>${p.myPrice != null && market != null && p.myPrice !== market ? `기준 ${fmt(market)}` : '현재가'} · 범위 ${fmt(min)}~${fmt(max)}${ratio ? ` <span class="max-price-ratio">${ratio}</span>` : ''}</small></div>`;
+    return `<div class="price-line"><strong>${fmt(market)}</strong><small>상점 판매가 · 범위 ${fmt(min)}~${fmt(max)}${ratio ? ` <span class="max-price-ratio">${ratio}</span>` : ''}</small></div>`;
   }
 
   function foodCard(food, gold = false) {
@@ -658,7 +656,7 @@
 
   function marketPrice(food, gold = false) {
     const p = getPrice(food, gold);
-    return p?.marketPrice ?? p?.myPrice ?? null;
+    return p?.marketPrice ?? null;
   }
 
   function trendName(food, gold = false) {
@@ -1061,13 +1059,13 @@
           <div class="market-chart-main">
             <div class="market-chart-head">
               <div class="market-selected-food"><span class="market-selected-icon"><img src="${trendImage(selected, trendGold)}" alt=""></span><div><span class="market-kicker">${trendGold ? 'SELECTED GOLD FOOD' : 'SELECTED FOOD'}</span><h3>${esc(trendName(selected, trendGold))}</h3></div></div>
-              <div class="market-selected-numbers"><div><small>시장 판매가</small><b>${fmt(marketPrice(selected, trendGold))}</b></div><div><small>나의 판매가</small><b>${fmt(selectedPrice?.myPrice ?? selectedPrice?.marketPrice)}</b></div>${changeBadge(selectedChange)}${forecastBadge(selectedForecast,true)}</div>
+              <div class="market-selected-numbers"><div><small>상점 일반 판매가</small><b>${fmt(marketPrice(selected, trendGold))}</b></div>${changeBadge(selectedChange)}${forecastBadge(selectedForecast,true)}</div>
             </div>
             <div class="market-chart-wrap">${trendChartSvg(selected, trendGold)}</div>
           </div>
           <aside class="market-food-picker"><div class="picker-head"><b>${trendGold ? '황금 요리 선택' : '음식 선택'}</b><span>${trendFoods.length}/${D.foods.length}</span></div><div class="picker-list">${D.foods.map(food => {
             const p=getPrice(food, trendGold), ch=priceChange(food, trendGold), itemName=trendName(food, trendGold), itemImage=trendImage(food, trendGold);
-            return `<button class="picker-food ${food.slug===selected.slug?'active':''} ${p?'':'disabled'}" data-trend-food="${food.slug}" data-trend-gold="${trendGold ? '1' : '0'}" ${p?'':'disabled'}><img src="${itemImage}" alt=""><span><b>${esc(itemName)}</b><small>${p ? `${fmt(p.myPrice ?? p.marketPrice)} · ${ch.pct == null ? '변동 기록 대기' : `${ch.diff>0?'↑':ch.diff<0?'↓':'→'} ${Math.abs(ch.pct).toFixed(1)}%`}` : '가격 미수집'}</small></span></button>`;
+            return `<button class="picker-food ${food.slug===selected.slug?'active':''} ${p?'':'disabled'}" data-trend-food="${food.slug}" data-trend-gold="${trendGold ? '1' : '0'}" ${p?'':'disabled'}><img src="${itemImage}" alt=""><span><b>${esc(itemName)}</b><small>${p?.marketPrice != null ? `${fmt(p.marketPrice)} · ${ch.pct == null ? '변동 기록 대기' : `${ch.diff>0?'↑':ch.diff<0?'↓':'→'} ${Math.abs(ch.pct).toFixed(1)}%`}` : '상점 판매가 미확인'}</small></span></button>`;
           }).join('')}</div></aside>
         </div>
       </section>
@@ -1896,7 +1894,7 @@
         <div id="npcPurchasePlanner">${npcPurchasePlannerHtml(food,1)}</div>
         <div class="npc-plan-note">세트 환산은 <b>1세트 = 64개</b>. 현재 인벤토리 보유량은 차감하지 않은 ‘처음부터 전부 구매’ 기준이에요.</div>
       </div>` : ''}
-      <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p ? `기준 ${fmt(p.marketPrice)} · 나의 판매가 <b>${fmt(p.myPrice ?? p.marketPrice)}</b>` : '가격 파일에서 아직 이 음식 값을 읽지 못했어요!'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map((h,i) => `<div class="mini-row"><span>${esc(historyLabel(h,i))}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
+      <div class="drawer-section"><h3>현재 가격</h3><div class="drawer-text">${p?.marketPrice != null ? `상점 일반 판매가 <b>${fmt(p.marketPrice)}</b>` : '상점 일반 판매가가 아직 확인되지 않았어요.'}</div>${p?.history?.length ? `<div class="mini-list" style="margin-top:10px">${p.history.map((h,i) => `<div class="mini-row"><span>${esc(historyLabel(h,i))}</span><b>${fmt(h.price)}</b></div>`).join('')}</div>` : ''}</div>
       <p class="source-note">완성 요리 레시피·밀키 구매가는 공식 위키와 대조. 버터 조각은 2026-10-03 인게임 확인값(요리용 우유 ×8 + 오일 ×4)을 우선 반영.</p></div>`;
     $('#drawerBackdrop').hidden = false;
     $('#detailDrawer').classList.add('open');
